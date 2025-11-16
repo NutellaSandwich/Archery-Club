@@ -209,6 +209,17 @@ function SignupFlow({
       return;
     }
 
+    if (!account.email || !account.email.includes("@")) {
+      toast.error("Please enter a valid email address.");
+      setLoading(false);
+      return;
+    }
+    if (!account.password || account.password.length < 6) {
+      toast.error("Password must be at least 6 characters long.");
+      setLoading(false);
+      return;
+    }
+
     // ✅ Signup — safely handle existing user case
     const { data, error } = await supabase.auth.signUp({
       email: account.email.trim(),
@@ -303,12 +314,14 @@ function SignupFlow({
       const expiry = new Date();
       expiry.setFullYear(expiry.getFullYear() + 1);
 
+      const cleanDob = form.dob ? form.dob : null;
+
       const { error } = await supabase
         .from("profiles")
         .update({
-          full_name: form.full_name,
-          dob: form.dob,
-          agb_number: form.agb_number || null,
+          full_name: form.full_name.trim(),
+          dob: cleanDob,
+          agb_number: form.agb_number?.trim() || null,
           category: form.category,
           experience: form.experience,
           payment_status: "paid",
@@ -316,21 +329,19 @@ function SignupFlow({
         })
         .eq("id", user.id);
 
-      if (error) toast.error("Failed to complete signup.");
+      if (error) toast.error(`Failed to complete signup: ${error.message}`);
       else toast.success("Welcome! You’re now an individual member.");
     }
 
     // 🏹 JOIN CLUB
     if (type === "joinClub") {
-      // 🔍 Look up club by code (case-insensitive)
       const { data: club, error: clubError } = await supabase
         .from("clubs")
         .select("id, name")
-        .ilike("join_code", form.club_code.trim()) // ✅ case-insensitive match
+        .ilike("join_code", form.club_code.trim())
         .maybeSingle();
 
       if (clubError) {
-        console.error("Club lookup failed:", clubError);
         toast.error("Error checking club code.");
         setLoading(false);
         return;
@@ -342,15 +353,16 @@ function SignupFlow({
         return;
       }
 
-      // ✅ Insert join request with full info
+      const cleanDob = form.dob ? form.dob : null;
+
       const { error: joinError } = await supabase.from("join_requests").insert([
         {
           user_id: user.id,
           club_id: club.id,
           message: `${form.full_name} (${form.category}, ${form.experience})`,
-          full_name: form.full_name,
-          dob: form.dob,
-          agb_number: form.agb_number || null,
+          full_name: form.full_name.trim(),
+          dob: cleanDob,
+          agb_number: form.agb_number?.trim() || null,
           category: form.category,
           experience: form.experience,
         },
@@ -363,13 +375,12 @@ function SignupFlow({
         return;
       }
 
-      // ✅ Update user profile
       await supabase
         .from("profiles")
         .update({
-          full_name: form.full_name,
-          dob: form.dob,
-          agb_number: form.agb_number || null,
+          full_name: form.full_name.trim(),
+          dob: cleanDob,
+          agb_number: form.agb_number?.trim() || null,
           category: form.category,
           experience: form.experience,
         })
