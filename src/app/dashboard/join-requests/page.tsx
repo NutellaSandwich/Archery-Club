@@ -81,13 +81,16 @@ export default function JoinRequestsPage() {
         const { data: { session } } = await supabase.auth.getSession();
         const userId = session?.user?.id;
 
-        console.log("updateStatus →", { id, clubId, userId, status });
-
         if (!userId) {
             toast.error("You must be logged in.");
             return;
         }
 
+        // Log which request is being handled
+        const req = requests.find((r) => r.id === id);
+        console.log("🧠 updateStatus called with:", { id, clubId, userId, req });
+
+        // Update join_requests.status
         const { error: updateError } = await supabase
             .from("join_requests")
             .update({ status, reviewed_by: userId })
@@ -95,12 +98,35 @@ export default function JoinRequestsPage() {
             .eq("club_id", clubId);
 
         if (updateError) {
-            console.error("❌ updateError →", JSON.stringify(updateError, null, 2));
+            console.error("❌ updateError →", updateError);
             toast.error(`Failed to update request status: ${updateError.message}`);
             return;
         }
 
-        toast.success(`Request ${status}.`);
+        // ✅ Link user to the club if accepted
+        if (status === "accepted" && req?.user_id && req?.club_id) {
+            console.log("🔗 Linking user to club:", req.user_id, "→", req.club_id);
+
+            const { data, error: profileError } = await supabase
+                .from("profiles")
+                .update({ club_id: req.club_id })
+                .eq("id", req.user_id)
+                .select("id, club_id");
+
+            console.log("🔍 Profile update result:", { data, profileError });
+
+            if (profileError) {
+                toast.error("Failed to link user to club.");
+                console.error(profileError);
+            } else if (data?.length) {
+                toast.success("User successfully added to the club!");
+            } else {
+                toast.error("No matching profile found for that user_id!");
+            }
+        } else if (status === "accepted") {
+            console.warn("⚠️ Missing user_id or club_id in join_requests record:", req);
+        }
+
         setRequests((prev) =>
             prev.map((r) => (r.id === id ? { ...r, status } : r))
         );
