@@ -219,7 +219,7 @@ function SignupFlow({
       setLoading(false);
       return;
     }
-    
+
     console.log("🧠 Attempting signup", {
       email: account.email.trim(),
       passwordLength: account.password?.length,
@@ -418,6 +418,16 @@ function SignupFlow({
       }
 
       const clubData = insertedClubs[0];
+
+      console.log("🧠 Updating profiles with payload:", {
+        id: user.id,
+        club_id: clubData.id,
+        full_name: form.full_name,
+        dob: form.dob,
+        agb_number: form.agb_number,
+        category: form.category,
+        experience: form.experience,
+      });
 
       // 2️⃣ Update profile to link to new club
       const { error: profileError } = await supabase
