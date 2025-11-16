@@ -127,10 +127,16 @@ export default function JoinRequestsPage() {
                                 </span>
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="flex items-center justify-between">
+                        <CardContent className="space-y-2">
+                            <p><strong>Full Name:</strong> {r.full_name || "—"}</p>
+                            <p><strong>Category:</strong> {r.category || "—"}</p>
+                            <p><strong>Experience:</strong> {r.experience || "—"}</p>
+                            {r.agb_number && <p><strong>AGB Number:</strong> {r.agb_number}</p>}
+                            {r.dob && <p><strong>DOB:</strong> {new Date(r.dob).toLocaleDateString()}</p>}
                             <p className="text-sm text-muted-foreground">
                                 Requested on {new Date(r.created_at).toLocaleDateString()}
                             </p>
+
                             {r.status === "pending" ? (
                                 <div className="flex gap-2">
                                     <Button
@@ -151,9 +157,7 @@ export default function JoinRequestsPage() {
                                 </div>
                             ) : (
                                 <span
-                                    className={`text-sm font-medium ${r.status === "accepted"
-                                            ? "text-green-500"
-                                            : "text-red-500"
+                                    className={`text-sm font-medium ${r.status === "accepted" ? "text-green-500" : "text-red-500"
                                         }`}
                                 >
                                     {r.status.toUpperCase()}

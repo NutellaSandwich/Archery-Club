@@ -322,11 +322,19 @@ function SignupFlow({
 
     // 🏹 JOIN CLUB
     if (type === "joinClub") {
-      const { data: club } = await supabase
+      // 🔍 Look up club by code (case-insensitive)
+      const { data: club, error: clubError } = await supabase
         .from("clubs")
-        .select("id")
-        .eq("join_code", form.club_code)
+        .select("id, name")
+        .ilike("join_code", form.club_code.trim()) // ✅ case-insensitive match
         .maybeSingle();
+
+      if (clubError) {
+        console.error("Club lookup failed:", clubError);
+        toast.error("Error checking club code.");
+        setLoading(false);
+        return;
+      }
 
       if (!club) {
         toast.error("Invalid club code.");
@@ -334,14 +342,28 @@ function SignupFlow({
         return;
       }
 
-      await supabase.from("join_requests").insert([
+      // ✅ Insert join request with full info
+      const { error: joinError } = await supabase.from("join_requests").insert([
         {
           user_id: user.id,
           club_id: club.id,
-          message: `${form.full_name} (${form.category}, ${form.experience}) requests to join.`,
+          message: `${form.full_name} (${form.category}, ${form.experience})`,
+          full_name: form.full_name,
+          dob: form.dob,
+          agb_number: form.agb_number || null,
+          category: form.category,
+          experience: form.experience,
         },
       ]);
 
+      if (joinError) {
+        console.error("Join request insert failed:", joinError);
+        toast.error("Failed to send join request.");
+        setLoading(false);
+        return;
+      }
+
+      // ✅ Update user profile
       await supabase
         .from("profiles")
         .update({
