@@ -95,8 +95,8 @@ export default function JoinRequestsPage() {
             .eq("club_id", clubId);
 
         if (updateError) {
-            console.error("updateError →", updateError);
-            toast.error("Failed to update request status.");
+            console.error("❌ updateError →", JSON.stringify(updateError, null, 2));
+            toast.error(`Failed to update request status: ${updateError.message}`);
             return;
         }
 
