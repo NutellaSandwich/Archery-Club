@@ -81,30 +81,23 @@ export default function JoinRequestsPage() {
         const { data: { session } } = await supabase.auth.getSession();
         const userId = session?.user?.id;
 
-        if (!userId) return toast.error("You must be logged in.");
+        console.log("updateStatus →", { id, clubId, userId, status });
+
+        if (!userId) {
+            toast.error("You must be logged in.");
+            return;
+        }
 
         const { error: updateError } = await supabase
             .from("join_requests")
             .update({ status, reviewed_by: userId })
             .eq("id", id)
-            .eq("club_id", clubId); // ✅ Ensure update only applies within their club
+            .eq("club_id", clubId);
 
         if (updateError) {
+            console.error("updateError →", updateError);
             toast.error("Failed to update request status.");
             return;
-        }
-
-        // If accepted, link user to club
-        if (status === "accepted") {
-            const req = requests.find((r) => r.id === id);
-            if (req) {
-                const { error: profileError } = await supabase
-                    .from("profiles")
-                    .update({ club_id: req.club_id })
-                    .eq("id", req.user_id);
-
-                if (profileError) toast.error("Failed to link user to club.");
-            }
         }
 
         toast.success(`Request ${status}.`);
