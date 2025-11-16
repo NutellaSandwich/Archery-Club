@@ -128,9 +128,8 @@ export default function JoinRequestsPage() {
 
         async function handleSave() {
             setSaving(true);
-
             const { error } = await supabase
-                .from("profiles")
+                .from("join_requests")
                 .update({
                     full_name: form.full_name,
                     agb_number: form.agb_number,
@@ -138,13 +137,14 @@ export default function JoinRequestsPage() {
                     category: form.category,
                     experience: form.experience,
                 })
-                .eq("id", request.user_id);
+                .eq("id", request.id);
 
             setSaving(false);
             if (error) {
-                toast.error("Failed to update user info.");
+                console.error("Edit join_requests error:", error);
+                toast.error("Failed to update request info.");
             } else {
-                toast.success("Member details updated!");
+                toast.success("Request updated!");
                 onSave(form);
                 onClose();
             }
