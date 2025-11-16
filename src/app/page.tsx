@@ -219,6 +219,12 @@ function SignupFlow({
       setLoading(false);
       return;
     }
+    
+    console.log("🧠 Attempting signup", {
+      email: account.email.trim(),
+      passwordLength: account.password?.length,
+      redirect: `${window.location.origin}/dashboard`,
+    });
 
     // ✅ Signup — safely handle existing user case
     const { data, error } = await supabase.auth.signUp({
