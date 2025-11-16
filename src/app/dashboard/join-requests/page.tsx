@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, XCircle, User } from "lucide-react";
+import { CheckCircle, XCircle, User, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 export default function JoinRequestsPage() {
@@ -252,7 +252,7 @@ export default function JoinRequestsPage() {
                                         onClick={() => setEditingRequest(r)}
                                         className="flex items-center gap-1"
                                     >
-                                        ✏️ Edit
+                                        <Pencil size={14} /> Edit
                                     </Button>
                                 </div>
                             ) : (
