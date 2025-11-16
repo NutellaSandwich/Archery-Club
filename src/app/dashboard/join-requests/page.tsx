@@ -12,6 +12,7 @@ export default function JoinRequestsPage() {
     const [requests, setRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [clubId, setClubId] = useState<string | null>(null);
+    const [editingRequest, setEditingRequest] = useState<any | null>(null);
 
     // ✅ Fetch the logged-in user’s club_id first
     useEffect(() => {
@@ -46,15 +47,20 @@ export default function JoinRequestsPage() {
             const { data, error } = await supabase
                 .from("join_requests")
                 .select(`
-                    id,
-                    user_id,
-                    club_id,
-                    status,
-                    created_at,
-                    profiles:user_id(username, avatar_url),
-                    clubs:club_id(name)
-                `)
-                .eq("club_id", clubId) // 🧠 Restrict to current user's club only
+    id,
+    user_id,
+    club_id,
+    status,
+    created_at,
+    full_name,
+    dob,
+    agb_number,
+    category,
+    experience,
+    profiles:user_id(username, avatar_url),
+    clubs:club_id(name)
+  `)
+                .eq("club_id", clubId)
                 .order("created_at", { ascending: false });
 
             if (error) {
@@ -106,6 +112,92 @@ export default function JoinRequestsPage() {
         );
     }
 
+    function EditRequestModal({ request, onClose, onSave }: any) {
+        const [form, setForm] = useState({
+            full_name: request.full_name || "",
+            category: request.category || "",
+            experience: request.experience || "",
+            agb_number: request.agb_number || "",
+            dob: request.dob ? request.dob.split("T")[0] : "",
+        });
+        const [saving, setSaving] = useState(false);
+        const supabase = useMemo(() => supabaseBrowser(), []);
+
+        async function handleSave() {
+            setSaving(true);
+            const { error } = await supabase
+                .from("join_requests")
+                .update(form)
+                .eq("id", request.id);
+
+            setSaving(false);
+            if (error) {
+                toast.error("Failed to update request info.");
+            } else {
+                toast.success("Request updated!");
+                onSave(form);
+                onClose();
+            }
+        }
+
+        return (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div
+                    className="bg-[hsl(var(--card))] rounded-xl p-6 max-w-md w-full border border-[hsl(var(--border))]/40"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <h2 className="text-lg font-semibold mb-3">Edit Request</h2>
+
+                    <div className="space-y-3">
+                        <input
+                            className="w-full p-2 border rounded bg-background"
+                            placeholder="Full Name"
+                            value={form.full_name}
+                            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                        />
+                        <input
+                            className="w-full p-2 border rounded bg-background"
+                            placeholder="AGB Number"
+                            value={form.agb_number}
+                            onChange={(e) => setForm({ ...form, agb_number: e.target.value })}
+                        />
+                        <input
+                            type="date"
+                            className="w-full p-2 border rounded bg-background"
+                            value={form.dob}
+                            onChange={(e) => setForm({ ...form, dob: e.target.value })}
+                        />
+                        <select
+                            className="w-full p-2 border rounded bg-background"
+                            value={form.category}
+                            onChange={(e) => setForm({ ...form, category: e.target.value })}
+                        >
+                            <option>Open</option>
+                            <option>Women</option>
+                        </select>
+                        <select
+                            className="w-full p-2 border rounded bg-background"
+                            value={form.experience}
+                            onChange={(e) => setForm({ ...form, experience: e.target.value })}
+                        >
+                            <option>Novice</option>
+                            <option>Experienced</option>
+                        </select>
+
+                        <div className="flex justify-end gap-2 mt-3">
+                            <Button variant="ghost" onClick={onClose}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleSave} disabled={saving}>
+                                {saving ? "Saving..." : "Save"}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <main className="max-w-3xl mx-auto p-6 space-y-6">
             <h1 className="text-2xl font-semibold text-center">Join Requests</h1>
@@ -154,6 +246,14 @@ export default function JoinRequestsPage() {
                                     >
                                         <XCircle size={14} /> Reject
                                     </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={() => setEditingRequest(r)}
+                                        className="flex items-center gap-1"
+                                    >
+                                        ✏️ Edit
+                                    </Button>
                                 </div>
                             ) : (
                                 <span
@@ -166,6 +266,25 @@ export default function JoinRequestsPage() {
                         </CardContent>
                     </Card>
                 ))
+            )}
+            {editingRequest && (
+                <EditRequestModal
+                    request={editingRequest}
+                    onClose={() => setEditingRequest(null)}
+                    onSave={(updated: {
+                        full_name?: string;
+                        category?: string;
+                        experience?: string;
+                        agb_number?: string;
+                        dob?: string;
+                    }) =>
+                        setRequests((prev) =>
+                            prev.map((r) =>
+                                r.id === editingRequest.id ? { ...r, ...updated } : r
+                            )
+                        )
+                    }
+                />
             )}
         </main>
     );
