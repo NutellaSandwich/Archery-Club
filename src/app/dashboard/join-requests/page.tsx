@@ -52,12 +52,15 @@ export default function JoinRequestsPage() {
     club_id,
     status,
     created_at,
-    full_name,
-    dob,
-    agb_number,
-    category,
-    experience,
-    profiles:user_id(username, avatar_url),
+    profiles:user_id(
+      username,
+      avatar_url,
+      full_name,
+      dob,
+      agb_number,
+      category,
+      experience
+    ),
     clubs:club_id(name)
   `)
                 .eq("club_id", clubId)
@@ -125,16 +128,23 @@ export default function JoinRequestsPage() {
 
         async function handleSave() {
             setSaving(true);
+
             const { error } = await supabase
-                .from("join_requests")
-                .update(form)
-                .eq("id", request.id);
+                .from("profiles")
+                .update({
+                    full_name: form.full_name,
+                    agb_number: form.agb_number,
+                    dob: form.dob,
+                    category: form.category,
+                    experience: form.experience,
+                })
+                .eq("id", request.user_id);
 
             setSaving(false);
             if (error) {
-                toast.error("Failed to update request info.");
+                toast.error("Failed to update user info.");
             } else {
-                toast.success("Request updated!");
+                toast.success("Member details updated!");
                 onSave(form);
                 onClose();
             }
@@ -220,11 +230,11 @@ export default function JoinRequestsPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                            <p><strong>Full Name:</strong> {r.full_name || "—"}</p>
-                            <p><strong>Category:</strong> {r.category || "—"}</p>
-                            <p><strong>Experience:</strong> {r.experience || "—"}</p>
-                            {r.agb_number && <p><strong>AGB Number:</strong> {r.agb_number}</p>}
-                            {r.dob && <p><strong>DOB:</strong> {new Date(r.dob).toLocaleDateString()}</p>}
+                            <p><strong>Full Name:</strong> {r.profiles?.full_name || "—"}</p>
+                            <p><strong>Category:</strong> {r.profiles?.category || "—"}</p>
+                            <p><strong>Experience:</strong> {r.profiles?.experience || "—"}</p>
+                            {r.agb_number && <p><strong>AGB Number:</strong> {r.profiles?.agb_number}</p>}
+                            {r.dob && <p><strong>DOB:</strong> {new Date(r.profiles?.dob).toLocaleDateString()}</p>}
                             <p className="text-sm text-muted-foreground">
                                 Requested on {new Date(r.created_at).toLocaleDateString()}
                             </p>
