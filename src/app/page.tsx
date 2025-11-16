@@ -381,6 +381,15 @@ function SignupFlow({
         return;
       }
 
+      console.log("🧠 Updating profile when joining club", {
+        id: user.id,
+        full_name: form.full_name.trim(),
+        dob: cleanDob,
+        agb_number: form.agb_number?.trim() || null,
+        category: form.category,
+        experience: form.experience,
+      });
+      
       await supabase
         .from("profiles")
         .update({
