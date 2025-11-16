@@ -47,29 +47,27 @@ export default function JoinRequestsPage() {
             const { data, error } = await supabase
                 .from("join_requests")
                 .select(`
-    id,
-    user_id,
-    club_id,
-    status,
-    created_at,
-    profiles:user_id(
-      username,
-      avatar_url,
+      id,
+      user_id,
+      club_id,
+      status,
+      created_at,
       full_name,
       dob,
       agb_number,
       category,
-      experience
-    ),
-    clubs:club_id(name)
-  `)
+      experience,
+      profiles:user_id(username, avatar_url),
+      clubs:club_id(name)
+    `)
                 .eq("club_id", clubId)
                 .order("created_at", { ascending: false });
 
             if (error) {
-                console.error(error);
+                console.error("Error fetching join_requests:", error);
                 toast.error("Failed to load join requests.");
             } else {
+                console.log("Fetched join requests:", data);
                 setRequests(data || []);
             }
 
@@ -230,11 +228,11 @@ export default function JoinRequestsPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                            <p><strong>Full Name:</strong> {r.profiles?.full_name || "—"}</p>
-                            <p><strong>Category:</strong> {r.profiles?.category || "—"}</p>
-                            <p><strong>Experience:</strong> {r.profiles?.experience || "—"}</p>
-                            {r.agb_number && <p><strong>AGB Number:</strong> {r.profiles?.agb_number}</p>}
-                            {r.dob && <p><strong>DOB:</strong> {new Date(r.profiles?.dob).toLocaleDateString()}</p>}
+                            <p><strong>Full Name:</strong> {r.full_name || "—"}</p>
+                            <p><strong>Category:</strong> {r.category || "—"}</p>
+                            <p><strong>Experience:</strong> {r.experience || "—"}</p>
+                            {r.agb_number && <p><strong>AGB Number:</strong> {r.agb_number}</p>}
+                            {r.dob && <p><strong>DOB:</strong> {new Date(r.dob).toLocaleDateString()}</p>}
                             <p className="text-sm text-muted-foreground">
                                 Requested on {new Date(r.created_at).toLocaleDateString()}
                             </p>
