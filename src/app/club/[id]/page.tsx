@@ -84,7 +84,7 @@ export default function ClubPage() {
             if (!postsData) return;
 
             const enriched = await Promise.all(
-                postsData.map(async (post) => {
+                postsData.map(async (post: Post) => {
                     const { count: likes } = await supabase
                         .from("post_likes")
                         .select("*", { count: "exact", head: true })
