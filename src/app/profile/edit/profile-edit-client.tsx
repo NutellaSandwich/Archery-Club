@@ -7,14 +7,9 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface ProfileEditClientProps {
-    userId: string;
-}
-
-export default function ProfileEditClient({ userId }: ProfileEditClientProps) {
+export default function ProfileEditClient({ userId }: { userId: string }) {
     const router = useRouter();
     const supabase = supabaseBrowser();
-
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
@@ -32,8 +27,10 @@ export default function ProfileEditClient({ userId }: ProfileEditClientProps) {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [fileInputKey, setFileInputKey] = useState(0);
 
-    // 🧩 Load profile
+
     useEffect(() => {
+        if (!userId) return;
+
         async function loadData() {
             try {
                 const { data: profile, error } = await supabase
@@ -249,8 +246,6 @@ export default function ProfileEditClient({ userId }: ProfileEditClientProps) {
                     >
                         <option>Open</option>
                         <option>Women</option>
-                        <option>Junior</option>
-                        <option>Senior</option>
                     </select>
                 </div>
 

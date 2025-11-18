@@ -11,6 +11,22 @@ import {
     CardFooter,
 } from "@/components/ui/card";
 
+type Tournament = {
+    id: string;
+    title: string;
+    event_date: string;
+    signup_close_at: string | null;
+    description: string | null;
+    max_signups: number | null;
+    tournament_signups: {
+        user_id: string;
+        profiles: {
+            username: string;
+            avatar_url: string | null;
+        } | null;
+    }[];
+};
+
 export default function ManageTournaments() {
     const supabase = useMemo(() => supabaseBrowser(), []);
     const [tournaments, setTournaments] = useState<any[]>([]);
@@ -51,8 +67,7 @@ export default function ManageTournaments() {
             setTournaments(data || []);
             // ✅ Update modal signups if it's open
             if (selectedTournament) {
-                const updated = data?.find((t) => t.id === selectedTournament.id);
-                if (updated)
+                const updated = data?.find((t: Tournament) => t.id === selectedTournament.id);                if (updated)
                     setSignups(updated.tournament_signups || []);
             }
         }

@@ -24,6 +24,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import NotificationsDropdown from "@/components/notifications-dropdown";
 import { Button } from "@/components/ui/button";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 type UserProfile = {
     id: string;
@@ -42,6 +43,33 @@ export default function Navbar() {
     const [loading, setLoading] = useState(true);
     const [mounted, setMounted] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+
+    useEffect(() => {
+        const { data: listener } = supabase.auth.onAuthStateChange(
+            async (event: AuthChangeEvent, session: Session | null) => {
+                if (event === "SIGNED_OUT") {
+                    console.warn("🔴 Signed out detected, clearing session");
+                    localStorage.removeItem("sb-pivysrujmfjxaauahclj-auth-token");
+                    sessionStorage.clear();
+                    router.push("/login");
+                }
+
+                if (event === "TOKEN_REFRESHED" && !session) {
+                    console.warn("🔴 Invalid refresh token — forcing logout");
+                    await supabase.auth.signOut({ scope: "local" });
+                    localStorage.removeItem("sb-pivysrujmfjxaauahclj-auth-token");
+                    sessionStorage.clear();
+                    router.push("/login");
+                }
+
+                if (event === "SIGNED_IN") {
+                    console.log("✅ Signed in event received");
+                }
+            }
+        );
+
+        return () => listener?.subscription?.unsubscribe?.();
+    }, [supabase, router]);
 
     useEffect(() => setMounted(true), []);
 
@@ -89,7 +117,7 @@ export default function Navbar() {
         loadProfile();
 
         const { data: authListener } = supabase.auth.onAuthStateChange(
-            (event, session) => {
+            (event: AuthChangeEvent, session: Session | null) => {
                 if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
                     loadProfile();
                 }

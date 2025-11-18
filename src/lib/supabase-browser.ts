@@ -1,30 +1,12 @@
 import { createBrowserClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
 
-let browserClient: ReturnType<typeof createClient> | null = null;
+let browserClient: ReturnType<typeof createBrowserClient> | null = null;
 
 export function supabaseBrowser() {
-    if (typeof window === "undefined") {
-        // ✅ Still SSR-safe fallback
-        return createBrowserClient(
+    if (!browserClient) {
+        browserClient = createBrowserClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
-    }
-
-    // ✅ Browser-side singleton
-    if (!browserClient) {
-        browserClient = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                auth: {
-                    autoRefreshToken: true,
-                    persistSession: true,
-                    detectSessionInUrl: true,
-                    storage: window.localStorage,
-                },
-            }
         );
     }
 
