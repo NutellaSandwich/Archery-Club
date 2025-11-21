@@ -51,6 +51,7 @@ export default function Navbar() {
     const [results, setResults] = useState<any[]>([]);
     const [showResults, setShowResults] = useState(false);
     const [searching, setSearching] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
 
     useEffect(() => {
         const { data: listener } = supabase.auth.onAuthStateChange(
@@ -155,22 +156,27 @@ export default function Navbar() {
         };
     }, [supabase]);
 
-    async function handleLogout() {
+    async function handleLogoutAnimated() {
         try {
-            // Sign out locally and clear any stored auth data
+            setLoggingOut(true);
+
+            // Small delay for animation
+            await new Promise((resolve) => setTimeout(resolve, 300));
+
             await supabase.auth.signOut({ scope: "local" });
             localStorage.removeItem("sb-pivysrujmfjxaauahclj-auth-token");
             sessionStorage.clear();
-            setProfile(null);
 
-            // Call your API logout endpoint to clear cookies and sign out server-side
             await fetch("/logout", { method: "POST" });
 
-            // Redirect to main page
+            // Fade out before redirect
+            await new Promise((resolve) => setTimeout(resolve, 400));
+
             router.push("/");
             router.refresh();
         } catch (error) {
             console.error("Logout failed:", error);
+            setLoggingOut(false);
         }
     }
 
@@ -404,10 +410,23 @@ export default function Navbar() {
                                 <DropdownMenu.Separator className="h-px bg-[hsl(var(--border))]/40 my-1" />
 
                                 <DropdownMenu.Item
-                                    onSelect={handleLogout}
-                                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
+                                    disabled={loggingOut}
+                                    onSelect={handleLogoutAnimated}
+                                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm 
+               text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 
+               cursor-pointer transition-all duration-300"
                                 >
-                                    <LogOut size={14} /> Logout
+                                    {loggingOut ? (
+                                        <div className="flex items-center gap-2 animate-fade-in">
+                                            <span className="h-3 w-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></span>
+                                            Signing out…
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <LogOut size={14} />
+                                            Logout
+                                        </>
+                                    )}
                                 </DropdownMenu.Item>
                             </DropdownMenu.Content>
                         </DropdownMenu.Portal>
@@ -445,7 +464,7 @@ export default function Navbar() {
                         )}
                         <NavLink href="/profile" label="Profile" icon={UserCircle2} />
                         <button
-                            onClick={handleLogout}
+                            onClick={handleLogoutAnimated}
                             className="flex items-center gap-2 text-sm text-red-500 font-medium hover:underline mt-2"
                         >
                             <LogOut size={14} /> Logout
