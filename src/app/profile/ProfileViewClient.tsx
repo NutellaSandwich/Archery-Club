@@ -21,6 +21,20 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Target, Calendar, Activity } from "lucide-react";
 
+type ClubPost = {
+    id: string;
+    round_name: string;
+    score: number;
+    score_type: string | null;
+    score_date: string | null;
+    created_at: string;
+    is_personal_best: boolean | null;
+    category: string | null;
+    bow_type: string | null;
+    competition_name: string | null;
+    spot_type: string | null;
+};
+
 export default function ProfileViewClient({ userId }: { userId?: string }) {
     const supabase = useMemo(() => supabaseBrowser(), []);
     const [user, setUser] = useState<any>(null);
@@ -116,9 +130,8 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                 console.error("Error loading club posts:", error);
             }
 
-            // Handicap lookup logic
             const normalizedScores = await Promise.all(
-                (postData || []).map(async (p) => {
+                (postData || []).map(async (p: ClubPost) => {
                     const isOutdoor = p.score_type?.toLowerCase().includes("outdoor");
                     const bowType = p.bow_type || profileData?.bow_type || "recurve";
                     const bowGroup = bowType === "compound" ? "compound" : "non-compound";

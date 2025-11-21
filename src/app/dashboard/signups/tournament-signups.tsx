@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
-import { toast } from "sonner";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js"; import { toast } from "sonner";
 import {
     Card,
     CardHeader,
@@ -72,14 +72,17 @@ export default function TournamentSignups() {
             .on(
                 "postgres_changes",
                 { event: "*", schema: "public", table: "tournament_signups" },
-                (payload) => {
+                (payload: RealtimePostgresChangesPayload<{
+                    id: string;
+                    tournament_id: string;
+                    user_id: string;
+                }>) => {
                     console.log("Realtime update triggered:", payload);
 
-                    // 🔁 Debounce updates — wait a bit before reloading
                     clearTimeout(realtimeTimer);
                     realtimeTimer = setTimeout(() => {
                         loadData();
-                    }, 400); // You can tweak delay (300–600ms is fine)
+                    }, 400);
                 }
             )
             .subscribe();

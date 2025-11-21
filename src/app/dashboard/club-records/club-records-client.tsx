@@ -71,9 +71,9 @@ export default function ClubRecordsPage() {
         if (round) setSelectedRound(round);
     }, [searchParams]);
 
-    // ✅ Fetch all unique rounds (for this club)
     useEffect(() => {
         if (!clubId) return;
+
         async function fetchRounds() {
             const { data, error } = await supabase
                 .from("club_posts")
@@ -83,14 +83,19 @@ export default function ClubRecordsPage() {
                 .order("round_name");
 
             if (!error && data) {
+                // ✅ Safely cast the result
+                const typedData = data as { round_name: string }[];
+
                 const rounds = Array.from(
-                    new Set(data.map((r: { round_name: string }) => r.round_name))
+                    new Set(typedData.map((r) => r.round_name))
                 );
+
                 setAllRounds(rounds);
             }
         }
+
         fetchRounds();
-    }, [supabase, clubId]); // 🟢 FIXED: added clubId
+    }, [supabase, clubId]);
 
     // ✅ Fetch records for selected round (for this club)
     useEffect(() => {

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import Image from "next/image";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 interface DashboardClientProps {
     initialUser: User | null;
@@ -120,14 +121,16 @@ export default function DashboardClient({ initialUser }: DashboardClientProps) {
     useEffect(() => {
         if (!supabase) return;
 
-        const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-            if (event === "SIGNED_OUT") {
-                setUser(null);
-                router.replace("/login");
-            } else if (event === "SIGNED_IN") {
-                setUser(session?.user ?? null);
+        const { data: listener } = supabase.auth.onAuthStateChange(
+            (event: AuthChangeEvent, session: Session | null) => {
+                if (event === "SIGNED_OUT") {
+                    setUser(null);
+                    router.replace("/login");
+                } else if (event === "SIGNED_IN") {
+                    setUser(session?.user ?? null);
+                }
             }
-        });
+        );
 
         return () => listener.subscription.unsubscribe();
     }, [supabase, router]);

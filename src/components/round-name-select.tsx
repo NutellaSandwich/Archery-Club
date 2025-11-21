@@ -14,7 +14,6 @@ export default function RoundNameSelect({ value, onChange }: RoundNameSelectProp
     const [rounds, setRounds] = useState<string[]>([]);
     const supabase = useMemo(() => supabaseBrowser(), []);
 
-    // ✅ Fetch available rounds from the handicaps table
     useEffect(() => {
         async function loadRounds() {
             const { data, error } = await supabase
@@ -27,7 +26,14 @@ export default function RoundNameSelect({ value, onChange }: RoundNameSelectProp
                 return;
             }
 
-            const uniqueRounds = Array.from(new Set(data.map((r) => r.round_name))).sort();
+            // ✅ Explicitly cast to correct type
+            const rows = (data ?? []) as { round_name: string }[];
+
+            // ✅ Deduplicate and sort round names
+            const uniqueRounds = Array.from(
+                new Set(rows.map((r) => r.round_name))
+            ).sort();
+
             setRounds(uniqueRounds);
         }
 

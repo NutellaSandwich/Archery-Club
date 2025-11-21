@@ -202,12 +202,14 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
             const key = Object.keys(grouped).find(
                 (k) => normalizeRound(k) === normalizeRound(current.round_name)
             );
-            const spots = key ? Array.from(grouped[key]) : ["full size"];
+            const spots: string[] = key ? Array.from(grouped[key] as Set<string>) : ["full size"];
             setEditAvailableSpotTypes(spots);
+
             if (spots.length === 1 && current.spot_type !== spots[0]) {
-                setEditingPost((prev) =>
-                    prev && prev.id === current.id ? { ...prev, spot_type: spots[0] } : prev
-                );
+                setEditingPost((prev): typeof editingPost => {
+                    if (!prev) return prev;
+                    return prev.id === current.id ? { ...prev, spot_type: spots[0] } : prev;
+                });
             }
         }
 
@@ -272,7 +274,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
             if (userLikesError) console.error("User likes load error:", userLikesError);
 
             const likeCounts =
-                likesData?.reduce((acc: Record<string, number>, { post_id }) => {
+                likesData?.reduce((acc: Record<string, number>, { post_id }: { post_id: string }) => {
                     acc[post_id] = (acc[post_id] || 0) + 1;
                     return acc;
                 }, {}) || {};
@@ -306,30 +308,28 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
             if (replyError) console.error("Reply load error:", replyError);
 
             const repliesByComment =
-                repliesData?.reduce((acc: Record<string, any[]>, r) => {
+                repliesData?.reduce((acc: Record<string, Reply[]>, r: Reply & { comment_id: string }) => {
                     acc[r.comment_id] = acc[r.comment_id] || [];
                     acc[r.comment_id].push(r);
                     return acc;
                 }, {}) || {};
 
             const commentsByPost =
-                ((commentsData as unknown as RawComment[]) ?? []).reduce<
-                    Record<string, Comment[]>
-                >((acc, c) => {
-                    if (!c.post_id) return acc;
-                    acc[c.post_id] = acc[c.post_id] || [];
-                    acc[c.post_id].push({
-                        ...c,
-                        replies: repliesByComment[c.id] || [],
-                    });
-                    return acc;
-                }, {});
+                ((commentsData as unknown as RawComment[]) ?? []).reduce<Record<string, Comment[]>>(
+                    (acc, c: RawComment) => {
+                        if (!c.post_id) return acc;
+                        acc[c.post_id] = acc[c.post_id] || [];
+                        acc[c.post_id].push({ ...c, replies: repliesByComment[c.id] || [] });
+                        return acc;
+                    },
+                    {}
+                );
 
-            const enriched = posts.map((p) => ({
+            const enriched = posts.map((p: Post) => ({
                 ...p,
                 profiles: Array.isArray(p.profiles) ? p.profiles[0] : p.profiles,
                 likes_count: likeCounts[p.id] || 0,
-                liked_by_user: userLikes?.some((l) => l.post_id === p.id) ?? false,
+                liked_by_user: userLikes?.some((l: { post_id: string }) => l.post_id === p.id) ?? false,
                 comments: commentsByPost[p.id] || [],
                 comments_count: commentsByPost[p.id]?.length || 0,
             }));

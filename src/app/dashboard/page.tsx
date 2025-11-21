@@ -1,8 +1,7 @@
-"use client";
-
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import ClubFeedWrapper from "./club-feed-wrapper";
 
 export default function DashboardPage() {
@@ -19,14 +18,12 @@ export default function DashboardPage() {
             const sessionUser = data?.session?.user;
 
             if (!sessionUser) {
-                // not signed in → go to login
                 router.push("/login");
                 return;
             }
 
             setUserId(sessionUser.id);
 
-            // fetch profile to get club_id
             const { data: profile, error } = await supabase
                 .from("profiles")
                 .select("club_id")
@@ -34,20 +31,22 @@ export default function DashboardPage() {
                 .maybeSingle();
 
             if (error) console.error("Profile fetch error:", error);
-
             setClubId(profile?.club_id ?? null);
             setSessionChecked(true);
         }
 
         loadSession();
 
-        // watch for auth changes
-        const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (!session) router.push("/login");
-            else setUserId(session.user.id);
-        });
+        const { data: listener } = supabase.auth.onAuthStateChange(
+            (_event: AuthChangeEvent, session: Session | null) => {
+                if (!session) router.push("/login");
+                else setUserId(session.user.id);
+            }
+        );
 
-        return () => listener?.subscription?.unsubscribe?.();
+        return () => {
+            listener?.subscription?.unsubscribe();
+        };
     }, [supabase, router]);
 
     if (!sessionChecked) {
@@ -58,6 +57,5 @@ export default function DashboardPage() {
         );
     }
 
-    // ✅ render feed only when session and profile are ready
     return <ClubFeedWrapper userId={userId!} clubId={clubId} />;
 }

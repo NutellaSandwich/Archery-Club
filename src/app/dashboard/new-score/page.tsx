@@ -235,8 +235,10 @@ export default function NewScorePage() {
                 return;
             }
 
-            // Group by round name
-            const grouped = (data || []).reduce((acc, row) => {
+            const grouped = (data || []).reduce((acc: Record<string, Set<string>>, row: {
+                round_name?: string | null;
+                spot_type?: string | null;
+            }) => {
                 const name = row.round_name?.trim();
                 if (!name) return acc;
                 if (!acc[name]) acc[name] = new Set<string>();
@@ -249,11 +251,12 @@ export default function NewScorePage() {
             }, {} as Record<string, Set<string>>);
 
             // Combine with static max scores
-            const results = Object.keys(ROUND_MAX_SCORES).map((name) => ({
-                round_name: name,
-                max_score: ROUND_MAX_SCORES[name],
-                spot_types: Array.from(grouped[name] || ["full size"]),
-            }));
+            const results: { round_name: string; max_score: number; spot_types: string[] }[] =
+                Object.keys(ROUND_MAX_SCORES).map((name) => ({
+                    round_name: name,
+                    max_score: ROUND_MAX_SCORES[name],
+                    spot_types: Array.from(grouped[name] || ["full size"]) as string[],
+                }));
 
             console.log(`✅ Loaded ${results.length} static round records`);
             localStorage.setItem("handicaps_cache_static", JSON.stringify(results));

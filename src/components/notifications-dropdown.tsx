@@ -54,13 +54,15 @@ export default function NotificationsDropdown({ userId }: { userId: string }) {
             return;
         }
 
+        const typedData = (data ?? []) as unknown as Notification[];
+
         setNotifications(
-            (data || []).map((n) => ({
+            typedData.map((n) => ({
                 ...n,
                 actor: Array.isArray(n.actor) ? n.actor[0] : n.actor,
             }))
         );
-        setUnreadCount(data?.filter((n) => !n.read).length || 0);
+        setUnreadCount(typedData.filter((n) => !n.read).length);
     }
 
     async function markAllRead() {
@@ -80,10 +82,16 @@ export default function NotificationsDropdown({ userId }: { userId: string }) {
 
     const getMessage = (n: Notification) => {
         const actor = n.actor?.username || "Someone";
-        if (n.type === "like") return `${actor} liked your post`;
-        if (n.type === "comment") return `${actor} commented on your post`;
-        if (n.type === "reply") return `${actor} replied to your comment`;
-        return `${actor} did something`;
+        switch (n.type) {
+            case "like":
+                return `${actor} liked your post`;
+            case "comment":
+                return `${actor} commented on your post`;
+            case "reply":
+                return `${actor} replied to your comment`;
+            default:
+                return `${actor} did something`;
+        }
     };
 
     return (
@@ -129,7 +137,9 @@ export default function NotificationsDropdown({ userId }: { userId: string }) {
                                 <DropdownMenu.Item
                                     key={n.id}
                                     asChild
-                                    className={`block px-3 py-2 rounded-md text-sm cursor-pointer hover:bg-[hsl(var(--muted))]/30 transition ${!n.read ? "bg-[hsl(var(--muted))]/20" : ""
+                                    className={`block px-3 py-2 rounded-md text-sm cursor-pointer hover:bg-[hsl(var(--muted))]/30 transition ${!n.read
+                                            ? "bg-[hsl(var(--muted))]/20"
+                                            : ""
                                         }`}
                                 >
                                     <Link
@@ -141,9 +151,13 @@ export default function NotificationsDropdown({ userId }: { userId: string }) {
                                                 .eq("id", n.id);
                                         }}
                                     >
-                                        <p className="text-[hsl(var(--foreground))]">{getMessage(n)}</p>
+                                        <p className="text-[hsl(var(--foreground))]">
+                                            {getMessage(n)}
+                                        </p>
                                         <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-0.5">
-                                            {new Date(n.created_at).toLocaleString()}
+                                            {new Date(
+                                                n.created_at
+                                            ).toLocaleString()}
                                         </p>
                                     </Link>
                                 </DropdownMenu.Item>
