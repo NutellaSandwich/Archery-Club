@@ -90,13 +90,20 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
             const viewedUserId = userId || sessionUser!.id;
             setUser(sessionUser);
 
-            // Load viewer profile for role comparison
-            const { data: viewerData } = await supabase
+            // Load viewer profile
+            const { data: viewerProfile } = await supabase
                 .from("profiles")
                 .select("id, role, club_id")
                 .eq("id", sessionUser?.id)
                 .maybeSingle();
-            setViewer(viewerData || null);
+
+            // Attach email from Auth (since profiles doesn't store it)
+            const viewerData = {
+                ...viewerProfile,
+                email: sessionUser?.email || null,
+            };
+
+            setViewer(viewerData);
 
             const { data: profileData, error: profileError } = await supabase
                 .from("profiles")
