@@ -29,6 +29,7 @@ import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 type UserProfile = {
     id: string;
     username: string | null;
+    full_name: string | null; // ✅ added
     avatar_url: string | null;
     role?: string | null;
 };
@@ -94,7 +95,7 @@ export default function Navbar() {
 
                 const { data: profileData, error } = await supabase
                     .from("profiles")
-                    .select("id, username, avatar_url, role")
+                    .select("id, username, full_name, avatar_url, role") // ✅ added full_name
                     .eq("id", user.id)
                     .maybeSingle();
 
@@ -104,6 +105,7 @@ export default function Navbar() {
                     setProfile({
                         id: user.id,
                         username: user.email ?? "User",
+                        full_name: null,
                         avatar_url: null,
                     });
                 }
@@ -275,7 +277,7 @@ export default function Navbar() {
                                 sideOffset={6}
                             >
                                 <DropdownMenu.Label className="px-3 py-2 text-xs text-[hsl(var(--muted-foreground))]">
-                                    {profile.username || "User"}
+                                    {profile.full_name || profile.username || "Archer"}
                                 </DropdownMenu.Label>
 
                                 <DropdownMenu.Item asChild>

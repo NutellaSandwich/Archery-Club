@@ -394,6 +394,7 @@ function SignupFlow({
         .from("profiles")
         .update({
           full_name: form.full_name.trim(),
+          username: form.full_name.trim(), // ✅ display name
           dob: cleanDob,
           agb_number: form.agb_number?.trim() || null,
           category: form.category,
@@ -443,7 +444,8 @@ function SignupFlow({
         .from("profiles")
         .update({
           club_id: clubData.id,
-          full_name: form.full_name,
+          full_name: form.full_name.trim(),
+          username: form.full_name.trim(), // ✅ display name
           dob: form.dob,
           agb_number: form.agb_number || null,
           category: form.category,

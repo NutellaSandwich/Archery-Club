@@ -15,6 +15,7 @@ interface DashboardClientProps {
 interface Profile {
     id: string;
     username: string | null;
+    full_name: string | null; // ✅ added this
     bow_type: string | null;
     category: string | null;
     experience: string | null;
@@ -76,7 +77,11 @@ export default function DashboardClient({ initialUser }: DashboardClientProps) {
                     { data: profileData, error: profileError },
                     { data: clubsData, error: clubsError },
                 ] = await Promise.all([
-                    supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+                    supabase
+                        .from("profiles")
+                        .select("id, username, full_name, bow_type, category, experience, created_at, club_id, is_admin, avatar_url, handicap")
+                        .eq("id", user.id)
+                        .maybeSingle(),
                     supabase.from("clubs").select("id, name, location, description"),
                 ]);
 
@@ -207,7 +212,7 @@ export default function DashboardClient({ initialUser }: DashboardClientProps) {
     return (
         <main className="flex min-h-screen flex-col items-center justify-center space-y-6">
             <h1 className="text-2xl font-bold">
-                Welcome back, {profile?.username || user?.email?.split("@")[0] || "Archer"}!
+                Welcome back, {profile?.full_name || profile?.username || "Archer"}!
             </h1>
 
             {/* Profile Card */}
