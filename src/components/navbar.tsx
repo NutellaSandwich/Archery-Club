@@ -92,24 +92,36 @@ export default function Navbar() {
                     }
                     return;
                 }
-
+                
+                // Fetch profile from database
                 const { data: profileData, error } = await supabase
                     .from("profiles")
-                    .select("id, username, full_name, avatar_url, role") // ✅ added full_name
+                    .select("id, username, full_name, avatar_url, role")
                     .eq("id", user.id)
                     .maybeSingle();
 
-                if (!error && profileData && isMounted) {
-                    setProfile(profileData);
-                } else if (isMounted) {
-                    // fallback only if the user truly has no profile
-                    setProfile({
-                        id: user.id,
-                        username: null,
-                        full_name: user.user_metadata?.full_name || null,
-                        avatar_url: user.user_metadata?.avatar_url || null,
-                    });
-                }
+                console.log("Loaded profile:", profileData, user.user_metadata);
+
+                // ✅ Use full_name from DB or fallback to metadata
+                const finalProfile: UserProfile = {
+                    id: user.id,
+                    username:
+                        profileData?.username ||
+                        user.user_metadata?.username ||
+                        user.email?.split("@")[0] ||
+                        "Archer",
+                    full_name:
+                        profileData?.full_name ||
+                        user.user_metadata?.full_name ||
+                        null,
+                    avatar_url:
+                        profileData?.avatar_url ||
+                        user.user_metadata?.avatar_url ||
+                        null,
+                    role: profileData?.role || null,
+                };
+
+                if (isMounted) setProfile(finalProfile);
             } catch (err) {
                 console.error("Navbar profile load error:", err);
             } finally {
