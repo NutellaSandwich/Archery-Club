@@ -22,10 +22,17 @@ export async function POST() {
         }
     );
 
+    // 🔒 Sign out the user
     await supabase.auth.signOut();
 
-    const res = NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"));
+    // 🧭 Redirect to the main page instead of /login
+    const res = NextResponse.redirect(
+        new URL("/", process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000")
+    );
+
+    // 🧹 Clear auth cookies
     res.cookies.delete("sb-access-token");
     res.cookies.delete("sb-refresh-token");
+
     return res;
 }
