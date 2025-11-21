@@ -418,43 +418,47 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                         {viewer?.email === "u2102807@live.warwick.ac.uk" && (
                             <div
                                 className={`
-        relative inline-flex items-center gap-2 mt-2 px-4 py-1.5
-        text-xs font-semibold text-white backdrop-blur-md rounded-full
-        bg-white/10 border border-purple-300/20 shadow-[0_0_12px_rgba(168,85,247,0.6)]
-        overflow-hidden
-    `}
+            relative inline-flex items-center gap-2 mt-2 px-4 py-1.5
+            text-xs font-semibold text-white backdrop-blur-md rounded-full
+            bg-white/10 border border-purple-300/20 shadow-[0_0_12px_rgba(168,85,247,0.6)]
+            overflow-hidden
+        `}
                             >
-                                <Sparkles className="w-4 h-4 text-purple-200 drop-shadow-[0_0_6px_rgba(168,85,247,0.9)] animate-pulse" />
+                                <Sparkles
+                                    className="w-4 h-4 text-purple-200 drop-shadow-[0_0_6px_rgba(168,85,247,0.9)] animate-pulse"
+                                />
 
-                                <span className="drop-shadow-[0_0_6px_rgba(168,85,247,0.8)]">Developer</span>
+                                <span className="drop-shadow-[0_0_6px_rgba(168,85,247,0.8)]">
+                                    Developer
+                                </span>
 
                                 {/* Outer glow */}
                                 <div
-                                    className="
+                                    className={`
                 absolute inset-0 rounded-full
                 bg-purple-500/40 blur-xl opacity-60
                 animate-[pulse_3s_ease-in-out_infinite]
                 pointer-events-none
-            "
+            `}
                                 />
 
                                 {/* Frosted highlight */}
                                 <div
-                                    className="
+                                    className={`
                 absolute inset-0 rounded-full
                 bg-gradient-to-br from-white/10 to-transparent
                 mix-blend-overlay pointer-events-none
-            "
+            `}
                                 />
 
                                 {/* Shimmer */}
                                 <div
-                                    className="
+                                    className={`
                 absolute inset-0 rounded-full
                 bg-gradient-to-r from-transparent via-white/40 to-transparent
                 opacity-40 blur-md animate-[shimmer_2.5s_linear_infinite]
                 pointer-events-none
-            "
+            `}
                                 />
 
                                 <style jsx>{`
