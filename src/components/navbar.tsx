@@ -135,11 +135,17 @@ export default function Navbar() {
 
     async function handleLogout() {
         try {
+            // Sign out locally and clear any stored auth data
             await supabase.auth.signOut({ scope: "local" });
             localStorage.removeItem("sb-pivysrujmfjxaauahclj-auth-token");
             sessionStorage.clear();
             setProfile(null);
-            router.push("/login");
+
+            // Call your API logout endpoint to clear cookies and sign out server-side
+            await fetch("/logout", { method: "POST" });
+
+            // Redirect to main page
+            router.push("/");
             router.refresh();
         } catch (error) {
             console.error("Logout failed:", error);
