@@ -3,6 +3,8 @@
 import { useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+
 
 /**
  * Redirects user to /dashboard when *confirmed* logged in.
@@ -34,7 +36,7 @@ export function useSupabaseAuthRedirect() {
         verifySession();
 
         const { data: listener } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
+            async (event: AuthChangeEvent, session: Session | null) => {
                 console.log("🔄 Auth event:", event);
                 if (
                     event === "SIGNED_IN" &&
