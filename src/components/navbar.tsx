@@ -312,7 +312,7 @@ export default function Navbar() {
                                         alt="Avatar"
                                         width={32}
                                         height={32}
-                                        className="rounded-full object-cover border border-[hsl(var(--border))]"
+                                        className="h-8 w-8 rounded-full object-cover border border-[hsl(var(--border))] bg-gray-100"
                                     />
                                     <div className="flex flex-col">
                                         <span className="text-sm font-medium">{u.full_name || u.username}</span>
