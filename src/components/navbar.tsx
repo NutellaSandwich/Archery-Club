@@ -29,9 +29,10 @@ import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 type UserProfile = {
     id: string;
     username: string | null;
-    full_name: string | null; // ✅ added
+    full_name: string | null;
     avatar_url: string | null;
     role?: string | null;
+    bow_type?: string | null; // 🎯 NEW: to show the user's bow style
 };
 
 export default function Navbar() {
@@ -96,13 +97,12 @@ export default function Navbar() {
                 // Fetch profile from database
                 const { data: profileData, error } = await supabase
                     .from("profiles")
-                    .select("id, username, full_name, avatar_url, role")
+                    .select("id, username, full_name, avatar_url, role, bow_type")
                     .eq("id", user.id)
                     .maybeSingle();
 
                 console.log("Loaded profile:", profileData, user.user_metadata);
 
-                // ✅ Use full_name from DB or fallback to metadata
                 const finalProfile: UserProfile = {
                     id: user.id,
                     username:
@@ -119,6 +119,7 @@ export default function Navbar() {
                         user.user_metadata?.avatar_url ||
                         null,
                     role: profileData?.role || null,
+                    bow_type: profileData?.bow_type || null, // 🎯 added
                 };
 
                 if (isMounted) setProfile(finalProfile);
@@ -247,6 +248,21 @@ export default function Navbar() {
                 )}
             </div>
 
+            {/* 🔍 User Search Bar */}
+            {!loading && profile && (
+                <div className="relative hidden md:block">
+                    <input
+                        type="text"
+                        placeholder="Search users..."
+                        className="w-56 rounded-full border border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                        onChange={(e) => {
+                            const q = e.target.value.trim();
+                            if (q.length > 1) router.push(`/search?query=${encodeURIComponent(q)}`);
+                        }}
+                    />
+                </div>
+            )}
+
             {/* Right section */}
             <div className="flex items-center gap-3">
                 <ThemeToggle />
@@ -294,8 +310,27 @@ export default function Navbar() {
                                 className="min-w-[180px] rounded-xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--popover))] p-2 shadow-md"
                                 sideOffset={6}
                             >
-                                <DropdownMenu.Label className="px-3 py-2 text-xs text-[hsl(var(--muted-foreground))]">
-                                    {profile.full_name || profile.username || "Archer"}
+                                <DropdownMenu.Label className="px-3 py-2 text-xs text-[hsl(var(--muted-foreground))] flex flex-col">
+                                    <span>{profile.full_name || profile.username || "Archer"}</span>
+
+                                    {/* 🎯 Bow type tag */}
+                                    {profile.bow_type && (
+                                        <span
+                                            className={`mt-1 inline-block w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase
+        ${profile.bow_type === "Recurve"
+                                                    ? "bg-blue-500/20 text-blue-600 dark:text-blue-400"
+                                                    : profile.bow_type === "Compound"
+                                                        ? "bg-red-500/20 text-red-600 dark:text-red-400"
+                                                        : profile.bow_type === "Barebow"
+                                                            ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                                                            : profile.bow_type === "Longbow"
+                                                                ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                                                                : "bg-gray-500/20 text-gray-600 dark:text-gray-400"
+                                                }`}
+                                        >
+                                            {profile.bow_type}
+                                        </span>
+                                    )}
                                 </DropdownMenu.Label>
 
                                 <DropdownMenu.Item asChild>
