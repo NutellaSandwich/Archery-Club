@@ -419,22 +419,16 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                             <div
                                 className="
             relative inline-flex items-center gap-2 mt-2 px-4 py-1.5
-            text-xs font-semibold text-white
-            backdrop-blur-md rounded-full
-            bg-white/10 border border-purple-300/20
-            shadow-[0_0_12px_rgba(168,85,247,0.6)]
+            text-xs font-semibold text-white backdrop-blur-md rounded-full
+            bg-white/10 border border-purple-300/20 shadow-[0_0_12px_rgba(168,85,247,0.6)]
             overflow-hidden
         "
                             >
-                                {/* Icon */}
                                 <Sparkles className="w-4 h-4 text-purple-200 drop-shadow-[0_0_6px_rgba(168,85,247,0.9)] animate-pulse" />
 
-                                {/* Text */}
-                                <span className="drop-shadow-[0_0_6px_rgba(168,85,247,0.8)]">
-                                    Developer
-                                </span>
+                                <span className="drop-shadow-[0_0_6px_rgba(168,85,247,0.8)]">Developer</span>
 
-                                {/* Permanent purple outer glow */}
+                                {/* Outer glow */}
                                 <div
                                     className="
                 absolute inset-0 rounded-full
@@ -442,29 +436,27 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                 animate-[pulse_3s_ease-in-out_infinite]
                 pointer-events-none
             "
-                                ></div>
+                                />
 
-                                {/* Glass shine overlay */}
+                                {/* Frosted highlight */}
                                 <div
                                     className="
                 absolute inset-0 rounded-full
                 bg-gradient-to-br from-white/10 to-transparent
                 mix-blend-overlay pointer-events-none
             "
-                                ></div>
+                                />
 
-                                {/* 🔥 Shimmer effect */}
+                                {/* Shimmer */}
                                 <div
                                     className="
                 absolute inset-0 rounded-full
                 bg-gradient-to-r from-transparent via-white/40 to-transparent
-                opacity-40 blur-md
-                animate-[shimmer_2.5s_linear_infinite]
+                opacity-40 blur-md animate-[shimmer_2.5s_linear_infinite]
                 pointer-events-none
             "
-                                ></div>
+                                />
 
-                                {/* Keyframes for shimmer */}
                                 <style jsx>{`
             @keyframes shimmer {
                 0% {
