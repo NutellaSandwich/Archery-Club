@@ -104,7 +104,7 @@ export default function Navbar() {
                 // Fetch profile from database
                 const { data: profileData, error } = await supabase
                     .from("profiles")
-                    .select("id, username, full_name, avatar_url, role, bow_type")
+                    .select("id, username, full_name, avatar_url, role, bow_type, club_id")
                     .eq("id", user.id)
                     .maybeSingle();
 
@@ -127,6 +127,7 @@ export default function Navbar() {
                         null,
                     role: profileData?.role || null,
                     bow_type: profileData?.bow_type || null, // 🎯 added
+                    club_id: profileData?.club_id || null, 
                 };
 
                 if (isMounted) setProfile(finalProfile);
