@@ -415,7 +415,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
 
                         
 
-                        {viewer?.email === "u2102807@live.warwick.ac.uk" && (
+                        {viewer?.email === "u2102807@live.warwick.ac.uk" && viewer?.id === profile?.id && (
                             <div
                                 className={`
             relative inline-flex items-center gap-2 mt-2 px-4 py-1.5
