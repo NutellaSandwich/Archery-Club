@@ -32,7 +32,8 @@ type UserProfile = {
     full_name: string | null;
     avatar_url: string | null;
     role?: string | null;
-    bow_type?: string | null; // 🎯 NEW: to show the user's bow style
+    bow_type?: string | null;
+    club_id?: string | null;   // ✅ ADD THIS
 };
 
 export default function Navbar() {
@@ -215,6 +216,7 @@ export default function Navbar() {
     }
 
     useEffect(() => {
+        if (!profile?.club_id) return;            // ✅ prevent TS error & prevents bad query
         if (query.length < 2) {
             setResults([]);
             setShowResults(false);
@@ -226,8 +228,9 @@ export default function Navbar() {
 
             const { data, error } = await supabase
                 .from("profiles")
-                .select("id, username, full_name, avatar_url, bow_type")
+                .select("id, username, full_name, avatar_url, bow_type, club_id")
                 .ilike("username", `%${query}%`)
+                .eq("club_id", profile.club_id)   // now safe
                 .limit(5);
 
             if (!error) {
@@ -236,10 +239,10 @@ export default function Navbar() {
             }
 
             setSearching(false);
-        }, 250); // debounce time
+        }, 250);
 
         return () => clearTimeout(delay);
-    }, [query]);
+    }, [query, profile?.club_id]);
 
     return (
         <nav
