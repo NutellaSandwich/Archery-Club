@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+
 
 /**
  * Provides the current Supabase user session (client-side).
@@ -22,7 +24,7 @@ export function useUser() {
         loadUser();
 
         const { data: listener } = supabase.auth.onAuthStateChange(
-            async (_event, session) => {
+            async (_event: AuthChangeEvent, session: Session | null) => {
                 setUser(session?.user ?? null);
             }
         );
