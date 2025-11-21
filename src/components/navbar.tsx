@@ -46,6 +46,11 @@ export default function Navbar() {
     const [mounted, setMounted] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
 
+    const [query, setQuery] = useState("");
+    const [results, setResults] = useState<any[]>([]);
+    const [showResults, setShowResults] = useState(false);
+    const [searching, setSearching] = useState(false);
+
     useEffect(() => {
         const { data: listener } = supabase.auth.onAuthStateChange(
             async (event: AuthChangeEvent, session: Session | null) => {
@@ -209,6 +214,33 @@ export default function Navbar() {
         );
     }
 
+    useEffect(() => {
+        if (query.length < 2) {
+            setResults([]);
+            setShowResults(false);
+            return;
+        }
+
+        const delay = setTimeout(async () => {
+            setSearching(true);
+
+            const { data, error } = await supabase
+                .from("profiles")
+                .select("id, username, full_name, avatar_url, bow_type")
+                .ilike("username", `%${query}%`)
+                .limit(5);
+
+            if (!error) {
+                setResults(data || []);
+                setShowResults(true);
+            }
+
+            setSearching(false);
+        }, 250); // debounce time
+
+        return () => clearTimeout(delay);
+    }, [query]);
+
     return (
         <nav
             className="sticky top-0 z-50 mx-auto mt-2 mb-4 flex items-center justify-between
@@ -248,18 +280,61 @@ export default function Navbar() {
                 )}
             </div>
 
-            {/* 🔍 User Search Bar */}
+            {/* 🔍 User Search Bar with Dropdown */}
             {!loading && profile && (
                 <div className="relative hidden md:block">
                     <input
                         type="text"
                         placeholder="Search users..."
-                        className="w-56 rounded-full border border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
-                        onChange={(e) => {
-                            const q = e.target.value.trim();
-                            if (q.length > 1) router.push(`/search?query=${encodeURIComponent(q)}`);
-                        }}
+                        className="w-56 rounded-full border border-[hsl(var(--border))]/40 
+                       bg-[hsl(var(--muted))]/30 px-3 py-1.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onBlur={() => setTimeout(() => setShowResults(false), 150)}
+                        onFocus={() => query.length > 1 && setShowResults(true)}
                     />
+
+                    {/* 🔽 Results dropdown */}
+                    {showResults && results.length > 0 && (
+                        <div className="absolute mt-2 w-64 bg-[hsl(var(--popover))] 
+                            border border-[hsl(var(--border))]/40 rounded-xl 
+                            shadow-lg p-2 z-50">
+                            {results.map((u) => (
+                                <Link
+                                    key={u.id}
+                                    href={`/profile/${u.id}`}
+                                    className="flex items-center gap-3 p-2 rounded-lg
+                                   hover:bg-[hsl(var(--muted))]/30 transition"
+                                >
+                                    <Image
+                                        src={u.avatar_url || "/default-avatar.png"}
+                                        alt="Avatar"
+                                        width={32}
+                                        height={32}
+                                        className="rounded-full object-cover border border-[hsl(var(--border))]"
+                                    />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium">{u.full_name || u.username}</span>
+                                        {u.bow_type && (
+                                            <span className="text-xs uppercase text-[hsl(var(--muted-foreground))]">
+                                                {u.bow_type}
+                                            </span>
+                                        )}
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* No results */}
+                    {showResults && query.length > 1 && results.length === 0 && (
+                        <div className="absolute mt-2 w-64 bg-[hsl(var(--popover))] 
+                            border border-[hsl(var(--border))]/40 rounded-xl 
+                            shadow-lg p-3 text-sm text-center z-50">
+                            No users found
+                        </div>
+                    )}
                 </div>
             )}
 
