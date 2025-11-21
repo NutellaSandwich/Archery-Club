@@ -20,6 +20,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Target, Calendar, Activity } from "lucide-react";
+import BowTypeTag from "@/components/BowTypeTag";
 
 type ClubPost = {
     id: string;
@@ -392,9 +393,9 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                         )}
 
                         {profile?.bow_type && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                                Bow Type: <span className="font-medium">{profile.bow_type}</span>
-                            </p>
+                            <div className="mt-2">
+                                <BowTypeTag bow={profile.bow_type} />
+                            </div>
                         )}
 
 
