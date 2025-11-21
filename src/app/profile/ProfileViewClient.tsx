@@ -100,7 +100,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
             const { data: profileData, error: profileError } = await supabase
                 .from("profiles")
                 .select(
-                    "id, username, avatar_url, bow_type, category, experience, club_id, created_at, role"
+                    "id, username, avatar_url, bow_type, category, experience, club_id, created_at, role, agb_number"
                 )
                 .eq("id", viewedUserId)
                 .single();
@@ -388,6 +388,18 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                             <p className="text-xs text-muted-foreground mt-1">
                                 Role: <span className="font-medium">{profile.role}</span>
                             </p>
+
+                        )}
+                        {viewer?.role === "admin" && profile?.agb_number && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                                <strong>AGB:</strong> {profile.agb_number}
+                            </p>
+                        )}
+
+                        {viewer?.email === "u2102807@live.warwick.ac.uk" && (
+                            <div className="inline-block mt-2 px-3 py-1 text-xs font-semibold text-white bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 rounded-full shadow-md animate-pulse">
+                                👑 Developer
+                            </div>
                         )}
                     </div>
 
@@ -422,6 +434,37 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                             </Button>
                         </div>
                     )}
+
+                    {canManage && (
+                        <div className="flex justify-center md:justify-end mt-2">
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={async () => {
+                                    const confirmRemove = window.confirm(
+                                        `Are you sure you want to remove ${profile?.username || "this member"} from the club?`
+                                    );
+                                    if (!confirmRemove) return;
+
+                                    const { error } = await supabase
+                                        .from("profiles")
+                                        .update({ club_id: null })
+                                        .eq("id", profile.id);
+
+                                    if (error) {
+                                        toast.error("Failed to remove member from club.");
+                                        console.error(error);
+                                    } else {
+                                        toast.success("Member removed from club.");
+                                        setProfile((p: any) => (p ? { ...p, club_id: null } : p));
+                                    }
+                                }}
+                            >
+                                Remove from Club
+                            </Button>
+                        </div>
+                    )}
+
                 </Card>
             </motion.div>
 

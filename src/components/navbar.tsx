@@ -102,11 +102,12 @@ export default function Navbar() {
                 if (!error && profileData && isMounted) {
                     setProfile(profileData);
                 } else if (isMounted) {
+                    // fallback only if the user truly has no profile
                     setProfile({
                         id: user.id,
-                        username: user.email ?? "User",
-                        full_name: null,
-                        avatar_url: null,
+                        username: null,
+                        full_name: user.user_metadata?.full_name || null,
+                        avatar_url: user.user_metadata?.avatar_url || null,
                     });
                 }
             } catch (err) {
@@ -256,17 +257,22 @@ export default function Navbar() {
                             <button className="hidden md:flex items-center gap-2 rounded-full focus:outline-none hover:opacity-80 transition-opacity">
                                 {profile.avatar_url ? (
                                     <Image
-                                        src={profile.avatar_url}
+                                        src={profile.avatar_url.startsWith("http")
+                                            ? profile.avatar_url
+                                            : `/default-avatar.png`}
                                         alt="Avatar"
                                         width={34}
                                         height={34}
                                         className="h-8 w-8 rounded-full object-cover border border-[hsl(var(--border))] bg-gray-100"
-                                        style={{ aspectRatio: "1 / 1" }}
                                     />
                                 ) : (
-                                    <div className="h-8 w-8 rounded-full border border-[hsl(var(--border))] flex items-center justify-center text-xs bg-gray-200 text-gray-600">
-                                        ?
-                                    </div>
+                                    <Image
+                                        src="/default-avatar.png"
+                                        alt="Default Avatar"
+                                        width={34}
+                                        height={34}
+                                        className="h-8 w-8 rounded-full object-cover border border-[hsl(var(--border))] bg-gray-100"
+                                    />
                                 )}
                             </button>
                         </DropdownMenu.Trigger>
