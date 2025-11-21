@@ -21,6 +21,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Target, Calendar, Activity } from "lucide-react";
 import BowTypeTag from "@/components/BowTypeTag";
+import { Sparkles } from "lucide-react";
 
 type ClubPost = {
     id: string;
@@ -415,8 +416,34 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                         
 
                         {viewer?.email === "u2102807@live.warwick.ac.uk" && (
-                            <div className="inline-block mt-2 px-3 py-1 text-xs font-semibold text-white bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 rounded-full shadow-md animate-pulse">
-                                👑 Developer
+                            <div className="
+        relative inline-flex items-center gap-2 mt-2 px-4 py-1.5
+        text-xs font-semibold text-white backdrop-blur-md
+        rounded-full shadow-xl
+        bg-white/10
+        border border-white/20
+        transition
+        hover:shadow-[0_0_20px_rgba(255,255,255,0.4)]
+    ">
+                                <Sparkles className="w-4 h-4 text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.9)] animate-pulse" />
+
+                                <span className="drop-shadow-[0_0_4px_rgba(255,255,255,0.7)]">Developer</span>
+
+                                {/* Outer glow */}
+                                <div className="
+            absolute inset-0 rounded-full 
+            bg-gradient-to-r from-purple-400/40 via-fuchsia-400/40 to-pink-400/40
+            blur-xl opacity-40
+            animate-[pulse_3s_ease-in-out_infinite]
+            pointer-events-none
+        "></div>
+
+                                {/* Inner highlight */}
+                                <div className="
+            absolute inset-0 rounded-full
+            bg-gradient-to-r from-white/10 to-transparent
+            mix-blend-overlay pointer-events-none
+        "></div>
                             </div>
                         )}
                     </div>
