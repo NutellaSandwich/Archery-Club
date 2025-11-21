@@ -51,7 +51,7 @@ export default function Navbar() {
                     console.warn("🔴 Signed out detected, clearing session");
                     localStorage.removeItem("sb-pivysrujmfjxaauahclj-auth-token");
                     sessionStorage.clear();
-                    router.push("/login");
+                    router.push("/");
                 }
 
                 if (event === "TOKEN_REFRESHED" && !session) {
@@ -59,7 +59,7 @@ export default function Navbar() {
                     await supabase.auth.signOut({ scope: "local" });
                     localStorage.removeItem("sb-pivysrujmfjxaauahclj-auth-token");
                     sessionStorage.clear();
-                    router.push("/login");
+                    router.push("/");
                 }
 
                 if (event === "SIGNED_IN") {
