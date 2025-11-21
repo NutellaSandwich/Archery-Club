@@ -390,11 +390,21 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                             </p>
 
                         )}
-                        {viewer?.role === "admin" && profile?.agb_number && (
+
+                        {profile?.bow_type && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Bow Type: <span className="font-medium">{profile.bow_type}</span>
+                            </p>
+                        )}
+
+
+                        {(viewer?.role === "admin" || viewer?.id === profile?.id) && profile?.agb_number && (
                             <p className="text-xs text-muted-foreground mt-1">
                                 <strong>AGB:</strong> {profile.agb_number}
                             </p>
                         )}
+
+                        
 
                         {viewer?.email === "u2102807@live.warwick.ac.uk" && (
                             <div className="inline-block mt-2 px-3 py-1 text-xs font-semibold text-white bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 rounded-full shadow-md animate-pulse">
@@ -411,38 +421,30 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
 
                     {canManage && (
                         <div className="flex flex-wrap gap-2 justify-center md:justify-end">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => changeRole("coach")}
-                            >
+                            <Button variant="outline" size="sm" onClick={() => changeRole("coach")}>
                                 Make Coach
                             </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => changeRole("admin")}
-                            >
+
+                            <Button variant="outline" size="sm" onClick={() => changeRole("admin")}>
                                 Make Admin
                             </Button>
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => changeRole("member")}
-                            >
-                                Remove Role
-                            </Button>
-                        </div>
-                    )}
 
-                    {canManage && (
-                        <div className="flex justify-center md:justify-end mt-2">
+                            {profile?.role !== "member" && (
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => changeRole("member")}
+                                >
+                                    Remove Role
+                                </Button>
+                            )}
+
                             <Button
                                 variant="destructive"
                                 size="sm"
                                 onClick={async () => {
                                     const confirmRemove = window.confirm(
-                                        `Are you sure you want to remove ${profile?.username || "this member"} from the club?`
+                                        `Remove ${profile?.username}?`
                                     );
                                     if (!confirmRemove) return;
 
@@ -451,13 +453,8 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                         .update({ club_id: null })
                                         .eq("id", profile.id);
 
-                                    if (error) {
-                                        toast.error("Failed to remove member from club.");
-                                        console.error(error);
-                                    } else {
-                                        toast.success("Member removed from club.");
-                                        setProfile((p: any) => (p ? { ...p, club_id: null } : p));
-                                    }
+                                    if (error) toast.error("Failed");
+                                    else toast.success("Member removed");
                                 }}
                             >
                                 Remove from Club
