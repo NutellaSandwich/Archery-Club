@@ -416,34 +416,68 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                         
 
                         {viewer?.email === "u2102807@live.warwick.ac.uk" && (
-                            <div className="
-        relative inline-flex items-center gap-2 mt-2 px-4 py-1.5
-        text-xs font-semibold text-white backdrop-blur-md
-        rounded-full shadow-xl
-        bg-white/10
-        border border-white/20
-        transition
-        hover:shadow-[0_0_20px_rgba(255,255,255,0.4)]
-    ">
-                                <Sparkles className="w-4 h-4 text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.9)] animate-pulse" />
+                            <div
+                                className="
+            relative inline-flex items-center gap-2 mt-2 px-4 py-1.5
+            text-xs font-semibold text-white
+            backdrop-blur-md rounded-full
+            bg-white/10 border border-purple-300/20
+            shadow-[0_0_12px_rgba(168,85,247,0.6)]
+            overflow-hidden
+        "
+                            >
+                                {/* Icon */}
+                                <Sparkles className="w-4 h-4 text-purple-200 drop-shadow-[0_0_6px_rgba(168,85,247,0.9)] animate-pulse" />
 
-                                <span className="drop-shadow-[0_0_4px_rgba(255,255,255,0.7)]">Developer</span>
+                                {/* Text */}
+                                <span className="drop-shadow-[0_0_6px_rgba(168,85,247,0.8)]">
+                                    Developer
+                                </span>
 
-                                {/* Outer glow */}
-                                <div className="
-            absolute inset-0 rounded-full 
-            bg-gradient-to-r from-purple-400/40 via-fuchsia-400/40 to-pink-400/40
-            blur-xl opacity-40
-            animate-[pulse_3s_ease-in-out_infinite]
-            pointer-events-none
-        "></div>
+                                {/* Permanent purple outer glow */}
+                                <div
+                                    className="
+                absolute inset-0 rounded-full
+                bg-purple-500/40 blur-xl opacity-60
+                animate-[pulse_3s_ease-in-out_infinite]
+                pointer-events-none
+            "
+                                ></div>
 
-                                {/* Inner highlight */}
-                                <div className="
-            absolute inset-0 rounded-full
-            bg-gradient-to-r from-white/10 to-transparent
-            mix-blend-overlay pointer-events-none
-        "></div>
+                                {/* Glass shine overlay */}
+                                <div
+                                    className="
+                absolute inset-0 rounded-full
+                bg-gradient-to-br from-white/10 to-transparent
+                mix-blend-overlay pointer-events-none
+            "
+                                ></div>
+
+                                {/* 🔥 Shimmer effect */}
+                                <div
+                                    className="
+                absolute inset-0 rounded-full
+                bg-gradient-to-r from-transparent via-white/40 to-transparent
+                opacity-40 blur-md
+                animate-[shimmer_2.5s_linear_infinite]
+                pointer-events-none
+            "
+                                ></div>
+
+                                {/* Keyframes for shimmer */}
+                                <style jsx>{`
+            @keyframes shimmer {
+                0% {
+                    transform: translateX(-150%);
+                }
+                50% {
+                    transform: translateX(150%);
+                }
+                100% {
+                    transform: translateX(150%);
+                }
+            }
+        `}</style>
                             </div>
                         )}
                     </div>
