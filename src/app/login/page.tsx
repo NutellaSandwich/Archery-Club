@@ -125,8 +125,7 @@ export default function LoginPage() {
                     <button
                         type="button"
                         onClick={handleForgotPassword}
-                        className="text-sm text-blue-500 hover:underline self-end"
-                    >
+                        className="text-sm text-blue-500 hover:underline mx-auto"                    >
                         Forgot your password?
                     </button>
                 )}

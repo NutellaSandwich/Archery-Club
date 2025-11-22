@@ -83,19 +83,25 @@ export default function ClubRecordsPage() {
                 .order("round_name");
 
             if (!error && data) {
-                // ✅ Safely cast the result
                 const typedData = data as { round_name: string }[];
 
-                const rounds = Array.from(
-                    new Set(typedData.map((r) => r.round_name))
-                );
-
+                const rounds = Array.from(new Set(typedData.map((r) => r.round_name)));
                 setAllRounds(rounds);
+
+                // ✅ Default to "Portsmouth" if available
+                if (!selectedRound) {
+                    const defaultRound = rounds.find((r) =>
+                        r.toLowerCase().includes("portsmouth")
+                    );
+                    if (defaultRound) {
+                        setSelectedRound(defaultRound);
+                    }
+                }
             }
         }
 
         fetchRounds();
-    }, [supabase, clubId]);
+    }, [supabase, clubId, selectedRound]);
 
     // ✅ Fetch records for selected round (for this club)
     useEffect(() => {
