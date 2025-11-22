@@ -401,7 +401,9 @@ export default function ClubRecordsPage() {
                                         )}
 
                                         {/* 🕒 Previous records */}
-                                            {history.map((h, idx) => {
+                                            {history
+                                                .filter((h) => h.new_score !== activeRecord?.score) // 🟢 remove current record from history
+                                                .map((h, idx) => {
                                                 const isCurrentRecord = h.new_score === activeRecord?.score;
                                                 return (
                                                     <motion.div
