@@ -393,8 +393,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
             >
-                <Card className="flex flex-col md:flex-row items-center gap-6 p-6 shadow-md">
-                    <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-[hsl(var(--primary))]/30">
+                <Card className="relative flex flex-col md:flex-row items-center gap-6 p-6 shadow-md">                    <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-[hsl(var(--primary))]/30">
                         <Image
                             src={profile?.avatar_url || "/default-avatar.png"}
                             alt="Profile Picture"
@@ -508,25 +507,18 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                     )}
 
                     {canManage && (
-                        <div className="flex flex-wrap gap-2 justify-center md:justify-end">
+                        <div className="absolute bottom-4 right-4 flex flex-wrap gap-2 justify-end">
                             <Button variant="outline" size="sm" onClick={() => changeRole("coach")}>
                                 Make Coach
                             </Button>
-
                             <Button variant="outline" size="sm" onClick={() => changeRole("admin")}>
                                 Make Admin
                             </Button>
-
                             {profile?.role !== "member" && (
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => changeRole("member")}
-                                >
+                                <Button variant="destructive" size="sm" onClick={() => changeRole("member")}>
                                     Remove Role
                                 </Button>
                             )}
-
                             <Button
                                 variant="destructive"
                                 size="sm"
@@ -580,9 +572,12 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
 
                                     <div className="flex items-center gap-2 flex-wrap justify-center">
                                         {(!userId || user?.id === userId) && (
-                                            <Button variant="outline" size="sm" onClick={() => setShowAddLineModal(true)}>
-                                                + Add/Edit Event Line
-                                            </Button>
+                                            <Link
+                                                href="/profile/edit"
+                                                className="absolute top-4 right-4"
+                                            >
+                                                <Button size="sm">Edit Profile</Button>
+                                            </Link>
                                         )}
 
                                         <div className="flex bg-muted rounded-full p-1">

@@ -177,13 +177,6 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
     return (
         <main className="relative max-w-xl mx-auto mt-16 px-6 py-10 rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--card))] shadow-sm space-y-6">
             <h1 className="text-2xl font-semibold text-center">Edit Profile</h1>
-            <button
-                type="button"
-                onClick={() => router.push(`/profile/${targetId}`)}
-                className="absolute top-4 right-4 text-sm bg-[hsl(var(--primary))]/10 hover:bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] px-3 py-1.5 rounded-md transition"
-            >
-                View Profile
-            </button>
 
             {/* 🖼️ Avatar Upload */}
             <div className="flex flex-col items-center gap-3">
@@ -284,18 +277,18 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                     />
                 </div>
 
-                <div className="absolute bottom-4 right-4 flex gap-3">
+                <div className="flex justify-between gap-4 pt-4">
                     <button
                         type="button"
                         onClick={() => router.push("/profile")}
-                        className="px-4 py-2 rounded-md border border-[hsl(var(--border))]/40 hover:bg-[hsl(var(--muted))]/40"
+                        className="flex-1 rounded-md border border-[hsl(var(--border))]/40 py-2 hover:bg-[hsl(var(--muted))]/40"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         disabled={saving}
-                        className="px-4 py-2 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-medium hover:opacity-90 transition-all disabled:opacity-50"
+                        className="flex-1 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] py-2 font-medium hover:opacity-90 transition-all disabled:opacity-50"
                     >
                         {saving ? "Saving..." : "Save Changes"}
                     </button>
