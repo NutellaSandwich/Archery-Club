@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Clock, Trophy, BowArrow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import BowTypeTag from "@/components/BowTypeTag";
 
 
 type ClubRecord = {
@@ -308,9 +309,13 @@ export default function ClubRecordsPage() {
                                     className="p-4 bg-[hsl(var(--card))] border border-[hsl(var(--border))]/40 rounded-xl shadow-sm hover:shadow-md"
                                 >
                                     <div className="flex justify-between items-center mb-2">
-                                        <span className="text-sm text-muted-foreground">
-                                            {r.experience} • {r.category} • {r.bow_type}
-                                        </span>
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <span>
+                                                {r.experience.charAt(0).toUpperCase() + r.experience.slice(1)} •{" "}
+                                                {r.category.charAt(0).toUpperCase() + r.category.slice(1)}
+                                            </span>
+                                            <BowTypeTag bow={r.bow_type} />
+                                        </div>
                                         <Trophy className="text-yellow-500" size={18} />
                                     </div>
 
