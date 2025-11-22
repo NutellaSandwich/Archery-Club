@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import RoundNameSelect from "@/components/RoundNameSelect";
 import { getRoundMaxScore } from "@/lib/rounds";
-
+import { Button } from "@/components/ui/button";
 interface ClubFeedClientProps {
     userId: string;
     clubId: string | null;
@@ -575,13 +575,21 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
         toast.success("Post updated!");
     }
 
-    if (!clubId)
+    if (!clubId) {
         return (
-            <div className="flex flex-col items-center justify-center h-[80vh] text-muted-foreground">
-                <p>You’re not currently in a club.</p>
-                <p className="text-sm mt-1">Join or create a club to see activity here.</p>
-            </div>
+            <main className="flex flex-col items-center justify-center h-[70vh] text-center space-y-4">
+                <div className="flex items-center gap-2 text-red-600">
+                    <BowArrow className="w-8 h-8" />
+                    <h1 className="text-2xl font-semibold">Club Membership Required</h1>
+                </div>
+                <p className="max-w-md text-muted-foreground">
+                    You need to be part of a club to access tournament signups. Please join or request to join a
+                    club first from the main page.
+                </p>
+                <Button onClick={() => (window.location.href = "/")}>Join a club</Button>
+            </main>
         );
+    }
 
     return (
         <main className="max-w-3xl mx-auto p-6 space-y-6">
