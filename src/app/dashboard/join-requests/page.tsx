@@ -148,7 +148,6 @@ export default function JoinRequestsPage() {
             const { error } = await supabase
                 .from("join_requests")
                 .update({
-                    username: form.username,
                     agb_number: form.agb_number,
                     dob: form.dob,
                     category: form.category,
@@ -161,7 +160,6 @@ export default function JoinRequestsPage() {
                 console.error("Edit join_requests error:", error);
                 toast.error("Failed to update request info.");
             } else {
-                toast.success("Request updated!");
                 onSave(form);
                 onClose();
             }
@@ -177,10 +175,10 @@ export default function JoinRequestsPage() {
 
                     <div className="space-y-3">
                         <input
-                            className="w-full p-2 border rounded bg-background"
+                            className="w-full p-2 border rounded bg-muted cursor-not-allowed text-muted-foreground"
                             placeholder="Username"
                             value={form.username}
-                            onChange={(e) => setForm({ ...form, username: e.target.value })}
+                            disabled
                         />
                         <input
                             className="w-full p-2 border rounded bg-background"
