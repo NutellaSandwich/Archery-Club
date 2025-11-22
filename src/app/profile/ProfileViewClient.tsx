@@ -427,7 +427,8 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                         )}
 
 
-                        {((viewer?.role === "admin" && viewer?.club_id === profile?.club_id) || viewer?.id === profile?.id) && profile?.agb_number && (                            <p className="text-xs text-muted-foreground mt-1">
+                        {(viewer?.id === profile?.id || canManage) && profile?.agb_number && (
+                            <p className="text-xs text-muted-foreground mt-1">
                                 <strong>AGB:</strong> {profile.agb_number}
                             </p>
                         )}
@@ -861,8 +862,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
             </Tabs>
 
             {/* 🟡 Add / Manage Event Lines Modal */}
-            {showAddLineModal && (!userId || user?.id === userId) && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            {showAddLineModal && ((!userId || user?.id === userId) || canManage) && (                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl w-[90%] max-w-sm space-y-4">
                         <h3 className="text-lg font-semibold text-center">Manage Event Lines</h3>
 
