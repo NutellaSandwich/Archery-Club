@@ -499,8 +499,14 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                     </div>
 
                     {((!userId || user?.id === userId) || canManage) && (
-                        <Link href={`/profile/edit${canManage ? `?id=${profile?.id}` : ""}`}>
-                            <Button>
+                        <Link
+                            href={`/profile/edit${canManage ? `?id=${profile?.id}` : ""}`}
+                            className="absolute top-4 right-4 z-10"
+                        >
+                            <Button
+                                size="sm"
+                                className="shadow-md"
+                            >
                                 {canManage ? "Edit Member Profile" : "Edit Profile"}
                             </Button>
                         </Link>
