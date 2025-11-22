@@ -38,7 +38,7 @@ type UserProfile = {
 export default function Navbar() {
     const router = useRouter();
     const pathname = usePathname();
-    const { theme, setTheme } = useTheme();
+    const { theme, systemTheme, setTheme } = useTheme();
     const supabase = useMemo(() => supabaseBrowser(), []);
 
     const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -205,7 +205,10 @@ export default function Navbar() {
 
     function ThemeToggle() {
         if (!mounted) return null;
-        const isDark = theme === "dark";
+
+        const currentTheme = theme === "system" ? systemTheme : theme;
+        const isDark = currentTheme === "dark";
+
         return (
             <button
                 onClick={() => setTheme(isDark ? "light" : "dark")}
