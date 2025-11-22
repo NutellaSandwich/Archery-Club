@@ -8,6 +8,7 @@ import { Search, Clock, Trophy, BowArrow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+
 type ClubRecord = {
     id: string;
     round_name: string;
@@ -45,13 +46,17 @@ export default function ClubRecordsPage() {
     const [loading, setLoading] = useState(false);
     const [activeRecord, setActiveRecord] = useState<ClubRecord | null>(null);
     const [clubId, setClubId] = useState<string | null>(null);
+    const [checkingClub, setCheckingClub] = useState(true);
 
     // ✅ Load user's club ID
     useEffect(() => {
         async function getClubId() {
             const { data: { session } } = await supabase.auth.getSession();
             const user = session?.user;
-            if (!user) return;
+            if (!user) {
+                setCheckingClub(false);
+                return;
+            }
 
             const { data, error } = await supabase
                 .from("profiles")
@@ -61,6 +66,8 @@ export default function ClubRecordsPage() {
 
             if (error) console.error("Failed to load club:", error);
             else setClubId(data?.club_id ?? null);
+
+            setCheckingClub(false); // ✅ done checking
         }
         getClubId();
     }, [supabase]);
@@ -202,6 +209,13 @@ export default function ClubRecordsPage() {
         r.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    if (checkingClub) {
+        return (
+            <main className="flex flex-col items-center justify-center h-[70vh] text-center space-y-4">
+                <p className="text-muted-foreground">Loading club details...</p>
+            </main>
+        );
+    }
 
     if (clubId === null) {
         return (
