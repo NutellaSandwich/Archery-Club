@@ -624,7 +624,6 @@ export default function NewScorePage() {
                 </button>
             </form>
 
-            {/* Competition Modal */}
             {showCompetitionModal && (
                 <div
                     className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
@@ -632,18 +631,28 @@ export default function NewScorePage() {
                 >
                     <div
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white rounded-xl p-6 shadow-xl w-80"
+                        className="rounded-xl p-6 shadow-xl w-80 
+                       bg-[hsl(var(--card))] 
+                       border border-[hsl(var(--border))]/40
+                       text-[hsl(var(--foreground))]"
                     >
                         <h2 className="text-lg font-semibold mb-2">Competition Name</h2>
+
                         <input
                             type="text"
                             value={form.competition_name}
                             onChange={(e) => setForm({ ...form, competition_name: e.target.value })}
                             placeholder="Enter competition name"
-                            className="w-full border rounded-md px-3 py-2 mb-4"
+                            className="w-full rounded-md px-3 py-2 mb-4
+                           border border-[hsl(var(--border))]/40
+                           bg-[hsl(var(--muted))]/20"
                         />
+
                         <button
-                            className="bg-blue-600 text-white px-4 py-2 rounded-md w-full"
+                            className="w-full rounded-md py-2 font-medium
+                           bg-[hsl(var(--primary))] 
+                           text-[hsl(var(--primary-foreground))] 
+                           hover:opacity-90 transition"
                             onClick={() => setShowCompetitionModal(false)}
                         >
                             Done
