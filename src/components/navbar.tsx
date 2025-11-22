@@ -29,11 +29,10 @@ import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 type UserProfile = {
     id: string;
     username: string | null;
-    full_name: string | null;
     avatar_url: string | null;
     role?: string | null;
     bow_type?: string | null;
-    club_id?: string | null;   // ✅ ADD THIS
+    club_id?: string | null;
 };
 
 export default function Navbar() {
@@ -104,8 +103,7 @@ export default function Navbar() {
                 // Fetch profile from database
                 const { data: profileData, error } = await supabase
                     .from("profiles")
-                    .select("id, username, full_name, avatar_url, role, bow_type, club_id")
-                    .eq("id", user.id)
+                    .select("id, username, avatar_url, role, bow_type, club_id")                    .eq("id", user.id)
                     .maybeSingle();
 
                 console.log("Loaded profile:", profileData, user.user_metadata);
@@ -117,17 +115,13 @@ export default function Navbar() {
                         user.user_metadata?.username ||
                         user.email?.split("@")[0] ||
                         "Archer",
-                    full_name:
-                        profileData?.full_name ||
-                        user.user_metadata?.full_name ||
-                        null,
                     avatar_url:
                         profileData?.avatar_url ||
                         user.user_metadata?.avatar_url ||
                         null,
                     role: profileData?.role || null,
-                    bow_type: profileData?.bow_type || null, // 🎯 added
-                    club_id: profileData?.club_id || null, 
+                    bow_type: profileData?.bow_type || null,
+                    club_id: profileData?.club_id || null,
                 };
 
                 if (isMounted) setProfile(finalProfile);
@@ -235,7 +229,7 @@ export default function Navbar() {
 
             const { data, error } = await supabase
                 .from("profiles")
-                .select("id, username, full_name, avatar_url, bow_type, club_id")
+                .select("id, username, avatar_url, bow_type, club_id")
                 .ilike("username", `%${query}%`)
                 .eq("club_id", profile.club_id)   // now safe
                 .limit(5);
@@ -325,8 +319,7 @@ export default function Navbar() {
                                         className="h-8 w-8 rounded-full object-cover border border-[hsl(var(--border))] bg-gray-100"
                                     />
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-medium">{u.full_name || u.username}</span>
-                                        {u.bow_type && (
+                                        <span className="text-sm font-medium">{u.username}</span>                                        {u.bow_type && (
                                             <span className="text-xs uppercase text-[hsl(var(--muted-foreground))]">
                                                 {u.bow_type}
                                             </span>
@@ -396,8 +389,7 @@ export default function Navbar() {
                                 sideOffset={6}
                             >
                                 <DropdownMenu.Label className="px-3 py-2 text-xs text-[hsl(var(--muted-foreground))] flex flex-col">
-                                    <span>{profile.full_name || profile.username || "Archer"}</span>
-                                </DropdownMenu.Label>
+                                    <span>{profile.username || "Archer"}</span>                                </DropdownMenu.Label>
 
                                 <DropdownMenu.Item asChild>
                                     <Link

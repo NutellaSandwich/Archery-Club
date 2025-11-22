@@ -163,7 +163,7 @@ function SignupFlow({
   const [loading, setLoading] = useState(false);
   const [account, setAccount] = useState({ email: "", password: "" });
   const [form, setForm] = useState({
-    full_name: "",
+    username: "",
     dob: "",
     agb_number: "",
     category: "Open",
@@ -325,7 +325,7 @@ function SignupFlow({
       const { error } = await supabase
         .from("profiles")
         .update({
-          full_name: form.full_name.trim(),
+          username: form.username.trim(),
           dob: cleanDob,
           agb_number: form.agb_number?.trim() || null,
           category: form.category,
@@ -365,8 +365,8 @@ function SignupFlow({
         {
           user_id: user.id,
           club_id: club.id,
-          message: `${form.full_name} (${form.category}, ${form.experience})`,
-          full_name: form.full_name.trim(),
+          message: `${form.username} (${form.category}, ${form.experience})`,
+          username: form.username.trim(),
           dob: cleanDob,
           agb_number: form.agb_number?.trim() || null,
           category: form.category,
@@ -381,20 +381,11 @@ function SignupFlow({
         return;
       }
 
-      console.log("🧠 Updating profile when joining club", {
-        id: user.id,
-        full_name: form.full_name.trim(),
-        dob: cleanDob,
-        agb_number: form.agb_number?.trim() || null,
-        category: form.category,
-        experience: form.experience,
-      });
       
       await supabase
         .from("profiles")
         .update({
-          full_name: form.full_name.trim(),
-          username: form.full_name.trim(), // ✅ display name
+          username: form.username.trim(),
           dob: cleanDob,
           agb_number: form.agb_number?.trim() || null,
           category: form.category,
@@ -429,23 +420,13 @@ function SignupFlow({
 
       const clubData = insertedClubs[0];
 
-      console.log("🧠 Updating profiles with payload:", {
-        id: user.id,
-        club_id: clubData.id,
-        full_name: form.full_name,
-        dob: form.dob,
-        agb_number: form.agb_number,
-        category: form.category,
-        experience: form.experience,
-      });
 
       // 2️⃣ Update profile to link to new club
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
           club_id: clubData.id,
-          full_name: form.full_name.trim(),
-          username: form.full_name.trim(), // ✅ display name
+          username: form.username.trim(),
           dob: form.dob,
           agb_number: form.agb_number || null,
           category: form.category,
@@ -546,11 +527,11 @@ function SignupFlow({
           </div>
 
           <div className="space-y-3">
-            <Input
-              placeholder="Full Name"
-              value={form.full_name}
-              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-            />
+              <Input
+                placeholder="Username"
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+              />
             <Input
               type="date"
               value={form.dob}

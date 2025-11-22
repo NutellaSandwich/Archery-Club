@@ -47,19 +47,19 @@ export default function JoinRequestsPage() {
             const { data, error } = await supabase
                 .from("join_requests")
                 .select(`
-      id,
-      user_id,
-      club_id,
-      status,
-      created_at,
-      full_name,
-      dob,
-      agb_number,
-      category,
-      experience,
-      profiles:user_id(username, avatar_url),
-      clubs:club_id(name)
-    `)
+  id,
+  user_id,
+  club_id,
+  status,
+  created_at,
+  username,
+  dob,
+  agb_number,
+  category,
+  experience,
+  profiles:user_id(username, avatar_url),
+  clubs:club_id(name)
+`)
                 .eq("club_id", clubId)
                 .order("created_at", { ascending: false });
 
@@ -134,7 +134,7 @@ export default function JoinRequestsPage() {
 
     function EditRequestModal({ request, onClose, onSave }: any) {
         const [form, setForm] = useState({
-            full_name: request.full_name || "",
+            username: request.username || "",
             category: request.category || "",
             experience: request.experience || "",
             agb_number: request.agb_number || "",
@@ -148,7 +148,7 @@ export default function JoinRequestsPage() {
             const { error } = await supabase
                 .from("join_requests")
                 .update({
-                    full_name: form.full_name,
+                    username: form.username,
                     agb_number: form.agb_number,
                     dob: form.dob,
                     category: form.category,
@@ -178,9 +178,9 @@ export default function JoinRequestsPage() {
                     <div className="space-y-3">
                         <input
                             className="w-full p-2 border rounded bg-background"
-                            placeholder="Full Name"
-                            value={form.full_name}
-                            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                            placeholder="Username"
+                            value={form.username}
+                            onChange={(e) => setForm({ ...form, username: e.target.value })}
                         />
                         <input
                             className="w-full p-2 border rounded bg-background"
@@ -247,7 +247,6 @@ export default function JoinRequestsPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                            <p><strong>Full Name:</strong> {r.full_name || "—"}</p>
                             <p><strong>Category:</strong> {r.category || "—"}</p>
                             <p><strong>Experience:</strong> {r.experience || "—"}</p>
                             {r.agb_number && <p><strong>AGB Number:</strong> {r.agb_number}</p>}
@@ -299,7 +298,7 @@ export default function JoinRequestsPage() {
                     request={editingRequest}
                     onClose={() => setEditingRequest(null)}
                     onSave={(updated: {
-                        full_name?: string;
+                        username?: string;
                         category?: string;
                         experience?: string;
                         agb_number?: string;
