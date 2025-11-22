@@ -3,23 +3,21 @@ export default function BowTypeTag({ bow }: { bow: string }) {
 
     const color =
         b === "recurve"
-            ? "from-red-900 to-red-700"
+            ? "from-red-700 to-red-500"
             : b === "compound"
-                ? "from-blue-900 to-blue-700"
+                ? "from-blue-700 to-blue-500"
                 : b === "barebow"
-                    ? "from-green-900 to-green-700"
+                    ? "from-green-700 to-green-500"
                     : b === "longbow"
-                        ? "from-amber-900 to-amber-700"
-                        : "from-gray-800 to-gray-600";
+                        ? "from-amber-700 to-amber-500"
+                        : "from-gray-700 to-gray-500";
 
     return (
         <span
             className={`px-4 py-1 rounded-full text-white text-xs font-semibold tracking-wide
                         bg-gradient-to-b ${color}
-                        shadow-[0_4px_10px_rgba(0,0,0,0.4)] border border-white/10
-                        ring-1 ring-black/40
-                        hover:shadow-[0_6px_14px_rgba(0,0,0,0.5)] transition-all duration-200
-                        backdrop-blur-sm`}
+                        shadow-[0_3px_6px_rgba(0,0,0,0.35)] border border-white/10
+                        hover:shadow-[0_5px_10px_rgba(0,0,0,0.45)] transition-all duration-200`}
         >
             {bow}
         </span>
