@@ -352,7 +352,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
             if (!supabase || !userId) return;
             const { data, error } = await supabase
                 .from("profiles")
-                .select("id, username, avatar_url")
+                .select("id, username, avatar_url, role") // ✅ include role
                 .eq("id", userId)
                 .single();
             if (!error && data) setCurrentProfile(data);
