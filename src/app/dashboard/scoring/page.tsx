@@ -332,17 +332,20 @@ export default function ScoringSetupPage() {
                 </>
             )}
 
-            {/* Divider */}
+            {/* Spacer to ensure dropdown never covers the button */}
+            <div className="mt-20"></div>
+
+            {/* Divider like Club Records page */}
             <div className="flex items-center my-8">
                 <div className="flex-1 h-px bg-[hsl(var(--border))]/40"></div>
                 <span className="px-4 text-sm text-muted-foreground">or</span>
                 <div className="flex-1 h-px bg-[hsl(var(--border))]/40"></div>
             </div>
 
-            {/* Submit New Score */}
+            {/* Styled Submit New Score button */}
             <Button
                 onClick={() => (window.location.href = "/dashboard/new-score")}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-md transition"
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-md shadow-sm transition"
             >
                 Submit New Score
             </Button>
