@@ -332,8 +332,10 @@ export default function ScoringSetupPage() {
                 </>
             )}
 
-            {/* Spacer to ensure dropdown never covers the button */}
-            <div className="mt-20"></div>
+            {/* Dynamic spacer so dropdown never covers the button */}
+            {filteredRounds.length > 0 && (
+                <div className="h-48"></div>
+            )}
 
             {/* Divider like Club Records page */}
             <div className="flex items-center my-8">
@@ -342,13 +344,17 @@ export default function ScoringSetupPage() {
                 <div className="flex-1 h-px bg-[hsl(var(--border))]/40"></div>
             </div>
 
-            {/* Styled Submit New Score button */}
-            <Button
+            {/* Exact styling like Club Feed */}
+            <button
                 onClick={() => (window.location.href = "/dashboard/new-score")}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-md shadow-sm transition"
+                className="bg-[hsl(var(--primary))]
+               text-[hsl(var(--primary-foreground))]
+               rounded-lg px-6 py-3 font-medium
+               hover:opacity-90 transition
+               w-full"
             >
                 Submit New Score
-            </Button>
+            </button>
         </main>
     );
 }
