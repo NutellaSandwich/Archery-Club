@@ -370,11 +370,19 @@ export default function NewScorePage() {
                 scoresheet_url = publicUrlData.publicUrl;
             }
 
-            // ✅ Validate score limit from handicap data
-            if (roundMaxScore && parseInt(form.score) > roundMaxScore) {
-                toast.error(`Score exceeds maximum possible for ${form.round_name} (${roundMaxScore}).`);
-                setSubmitting(false);
-                return;
+            // ✅ Validate golds based on number of arrows
+            if (roundMaxScore) {
+                const maxArrows =
+                    roundMaxScore % 10 === 0
+                        ? roundMaxScore / 10
+                        : roundMaxScore / 9;
+
+                const golds = parseInt(form.golds || "0");
+                if (golds > maxArrows) {
+                    toast.error(`Invalid number of golds: ${golds}. This round only has ${Math.floor(maxArrows)} arrows.`);
+                    setSubmitting(false);
+                    return;
+                }
             }
 
             // 🧩 Check for personal best BEFORE inserting
@@ -539,39 +547,7 @@ export default function NewScorePage() {
                         type="number"
                         placeholder="Golds (optional)"
                         value={form.golds}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            const num = parseInt(val);
-
-                            // ✅ Must be a valid number
-                            if (isNaN(num) || num < 0) {
-                                toast.error("Golds must be a positive number.");
-                                return;
-                            }
-
-                            // ✅ Calculate maximum arrows dynamically
-                            let maxArrows = 0;
-                            if (roundMaxScore) {
-                                maxArrows =
-                                    roundMaxScore % 10 === 0
-                                        ? roundMaxScore / 10
-                                        : roundMaxScore / 9;
-                            }
-
-                            // ✅ Cannot exceed number of arrows
-                            if (maxArrows && num > maxArrows) {
-                                toast.error(`Golds cannot exceed total arrows (${Math.floor(maxArrows)}).`);
-                                return;
-                            }
-
-                            // ✅ Cannot exceed total score (sanity check)
-                            if (form.score && num > parseInt(form.score)) {
-                                toast.error("Golds cannot exceed total score.");
-                                return;
-                            }
-
-                            setForm({ ...form, golds: val });
-                        }}
+                        onChange={(e) => setForm({ ...form, golds: e.target.value })}
                         className="rounded-md border border-[hsl(var(--border))]/40 px-3 py-2 bg-[hsl(var(--muted))]/20"
                         min="0"
                     />
