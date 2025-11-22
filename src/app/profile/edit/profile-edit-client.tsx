@@ -31,15 +31,36 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [fileInputKey, setFileInputKey] = useState(0);
 
+    const [showExperienceConfirm, setShowExperienceConfirm] = useState(false);
+    const [pendingExperience, setPendingExperience] = useState<string | null>(null);
+    const [viewerRole, setViewerRole] = useState<string | null>(null);
+
+    
 
     useEffect(() => {
         if (!targetId) return;
 
         async function loadData() {
             try {
+                // ✅ Get current viewer role
+                const { data: session } = await supabase.auth.getSession();
+                const uid = session?.session?.user?.id;
+
+                if (uid) {
+                    const { data: viewerProfile } = await supabase
+                        .from("profiles")
+                        .select("role")
+                        .eq("id", uid)
+                        .maybeSingle();
+
+                    setViewerRole(viewerProfile?.role ?? null);
+                }
+
+                // ✅ Then load target profile
                 const { data: profile, error } = await supabase
                     .from("profiles")
-                    .select("username, bow_type, category, experience, club_id, avatar_url, agb_number")                    .eq("id", targetId)
+                    .select("username, bow_type, category, experience, club_id, avatar_url, agb_number")
+                    .eq("id", targetId)
                     .maybeSingle();
 
                 if (error) throw error;
@@ -51,7 +72,7 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                     experience: profile?.experience ?? "Novice",
                     club_id: profile?.club_id ?? "",
                     avatar_url: profile?.avatar_url ?? "",
-                    agb_number: profile?.agb_number ?? "", // ✅ added
+                    agb_number: profile?.agb_number ?? "",
                 });
             } catch (err) {
                 console.error("Load error:", err);
@@ -64,18 +85,24 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
         loadData();
     }, [supabase, userId]);
 
-    // 🧠 Experience change logic
     const handleExperienceChange = (newExperience: string) => {
         if (form.experience === "Experienced" && newExperience === "Novice") {
-            toast.error("You cannot revert back to Novice once marked Experienced.");
+            if (viewerRole === "admin") {
+                setPendingExperience(newExperience);
+                setShowExperienceConfirm(true);
+                return;
+            } else {
+                toast.error("You cannot revert back to Novice once marked Experienced.");
+                return;
+            }
+        }
+
+        if (form.experience === "Novice" && newExperience === "Experienced") {
+            setPendingExperience(newExperience);
+            setShowExperienceConfirm(true);
             return;
         }
-        if (form.experience === "Novice" && newExperience === "Experienced") {
-            const confirmed = window.confirm(
-                "Are you sure you want to mark yourself as Experienced? This change cannot be undone."
-            );
-            if (!confirmed) return;
-        }
+
         setForm({ ...form, experience: newExperience });
     };
 
@@ -165,6 +192,8 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
             setSaving(false);
         }
     }
+
+
 
     if (loading) {
         return (
@@ -330,6 +359,60 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                                     className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition"
                                 >
                                     Remove
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+
+            <AnimatePresence>
+                {showExperienceConfirm && (
+                    <motion.div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setShowExperienceConfirm(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="bg-[hsl(var(--card))] border border-[hsl(var(--border))]/40 rounded-xl p-6 shadow-lg max-w-sm w-full text-center"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h2 className="text-lg font-semibold mb-2">
+                                Confirm Experience Change
+                            </h2>
+                            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+                                {pendingExperience === "Novice"
+                                    ? "Are you sure you want to revert this archer to Novice?"
+                                    : "Are you sure you want to mark this archer as Experienced? This cannot be undone."}
+                            </p>
+
+                            <div className="flex justify-center gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowExperienceConfirm(false);
+                                        setPendingExperience(null);
+                                    }}
+                                    className="px-4 py-2 rounded-md bg-[hsl(var(--muted))]/30 hover:bg-[hsl(var(--muted))]/50 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setForm({ ...form, experience: pendingExperience || form.experience });
+                                        setShowExperienceConfirm(false);
+                                        setPendingExperience(null);
+                                        toast.success("Experience updated.");
+                                    }}
+                                    className="px-4 py-2 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition"
+                                >
+                                    Confirm
                                 </button>
                             </div>
                         </motion.div>
