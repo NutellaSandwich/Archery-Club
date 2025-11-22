@@ -135,7 +135,6 @@ export default function TrophiesPage() {
         }
 
         setTrophies((prev) => prev.filter((t) => t.id !== trophyId));
-        toast.success("Trophy deleted successfully");
     }
 
     if (loading)

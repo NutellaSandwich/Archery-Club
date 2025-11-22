@@ -31,6 +31,7 @@ type Profile = {
     id: string;
     username: string;
     avatar_url: string | null;
+    role?: string | null; // ✅ Added this line
 };
 
 type Reply = {
@@ -95,6 +96,9 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
     const [animatingComment, setAnimatingComment] = useState<string | null>(null);
     const [animatingLike, setAnimatingLike] = useState<string | null>(null);
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+    // 🗑️ New states for deleting comments/replies
+    const [confirmDeleteComment, setConfirmDeleteComment] = useState<string | null>(null);
+    const [confirmDeleteReply, setConfirmDeleteReply] = useState<string | null>(null);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     // ✏️ Editing state (mirrors New Score rules)
@@ -488,6 +492,69 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
         } catch (err) {
             console.error(err);
             toast.error("Something went wrong deleting this post");
+        }
+    }
+
+    // 🗑️ Delete comment (and its replies)
+    async function handleDeleteComment(commentId: string) {
+        if (!supabase) return;
+        setConfirmDeleteComment(null);
+
+        try {
+            // Delete replies first
+            await supabase.from("comment_replies").delete().eq("comment_id", commentId);
+
+            // Delete comment itself
+            const { error } = await supabase
+                .from("post_comments")
+                .delete()
+                .eq("id", commentId);
+
+            if (error) throw error;
+
+            setPosts((prev) =>
+                prev.map((p) => ({
+                    ...p,
+                    comments: p.comments?.filter((c) => c.id !== commentId),
+                }))
+            );
+            toast.success("Comment deleted");
+        } catch (err) {
+            console.error("Failed to delete comment:", err);
+            toast.error("Error deleting comment");
+        }
+    }
+
+    // 🗑️ Delete reply
+    async function handleDeleteReply(replyId: string, commentId: string) {
+        if (!supabase) return;
+        setConfirmDeleteReply(null);
+
+        try {
+            const { error } = await supabase
+                .from("comment_replies")
+                .delete()
+                .eq("id", replyId);
+
+            if (error) throw error;
+
+            setPosts((prev) =>
+                prev.map((p) => ({
+                    ...p,
+                    comments: p.comments?.map((c) =>
+                        c.id === commentId
+                            ? {
+                                ...c,
+                                replies: c.replies?.filter((r) => r.id !== replyId),
+                            }
+                            : c
+                    ),
+                }))
+            );
+            toast.success("Reply deleted");
+        } catch (err) {
+            console.error("Failed to delete reply:", err);
+            toast.error("Error deleting reply");
         }
     }
 
@@ -1061,6 +1128,16 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                                                                     </span>
                                                                                     : {r.content}
                                                                                 </div>
+                                                                                {(r.profiles?.id === userId || currentProfile?.role === "admin") && (
+                                                                                    <button
+                                                                                        onClick={() => setConfirmDeleteReply(r.id)}
+                                                                                        className="text-gray-400 hover:text-red-500 transition ml-1"
+                                                                                        title="Delete reply"
+                                                                                    >
+                                                                                        <Trash2 size={12} />
+                                                                                    </button>
+                                                                                )}
+                                                                                
                                                                             </div>
                                                                         </div>
                                                                     ))}
@@ -1094,6 +1171,16 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                                     >
                                                         <CornerDownRight size={16} />
                                                     </button>
+
+                                                    {(c.profiles?.id === userId || currentProfile?.role === "admin") && (
+                                                        <button
+                                                            onClick={() => setConfirmDeleteComment(c.id)}
+                                                            className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-red-500 ml-2"
+                                                            title="Delete comment"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    )}
                                                 </div>
 
                                                 <AnimatePresence>
@@ -1275,6 +1362,84 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                 <button
                                     onClick={() => handleDeletePost(confirmDelete)}
                                     className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* 🗑️ Delete Comment Modal */}
+            <AnimatePresence>
+                {confirmDeleteComment && (
+                    <motion.div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className="bg-[hsl(var(--card))] rounded-xl shadow-lg border border-[hsl(var(--border))]/50 p-6 max-w-sm text-center"
+                        >
+                            <h2 className="text-lg font-semibold mb-2">Delete this comment?</h2>
+                            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+                                This will permanently remove the comment and its replies.
+                            </p>
+                            <div className="flex justify-center gap-3">
+                                <button
+                                    onClick={() => setConfirmDeleteComment(null)}
+                                    className="px-4 py-2 rounded-md bg-[hsl(var(--muted))]/30 hover:bg-[hsl(var(--muted))]/50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteComment(confirmDeleteComment)}
+                                    className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* 🗑️ Delete Reply Modal */}
+            <AnimatePresence>
+                {confirmDeleteReply && (
+                    <motion.div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className="bg-[hsl(var(--card))] rounded-xl shadow-lg border border-[hsl(var(--border))]/50 p-6 max-w-sm text-center"
+                        >
+                            <h2 className="text-lg font-semibold mb-2">Delete this reply?</h2>
+                            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+                                This action cannot be undone.
+                            </p>
+                            <div className="flex justify-center gap-3">
+                                <button
+                                    onClick={() => setConfirmDeleteReply(null)}
+                                    className="px-4 py-2 rounded-md bg-[hsl(var(--muted))]/30 hover:bg-[hsl(var(--muted))]/50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteReply(confirmDeleteReply, expandedComment!)}
+                                    className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
                                 >
                                     Delete
                                 </button>
