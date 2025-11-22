@@ -489,18 +489,46 @@ function SignupFlow({
                 setAccount({ ...account, confirmPassword: e.target.value })
               }
             />
-            {account.password && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Strength:{" "}
-                {account.password.length < 8
-                  ? "Too short"
-                  : /[A-Z]/.test(account.password) &&
-                    /[0-9]/.test(account.password) &&
-                    /[^A-Za-z0-9]/.test(account.password)
-                    ? "Strong"
-                    : "Medium"}
-              </p>
-            )}
+            {account.password && (() => {
+              const password = account.password;
+              const requirements = [
+                { test: password.length >= 8, label: "8+ characters" },
+                { test: /[A-Z]/.test(password), label: "uppercase letter" },
+                { test: /[a-z]/.test(password), label: "lowercase letter" },
+                { test: /[0-9]/.test(password), label: "number" },
+                { test: /[^A-Za-z0-9]/.test(password), label: "symbol" },
+              ];
+
+              const metCount = requirements.filter(r => r.test).length;
+              const missing = requirements.filter(r => !r.test).map(r => r.label);
+
+              let strengthColor = "bg-red-500";
+              let strengthLabel = "Weak";
+              if (metCount >= 3) { strengthColor = "bg-yellow-500"; strengthLabel = "Medium"; }
+              if (metCount >= 4) { strengthColor = "bg-green-500"; strengthLabel = "Strong"; }
+
+              return (
+                <div className="mt-2">
+                  {/* Bar */}
+                  <div className="w-full h-2 bg-[hsl(var(--muted))]/30 rounded-full overflow-hidden">
+                    <div
+                      className={`h-2 ${strengthColor} transition-all duration-300`}
+                      style={{ width: `${(metCount / requirements.length) * 100}%` }}
+                    />
+                  </div>
+
+                  {/* Label */}
+                  <p className="text-xs mt-1 text-muted-foreground">
+                    Strength: <span className={`${strengthColor.replace("bg-", "text-")} font-medium`}>{strengthLabel}</span>
+                    {missing.length > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        {" — Missing: "}{missing.join(", ")}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              );
+            })()}
 
             <Button onClick={handleAccountAction} className="w-full" disabled={loading}>
               {loading
