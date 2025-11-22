@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Trophy, PlusCircle, User, X } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 export default function TrophiesPage() {
     const supabase = useMemo(() => supabaseBrowser(), []);
@@ -16,6 +17,8 @@ export default function TrophiesPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState<Record<string, string>>({});
     const [clubId, setClubId] = useState<string | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [trophyToDelete, setTrophyToDelete] = useState<string | null>(null);
 
     // ✅ Load user profile and club-based data
     useEffect(() => {
@@ -119,10 +122,7 @@ export default function TrophiesPage() {
         toast.success(userId ? "Trophy assigned" : "Trophy cleared");
     }
 
-    // ✅ Delete a trophy
     async function handleDelete(trophyId: string) {
-        if (!confirm("Are you sure you want to delete this trophy?")) return;
-
         const { error } = await supabase
             .from("trophies")
             .delete()
@@ -228,12 +228,15 @@ export default function TrophiesPage() {
                                             <X size={14} /> Clear
                                         </Button>
                                         <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            className="text-xs"
-                                            onClick={() => handleDelete(trophy.id)}
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30"
+                                            onClick={() => {
+                                                setTrophyToDelete(trophy.id);
+                                                setShowDeleteModal(true);
+                                            }}
                                         >
-                                            Delete
+                                            <Trash2 size={16} />
                                         </Button>
                                     </div>
                                 </div>
@@ -295,6 +298,34 @@ export default function TrophiesPage() {
                     );
                 })}
             </div>
+
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-[90%] max-w-sm space-y-4">
+                        <h3 className="text-lg font-semibold text-center text-red-600">
+                            Delete Trophy
+                        </h3>
+                        <p className="text-sm text-muted-foreground text-center">
+                            Are you sure you want to delete this trophy? This action cannot be undone.
+                        </p>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={async () => {
+                                    if (trophyToDelete) await handleDelete(trophyToDelete);
+                                    setShowDeleteModal(false);
+                                    setTrophyToDelete(null);
+                                }}
+                            >
+                                Confirm Delete
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }
