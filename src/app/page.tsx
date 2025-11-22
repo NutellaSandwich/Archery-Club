@@ -161,7 +161,7 @@ function SignupFlow({
   const [step, setStep] = useState<1 | 2>(1);
   const [isLogin, setIsLogin] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [account, setAccount] = useState({ email: "", password: "" });
+  const [account, setAccount] = useState({ email: "", password: "", confirmPassword: "" });
   const [form, setForm] = useState({
     username: "",
     dob: "",
@@ -214,17 +214,28 @@ function SignupFlow({
       setLoading(false);
       return;
     }
-    if (!account.password || account.password.length < 6) {
-      toast.error("Password must be at least 6 characters long.");
+    // ✅ Password confirmation + strength checks
+    if (account.password !== account.confirmPassword) {
+      toast.error("Passwords do not match.");
       setLoading(false);
       return;
     }
 
-    console.log("🧠 Attempting signup", {
-      email: account.email.trim(),
-      passwordLength: account.password?.length,
-      redirect: `${window.location.origin}/dashboard`,
-    });
+    const password = account.password;
+    let strengthScore = 0;
+    if (password.length >= 8) strengthScore++;
+    if (/[A-Z]/.test(password)) strengthScore++;
+    if (/[a-z]/.test(password)) strengthScore++;
+    if (/[0-9]/.test(password)) strengthScore++;
+    if (/[^A-Za-z0-9]/.test(password)) strengthScore++;
+
+    if (strengthScore < 3) {
+      toast.error(
+        "Password too weak. Use at least 8 characters with a mix of upper/lowercase, numbers, and symbols."
+      );
+      setLoading(false);
+      return;
+    }
 
     // ✅ Signup — safely handle existing user case
     const { data, error } = await supabase.auth.signUp({
@@ -470,6 +481,26 @@ function SignupFlow({
               value={account.password}
               onChange={(e) => setAccount({ ...account, password: e.target.value })}
             />
+            <Input
+              placeholder="Confirm Password"
+              type="password"
+              value={account.confirmPassword || ""}
+              onChange={(e) =>
+                setAccount({ ...account, confirmPassword: e.target.value })
+              }
+            />
+            {account.password && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Strength:{" "}
+                {account.password.length < 8
+                  ? "Too short"
+                  : /[A-Z]/.test(account.password) &&
+                    /[0-9]/.test(account.password) &&
+                    /[^A-Za-z0-9]/.test(account.password)
+                    ? "Strong"
+                    : "Medium"}
+              </p>
+            )}
 
             <Button onClick={handleAccountAction} className="w-full" disabled={loading}>
               {loading
