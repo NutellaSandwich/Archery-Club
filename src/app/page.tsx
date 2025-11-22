@@ -459,6 +459,24 @@ function SignupFlow({
     onClose();
     router.replace("/dashboard");
   }
+
+  async function handleForgotPassword() {
+    if (!account.email || !account.email.includes("@")) {
+      toast.error("Please enter your email first.");
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(account.email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (error) {
+      toast.error(error.message || "Failed to send reset link.");
+    } else {
+      toast.success("Password reset link sent! Check your email.");
+    }
+  }
+  
   // ✨ RENDER
   return (
     <div>
@@ -539,6 +557,16 @@ function SignupFlow({
                   ? "Login"
                   : "Next"}
             </Button>
+
+            {isLogin && (
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-sm text-blue-500 hover:underline mt-2"
+              >
+                Forgot your password?
+              </button>
+            )}
 
             <p className="text-sm text-muted-foreground mt-2">
               {isLogin ? (

@@ -75,6 +75,24 @@ export default function LoginPage() {
         }
     }
 
+    async function handleForgotPassword() {
+        if (!supabase) return toast.error("Supabase not ready.");
+        if (!email || !email.includes("@")) {
+            toast.error("Please enter your email first.");
+            return;
+        }
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+            redirectTo: `${window.location.origin}/reset-password`,
+        });
+
+        if (error) {
+            toast.error(error.message || "Failed to send reset link.");
+        } else {
+            toast.success("Password reset link sent! Check your email.");
+        }
+    }
+
     return (
         <main className="flex min-h-screen flex-col items-center justify-center px-4">
             <form
@@ -102,6 +120,16 @@ export default function LoginPage() {
                     required
                     className="rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] p-2"
                 />
+
+                {mode === "login" && (
+                    <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        className="text-sm text-blue-500 hover:underline self-end"
+                    >
+                        Forgot your password?
+                    </button>
+                )}
 
                 <button
                     type="submit"
