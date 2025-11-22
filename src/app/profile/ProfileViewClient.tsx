@@ -577,9 +577,11 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                     <h2 className="text-lg font-semibold">Performance Over Time</h2>
 
                                     <div className="flex items-center gap-2 flex-wrap justify-center">
-                                        <Button variant="outline" size="sm" onClick={() => setShowAddLineModal(true)}>
-                                            + Add/Edit Event Line
-                                        </Button>
+                                        {(!userId || user?.id === userId) && (
+                                            <Button variant="outline" size="sm" onClick={() => setShowAddLineModal(true)}>
+                                                + Add/Edit Event Line
+                                            </Button>
+                                        )}
 
                                         <div className="flex bg-muted rounded-full p-1">
                                             <Button
@@ -860,7 +862,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
             </Tabs>
 
             {/* 🟡 Add / Manage Event Lines Modal */}
-            {showAddLineModal && (
+            {showAddLineModal && (!userId || user?.id === userId) && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl w-[90%] max-w-sm space-y-4">
                         <h3 className="text-lg font-semibold text-center">Manage Event Lines</h3>
