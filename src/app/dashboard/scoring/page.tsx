@@ -331,6 +331,21 @@ export default function ScoringSetupPage() {
                     </Button>
                 </>
             )}
+
+            {/* Divider */}
+            <div className="flex items-center my-8">
+                <div className="flex-1 h-px bg-[hsl(var(--border))]/40"></div>
+                <span className="px-4 text-sm text-muted-foreground">or</span>
+                <div className="flex-1 h-px bg-[hsl(var(--border))]/40"></div>
+            </div>
+
+            {/* Submit New Score */}
+            <Button
+                onClick={() => (window.location.href = "/dashboard/new-score")}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-md transition"
+            >
+                Submit New Score
+            </Button>
         </main>
     );
 }
