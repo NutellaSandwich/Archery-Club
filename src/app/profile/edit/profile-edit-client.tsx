@@ -7,6 +7,57 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
+function StyledSelect({
+    value,
+    onChange,
+    options,
+}: {
+    value: string;
+    onChange: (val: string) => void;
+    options: string[];
+}) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <div className="relative">
+            <button
+                type="button"
+                onClick={() => setOpen(!open)}
+                className="w-full flex justify-between items-center rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/20 px-3 py-2 text-left hover:bg-[hsl(var(--muted))]/30 transition"
+            >
+                <span>{value || "Select..."}</span>
+                <svg
+                    className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            {open && (
+                <ul className="absolute z-10 mt-1 w-full rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--card))] shadow-lg max-h-48 overflow-y-auto">
+                    {options.map((opt) => (
+                        <li
+                            key={opt}
+                            onMouseDown={() => {
+                                onChange(opt);
+                                setOpen(false);
+                            }}
+                            className={`px-3 py-2 text-sm cursor-pointer hover:bg-[hsl(var(--muted))]/40 ${opt === value ? "bg-[hsl(var(--muted))]/30 font-medium" : ""
+                                }`}
+                        >
+                            {opt}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+}
+
 export default function ProfileEditClient({ userId }: { userId: string }) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -259,40 +310,29 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
 
                 <div>
                     <label className="block text-sm mb-1">Bow Type</label>
-                    <select
+                    <StyledSelect
                         value={form.bow_type}
-                        onChange={(e) => setForm({ ...form, bow_type: e.target.value })}
-                        className="w-full rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/20 px-3 py-2"
-                    >
-                        <option>Recurve</option>
-                        <option>Compound</option>
-                        <option>Barebow</option>
-                        <option>Longbow</option>
-                    </select>
+                        onChange={(val) => setForm({ ...form, bow_type: val })}
+                        options={["Recurve", "Compound", "Barebow", "Longbow"]}
+                    />
                 </div>
 
                 <div>
                     <label className="block text-sm mb-1">Category</label>
-                    <select
+                    <StyledSelect
                         value={form.category}
-                        onChange={(e) => setForm({ ...form, category: e.target.value })}
-                        className="w-full rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/20 px-3 py-2"
-                    >
-                        <option>Open</option>
-                        <option>Women</option>
-                    </select>
+                        onChange={(val) => setForm({ ...form, category: val })}
+                        options={["Open", "Women"]}
+                    />
                 </div>
 
                 <div>
                     <label className="block text-sm mb-1">Experience</label>
-                    <select
+                    <StyledSelect
                         value={form.experience}
-                        onChange={(e) => handleExperienceChange(e.target.value)}
-                        className="w-full rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/20 px-3 py-2"
-                    >
-                        <option>Novice</option>
-                        <option>Experienced</option>
-                    </select>
+                        onChange={(val) => handleExperienceChange(val)}
+                        options={["Novice", "Experienced"]}
+                    />
                 </div>
 
                 <div>
