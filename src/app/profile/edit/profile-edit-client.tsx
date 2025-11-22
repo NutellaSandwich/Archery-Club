@@ -280,7 +280,7 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                 <div className="flex justify-between gap-4 pt-4">
                     <button
                         type="button"
-                        onClick={() => router.push("/profile")}
+                        onClick={() => router.push(`/profile/${targetId}`)}
                         className="flex-1 rounded-md border border-[hsl(var(--border))]/40 py-2 hover:bg-[hsl(var(--muted))]/40"
                     >
                         Cancel
