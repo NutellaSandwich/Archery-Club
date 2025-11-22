@@ -6,6 +6,7 @@ import SessionSignups from "./session-signups";
 import TournamentSignups from "./tournament-signups";
 import ManageSessions from "./manage-sessions";
 import ManageTournaments from "./manage-tournaments";
+import { BowArrow } from "lucide-react";
 
 export default function SignupsPage() {
     const [tab, setTab] = useState("sessions");

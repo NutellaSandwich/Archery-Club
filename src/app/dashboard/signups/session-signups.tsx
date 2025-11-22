@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
     Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter,
 } from "@/components/ui/card";
-import { CheckCircle, AlertTriangle, Clock } from "lucide-react";
+import { CheckCircle, AlertTriangle, Clock, BowArrow } from "lucide-react";
 
 export default function SessionSignups() {
     const supabase = useMemo(() => supabaseBrowser(), []);
@@ -308,12 +308,26 @@ export default function SessionSignups() {
             </p>
         );
 
-    if (!clubId)
+    if (!clubId) {
         return (
-            <p className="text-center text-muted-foreground mt-10">
-                You are not part of a club. Join or create one to view sessions.
-            </p>
+            <main className="flex flex-col items-center justify-center h-[70vh] text-center space-y-4">
+                <div className="flex items-center gap-2 text-red-600">
+                    <BowArrow className="w-8 h-8" />
+                    <h1 className="text-2xl font-semibold">Club Membership Required</h1>
+                </div>
+                <p className="max-w-md text-muted-foreground">
+                    You need to be part of a club to access session signups. Please join or request to join a
+                    club first from the main page.
+                </p>
+                <button
+                    onClick={() => (window.location.href = "/")}
+                    className="rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] px-4 py-2 text-sm hover:opacity-90"
+                >
+                    Join a club
+                </button>
+            </main>
         );
+    }
 
     // ---------- NEW: split recent vs older-than-yesterday ----------
     const startOfToday = new Date();

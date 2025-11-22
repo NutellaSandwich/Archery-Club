@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Clock, Trophy } from "lucide-react";
+import { Search, Clock, Trophy, BowArrow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -196,14 +196,19 @@ export default function ClubRecordsPage() {
         r.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // ✅ Fallback if not in a club
+
     if (clubId === null) {
         return (
-            <main className="max-w-4xl mx-auto p-6 text-center">
-                <h1 className="text-2xl font-semibold mb-4">Club Records</h1>
-                <p className="text-muted-foreground">
-                    You are not part of a club yet. Join or create a club to view records.
+            <main className="flex flex-col items-center justify-center h-[70vh] text-center space-y-4">
+                <div className="flex items-center gap-2 text-red-600">
+                    <BowArrow className="w-8 h-8" />
+                    <h1 className="text-2xl font-semibold">Club Membership Required</h1>
+                </div>
+                <p className="max-w-md text-muted-foreground">
+                    You need to be part of a club to access club records. Please join or request to join a
+                    club first from the main page.
                 </p>
+                <Button onClick={() => (window.location.href = "/")}>Join a club</Button>
             </main>
         );
     }

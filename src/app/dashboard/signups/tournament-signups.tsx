@@ -10,12 +10,15 @@ import {
     CardDescription,
     CardFooter,
 } from "@/components/ui/card";
+import { BowArrow } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function TournamentSignups() {
     const supabase = useMemo(() => supabaseBrowser(), []);
     const [tournaments, setTournaments] = useState<any[]>([]);
     const [userId, setUserId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [clubId, setClubId] = useState<string | null>(null);
 
     // ✅ Load tournaments
     async function loadData() {
@@ -26,7 +29,25 @@ export default function TournamentSignups() {
                 data: { user },
             } = await supabase.auth.getUser();
             const currentUserId = user?.id || null;
-            setUserId(currentUserId);
+            setUserId(currentUserId);   
+
+            if (!currentUserId) {
+                setLoading(false);
+                return;
+            }
+
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("club_id")
+                .eq("id", currentUserId)
+                .single();
+
+            setClubId(profile?.club_id || null);
+
+            if (!profile?.club_id) {
+                setLoading(false);
+                return;
+            }
 
             const today = new Date().toISOString().split("T")[0];
 
@@ -201,12 +222,27 @@ export default function TournamentSignups() {
         }
     }
 
-    // 🕒 Loading states
-    if (loading || !userId) {
+    if (loading) {
         return (
             <p className="text-center text-muted-foreground mt-10">
                 Loading tournaments...
             </p>
+        );
+    }
+
+    if (!clubId) {
+        return (
+            <main className="flex flex-col items-center justify-center h-[70vh] text-center space-y-4">
+                <div className="flex items-center gap-2 text-red-600">
+                    <BowArrow className="w-8 h-8" />
+                    <h1 className="text-2xl font-semibold">Club Membership Required</h1>
+                </div>
+                <p className="max-w-md text-muted-foreground">
+                    You need to be part of a club to access tournament signups. Please join or request to join a
+                    club first from the main page.
+                </p>
+                <Button onClick={() => (window.location.href = "/")}>Join a club</Button>
+            </main>
         );
     }
 

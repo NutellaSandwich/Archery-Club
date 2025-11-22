@@ -5,6 +5,7 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { BowArrow } from "lucide-react";
 
 // ✅ Round max scores from NewScorePage
 export const ROUND_MAX_SCORES: Record<string, number> = {
@@ -222,12 +223,15 @@ export default function ScoringSetupPage() {
     if (!hasClub) {
         return (
             <main className="flex flex-col items-center justify-center h-[70vh] text-center space-y-4">
-                <h1 className="text-2xl font-semibold text-red-600">🏹 Club Membership Required</h1>
+                <div className="flex items-center gap-2 text-red-600">
+                    <BowArrow className="w-8 h-8" />
+                    <h1 className="text-2xl font-semibold">Club Membership Required</h1>
+                </div>
                 <p className="max-w-md text-muted-foreground">
-                    You need to be part of a club to access scoring. Please join or request to join a
-                    club first from your profile page.
+                    You need to be part of a club to access coaching tools. Please join or request to join a
+                    club first from the main page.
                 </p>
-                <Button onClick={() => window.location.href = "/profile"}>Go to Profile</Button>
+                <Button onClick={() => (window.location.href = "/")}>Join a club</Button>
             </main>
         );
     }
