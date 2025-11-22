@@ -514,17 +514,27 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
 
                     {canManage && (
                         <div className="absolute bottom-4 right-4 flex flex-wrap gap-2 justify-end">
-                            <Button variant="outline" size="sm" onClick={() => changeRole("coach")}>
-                                Make Coach
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => changeRole("admin")}>
-                                Make Admin
-                            </Button>
+                            {/* Only show if not already a coach */}
+                            {profile?.role !== "coach" && (
+                                <Button variant="outline" size="sm" onClick={() => changeRole("coach")}>
+                                    Make Coach
+                                </Button>
+                            )}
+
+                            {/* Only show if not already an admin */}
+                            {profile?.role !== "admin" && (
+                                <Button variant="outline" size="sm" onClick={() => changeRole("admin")}>
+                                    Make Admin
+                                </Button>
+                            )}
+
+                            {/* Only show Remove Role if they currently have a role other than member */}
                             {profile?.role !== "member" && (
                                 <Button variant="destructive" size="sm" onClick={() => changeRole("member")}>
                                     Remove Role
                                 </Button>
                             )}
+
                             <Button
                                 variant="destructive"
                                 size="sm"
