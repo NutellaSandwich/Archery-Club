@@ -408,7 +408,6 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                                         setForm({ ...form, experience: pendingExperience || form.experience });
                                         setShowExperienceConfirm(false);
                                         setPendingExperience(null);
-                                        toast.success("Experience updated.");
                                     }}
                                     className="px-4 py-2 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition"
                                 >

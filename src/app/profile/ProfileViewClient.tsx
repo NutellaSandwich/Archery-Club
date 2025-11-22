@@ -634,9 +634,10 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                                     dataKey="handicap"
                                                     name="Handicap"
                                                     domain={yDomain}
+                                                    reversed={true}  // 👈 this flips the Y-axis
                                                     allowDecimals={false}
                                                     label={{
-                                                        value: "Handicap ↓",
+                                                        value: "Handicap ↑ (lower is better)",
                                                         angle: -90,
                                                         position: "insideLeft",
                                                         style: { textAnchor: "middle", fontSize: 13 },
