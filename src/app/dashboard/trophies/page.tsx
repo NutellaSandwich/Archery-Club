@@ -119,6 +119,25 @@ export default function TrophiesPage() {
         toast.success(userId ? "Trophy assigned" : "Trophy cleared");
     }
 
+    // ✅ Delete a trophy
+    async function handleDelete(trophyId: string) {
+        if (!confirm("Are you sure you want to delete this trophy?")) return;
+
+        const { error } = await supabase
+            .from("trophies")
+            .delete()
+            .eq("id", trophyId)
+            .eq("club_id", clubId);
+
+        if (error) {
+            console.error(error);
+            return toast.error("Error deleting trophy");
+        }
+
+        setTrophies((prev) => prev.filter((t) => t.id !== trophyId));
+        toast.success("Trophy deleted successfully");
+    }
+
     if (loading)
         return (
             <p className="text-center mt-10 text-muted-foreground">
@@ -199,14 +218,24 @@ export default function TrophiesPage() {
                                         )}
                                     </div>
 
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-xs text-muted-foreground hover:text-red-500"
-                                        onClick={() => handleAssign(trophy.id, null)}
-                                    >
-                                        <X size={14} /> Clear
-                                    </Button>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-xs text-muted-foreground hover:text-red-500"
+                                            onClick={() => handleAssign(trophy.id, null)}
+                                        >
+                                            <X size={14} /> Clear
+                                        </Button>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            className="text-xs"
+                                            onClick={() => handleDelete(trophy.id)}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </div>
                                 </div>
 
                                 <div className="flex items-center gap-2 relative">
