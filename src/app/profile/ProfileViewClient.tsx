@@ -427,7 +427,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                         )}
 
 
-                        {(viewer?.id === profile?.id || canManage) && profile?.agb_number && (
+                        {((!userId && viewer?.id) || viewer?.id === profile?.id || canManage) && profile?.agb_number && (
                             <p className="text-xs text-muted-foreground mt-1">
                                 <strong>AGB:</strong> {profile.agb_number}
                             </p>
@@ -499,9 +499,11 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                         )}
                     </div>
 
-                    {(!userId || user?.id === userId) && (
-                        <Link href="/profile/edit">
-                            <Button>Edit Profile</Button>
+                    {((!userId || user?.id === userId) || canManage) && (
+                        <Link href={`/profile/edit${canManage ? `?id=${profile?.id}` : ""}`}>
+                            <Button>
+                                {canManage ? "Edit Member Profile" : "Edit Profile"}
+                            </Button>
                         </Link>
                     )}
 

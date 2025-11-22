@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function ProfileEditClient({ userId }: { userId: string }) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const supabase = supabaseBrowser();
+
+    const targetId = searchParams.get("id") || userId; // ✅ allows admin editing others
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
@@ -21,6 +24,7 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
         experience: "",
         club_id: "",
         avatar_url: "",
+        agb_number: "", // ✅ new field
     });
 
     const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
@@ -29,14 +33,13 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
 
 
     useEffect(() => {
-        if (!userId) return;
+        if (!targetId) return;
 
         async function loadData() {
             try {
                 const { data: profile, error } = await supabase
                     .from("profiles")
-                    .select("username, bow_type, category, experience, club_id, avatar_url")
-                    .eq("id", userId)
+                    .select("username, bow_type, category, experience, club_id, avatar_url, agb_number")                    .eq("id", targetId)
                     .maybeSingle();
 
                 if (error) throw error;
@@ -48,6 +51,7 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                     experience: profile?.experience ?? "Novice",
                     club_id: profile?.club_id ?? "",
                     avatar_url: profile?.avatar_url ?? "",
+                    agb_number: profile?.agb_number ?? "", // ✅ added
                 });
             } catch (err) {
                 console.error("Load error:", err);
@@ -92,7 +96,7 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
             const { error } = await supabase
                 .from("profiles")
                 .update({ avatar_url: null })
-                .eq("id", userId);
+                .eq("id", targetId);
 
             if (error) throw error;
 
@@ -146,13 +150,14 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                     category: form.category,
                     experience: form.experience,
                     avatar_url,
+                    agb_number: form.agb_number?.trim() || null, // ✅ save AGB number
                 })
-                .eq("id", userId);
+                .eq("id", targetId);
 
             if (error) throw error;
 
             toast.success("Profile updated!");
-            router.push("/profile");
+            router.push(`/profile/${targetId}`);
         } catch (err) {
             console.error("Save error:", err);
             toast.error("Failed to save profile.");
@@ -259,6 +264,17 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                         <option>Novice</option>
                         <option>Experienced</option>
                     </select>
+                </div>
+
+                <div>
+                    <label className="block text-sm mb-1">AGB Number</label>
+                    <input
+                        type="text"
+                        value={form.agb_number}
+                        onChange={(e) => setForm({ ...form, agb_number: e.target.value })}
+                        className="w-full rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/20 px-3 py-2"
+                        placeholder="Enter AGB number"
+                    />
                 </div>
 
                 <div className="flex justify-between gap-4 pt-4">
