@@ -577,16 +577,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                     <h2 className="text-lg font-semibold">Performance Over Time</h2>
 
                                     <div className="flex items-center gap-2 flex-wrap justify-center">
-                                        {((!userId || user?.id === userId) || canManage) && (
-                                            <Link
-                                                href={`/profile/edit${canManage ? `?id=${profile?.id}` : ""}`}
-                                                className="absolute top-4 right-4 z-10"
-                                            >
-                                                <Button size="sm" className="shadow-md">
-                                                    {canManage ? "Edit Member Profile" : "Edit Profile"}
-                                                </Button>
-                                            </Link>
-                                        )}
+                                        
 
                                         <div className="flex bg-muted rounded-full p-1">
                                             <Button
