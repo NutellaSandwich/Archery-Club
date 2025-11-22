@@ -266,15 +266,11 @@ export default function ClubRecordsPage() {
                 )}
             </div>
 
-            {/* Selected Round */}
             {selectedRound && (
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center">
                     <span className="inline-flex items-center px-3 py-1.5 rounded-full border border-[hsl(var(--border))]/60 text-[hsl(var(--primary))] bg-transparent text-sm">
                         {selectedRound}
                     </span>
-                    <Button variant="ghost" size="sm" onClick={() => setSelectedRound(null)}>
-                        Change
-                    </Button>
                 </div>
             )}
 
@@ -363,7 +359,7 @@ export default function ClubRecordsPage() {
                                 Record History
                             </h3>
 
-                            {history.length === 0 ? (
+                            {history.length === 0 && !activeRecord ? (
                                 <p className="text-sm text-muted-foreground">
                                     No previous record history.
                                 </p>
@@ -371,53 +367,80 @@ export default function ClubRecordsPage() {
                                 <div className="relative mt-6 max-h-96 overflow-auto px-2 py-2">
                                     <div className="absolute left-1/2 top-0 bottom-0 w-px bg-muted-foreground/20 transform -translate-x-1/2"></div>
                                     <div className="flex flex-col gap-10 items-center">
-                                        {history
-                                            .filter((h) => h.new_score !== activeRecord?.score)
-                                            .map((h, idx) => (
-                                                <motion.div
-                                                    key={h.id}
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: idx * 0.05 }}
-                                                    className="relative flex flex-col items-center text-center"
+
+                                        {/* ✅ Current Top Record (added at the top) */}
+                                        {activeRecord && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="relative flex flex-col items-center text-center"
+                                            >
+                                                <div className="w-16 h-16 rounded-full border-2 border-yellow-400 shadow-[0_0_10px_rgba(255,215,0,0.4)] bg-background flex items-center justify-center z-10">
+                                                    <img
+                                                        src={activeRecord.profiles?.avatar_url || "/default-avatar.png"}
+                                                        alt={activeRecord.profiles?.username || "Archer"}
+                                                        className="w-14 h-14 rounded-full object-cover"
+                                                    />
+                                                </div>
+                                                <div className="mt-3 p-3 bg-[hsl(var(--muted))]/30 rounded-lg border border-[hsl(var(--border))]/40 shadow-sm w-60">
+                                                    <p className="text-sm font-medium text-foreground">
+                                                        {activeRecord.profiles?.username || "Unknown"}
+                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Current record:{" "}
+                                                        <span className="font-semibold text-[hsl(var(--primary))]">
+                                                            {activeRecord.score}
+                                                        </span>
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        {new Date(activeRecord.score_date ?? activeRecord.created_at).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </motion.div>
+                                        )}
+
+                                        {/* 🕒 Previous records */}
+                                        {history.map((h, idx) => (
+                                            <motion.div
+                                                key={h.id}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: (idx + 1) * 0.05 }}
+                                                className="relative flex flex-col items-center text-center"
+                                            >
+                                                <div
+                                                    className={`w-14 h-14 rounded-full border-2 ${idx === 0
+                                                            ? "border-blue-400"
+                                                            : "border-muted-foreground/40"
+                                                        } bg-background flex items-center justify-center z-10`}
                                                 >
-                                                    <div
-                                                        className={`w-14 h-14 rounded-full border-2 ${idx === 0
-                                                                ? "border-yellow-400 shadow-[0_0_10px_rgba(255,215,0,0.4)]"
-                                                                : "border-blue-400"
-                                                            } bg-background flex items-center justify-center z-10`}
-                                                    >
-                                                        <img
-                                                            src={h.profiles_new?.avatar_url || "/default-avatar.png"}
-                                                            alt={h.profiles_new?.username || "Archer"}
-                                                            className="w-12 h-12 rounded-full object-cover"
-                                                        />
-                                                    </div>
-
-                                                    {idx !== history.length - 1 && (
-                                                        <div className="absolute top-14 left-1/2 w-px h-10 bg-muted-foreground/20 transform -translate-x-1/2"></div>
-                                                    )}
-
-                                                    <div className="mt-3 p-2 bg-[hsl(var(--muted))]/30 rounded-lg border border-[hsl(var(--border))]/40 shadow-sm w-56">
-                                                        <p className="text-sm font-medium text-foreground">
-                                                            {h.profiles_new?.username || "Unknown"}
-                                                        </p>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            set a new record of{" "}
-                                                            <span className="font-semibold text-[hsl(var(--primary))]">
-                                                                {h.new_score}
-                                                            </span>
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground mt-1">
-                                                            {new Date(h.changed_at).toLocaleDateString()}{" "}
-                                                            {new Date(h.changed_at).toLocaleTimeString([], {
-                                                                hour: "2-digit",
-                                                                minute: "2-digit",
-                                                            })}
-                                                        </p>
-                                                    </div>
-                                                </motion.div>
-                                            ))}
+                                                    <img
+                                                        src={h.profiles_new?.avatar_url || "/default-avatar.png"}
+                                                        alt={h.profiles_new?.username || "Archer"}
+                                                        className="w-12 h-12 rounded-full object-cover"
+                                                    />
+                                                </div>
+                                                <div className="mt-3 p-2 bg-[hsl(var(--muted))]/30 rounded-lg border border-[hsl(var(--border))]/40 shadow-sm w-56">
+                                                    <p className="text-sm font-medium text-foreground">
+                                                        {h.profiles_new?.username || "Unknown"}
+                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        set a new record of{" "}
+                                                        <span className="font-semibold text-[hsl(var(--primary))]">
+                                                            {h.new_score}
+                                                        </span>
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        {new Date(h.changed_at).toLocaleDateString()}{" "}
+                                                        {new Date(h.changed_at).toLocaleTimeString([], {
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            </motion.div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
