@@ -109,6 +109,7 @@ export default function ScoringSetupPage() {
 
     const [userCategory, setUserCategory] = useState<string | null>(null);
     const [userExperience, setUserExperience] = useState<string | null>(null);
+    const [hasClub, setHasClub] = useState<boolean>(true); // ✅ default true until checked
 
     // 🧠 Load user category & experience
     useEffect(() => {
@@ -120,13 +121,14 @@ export default function ScoringSetupPage() {
 
             const { data, error } = await supabase
                 .from("profiles")
-                .select("category, experience")
+                .select("category, experience, club_id") // ✅ include club_id
                 .eq("id", user.id)
                 .single();
 
             if (!error) {
                 setUserCategory(data?.category ?? null);
                 setUserExperience(data?.experience ?? null);
+                setHasClub(!!data?.club_id); // ✅ new state for club membership
             }
         }
 
@@ -216,6 +218,19 @@ export default function ScoringSetupPage() {
         sessionStorage.setItem("scoringConfig", JSON.stringify(config));
         window.location.href = "/dashboard/scoring/active";
     };
+
+    if (!hasClub) {
+        return (
+            <main className="flex flex-col items-center justify-center h-[70vh] text-center space-y-4">
+                <h1 className="text-2xl font-semibold text-red-600">🏹 Club Membership Required</h1>
+                <p className="max-w-md text-muted-foreground">
+                    You need to be part of a club to access scoring. Please join or request to join a
+                    club first from your profile page.
+                </p>
+                <Button onClick={() => window.location.href = "/profile"}>Go to Profile</Button>
+            </main>
+        );
+    }
 
     return (
         <main className="max-w-2xl mx-auto p-6 space-y-6">

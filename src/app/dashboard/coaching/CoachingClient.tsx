@@ -88,6 +88,7 @@ export default function CoachingClient() {
     const [logComments, setLogComments] = useState<Record<string, any[]>>({});
     const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({});
     const [loadingThreads, setLoadingThreads] = useState<Record<string, boolean>>({});
+    const [hasClub, setHasClub] = useState(true);
 
     const toggleThread = async (id: string, type?: "goal" | "log") => {
         const isCurrentlyExpanded = expandedThreads[id];
@@ -126,6 +127,7 @@ export default function CoachingClient() {
                 .single();
             setProfile(data);
             setSelectedUser(data);
+            setHasClub(!!data?.club_id);
         }
         loadProfile();
     }, [supabase]);
@@ -391,6 +393,19 @@ export default function CoachingClient() {
 
     if (!isReady) {
         return <p className="text-sm text-muted-foreground">Loading coaching tools...</p>;
+    }
+
+    if (!hasClub) {
+        return (
+            <main className="flex flex-col items-center justify-center h-[70vh] text-center space-y-4">
+                <h1 className="text-2xl font-semibold text-red-600">🏹 Club Membership Required</h1>
+                <p className="max-w-md text-muted-foreground">
+                    You need to be part of a club to access coaching tools. Please join or request to join a
+                    club first from your profile page.
+                </p>
+                <Button onClick={() => window.location.href = "/profile"}>Go to Profile</Button>
+            </main>
+        );
     }
     return (
         <main className="max-w-5xl mx-auto p-6 space-y-8">

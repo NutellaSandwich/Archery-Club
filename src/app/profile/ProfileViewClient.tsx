@@ -57,7 +57,8 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editLineDate, setEditLineDate] = useState("");
     const [editLineLabel, setEditLineLabel] = useState("");
-    
+    const [showRemoveModal, setShowRemoveModal] = useState(false);
+    const [hasClub, setHasClub] = useState(true);
 
 
     // 🔄 Load persisted event lines from localStorage on mount
@@ -113,6 +114,8 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                 )
                 .eq("id", viewedUserId)
                 .single();
+
+            setHasClub(!!profileData?.club_id);
 
             if (profileError) toast.error("Error loading profile");
             setProfile(profileData);
@@ -364,6 +367,19 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
             </div>
         );
     }
+
+    if (!hasClub) {
+        return (
+            <main className="flex flex-col items-center justify-center h-[70vh] text-center space-y-4">
+                <h1 className="text-2xl font-semibold text-red-600">🏹 Club Membership Required</h1>
+                <p className="max-w-md text-muted-foreground">
+                    You need to be part of a club to access this page. Please join or request to join a
+                    club first from your profile page.
+                </p>
+                <Button onClick={() => window.location.href = "/profile"}>Go to Profile</Button>
+            </main>
+        );
+    }
     
     return (
         <main className="max-w-5xl mx-auto p-6 space-y-6">
@@ -508,20 +524,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                             <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={async () => {
-                                    const confirmRemove = window.confirm(
-                                        `Remove ${profile?.username}?`
-                                    );
-                                    if (!confirmRemove) return;
-
-                                    const { error } = await supabase
-                                        .from("profiles")
-                                        .update({ club_id: null })
-                                        .eq("id", profile.id);
-
-                                    if (error) toast.error("Failed");
-                                    else toast.success("Member removed");
-                                }}
+                                onClick={() => setShowRemoveModal(true)}
                             >
                                 Remove from Club
                             </Button>
@@ -1016,6 +1019,42 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                         <div className="flex justify-end mt-4">
                             <Button variant="outline" onClick={() => setShowAddLineModal(false)}>
                                 Close
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 🔴 Remove Member Confirmation Modal */}
+            {showRemoveModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl w-[90%] max-w-sm space-y-4">
+                        <h3 className="text-lg font-semibold text-center text-red-600">Remove Member</h3>
+                        <p className="text-sm text-muted-foreground text-center">
+                            Are you sure you want to remove <strong>{profile?.username}</strong> from the club?
+                            This will unlink their account from your club.
+                        </p>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setShowRemoveModal(false)}>
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={async () => {
+                                    const { error } = await supabase
+                                        .from("profiles")
+                                        .update({ club_id: null })
+                                        .eq("id", profile.id);
+
+                                    if (error) {
+                                        toast.error("Failed to remove member");
+                                    } else {
+                                        toast.success(`${profile?.username} removed from club`);
+                                        setShowRemoveModal(false);
+                                    }
+                                }}
+                            >
+                                Confirm Remove
                             </Button>
                         </div>
                     </div>
