@@ -218,26 +218,27 @@ export default function TrophiesPage() {
                                         )}
                                     </div>
 
-                                    <div className="flex gap-2">
+                                    <div className="flex items-center gap-1">
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="text-xs text-muted-foreground hover:text-red-500"
+                                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-red-500 h-8"
                                             onClick={() => handleAssign(trophy.id, null)}
                                         >
                                             <X size={14} /> Clear
                                         </Button>
                                         <Button
                                             variant="ghost"
-                                            size="icon"
-                                            className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30"
+                                            size="sm"
+                                            className="flex items-center justify-center text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 h-8 w-8"
                                             onClick={() => {
                                                 setTrophyToDelete(trophy.id);
                                                 setShowDeleteModal(true);
                                             }}
                                         >
-                                            <Trash2 size={16} />
+                                            <Trash2 size={14} />
                                         </Button>
+                                
                                     </div>
                                 </div>
 
