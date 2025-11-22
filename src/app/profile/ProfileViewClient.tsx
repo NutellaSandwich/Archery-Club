@@ -427,8 +427,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                         )}
 
 
-                        {(viewer?.role === "admin" || viewer?.id === profile?.id) && profile?.agb_number && (
-                            <p className="text-xs text-muted-foreground mt-1">
+                        {((viewer?.role === "admin" && viewer?.club_id === profile?.club_id) || viewer?.id === profile?.id) && profile?.agb_number && (                            <p className="text-xs text-muted-foreground mt-1">
                                 <strong>AGB:</strong> {profile.agb_number}
                             </p>
                         )}
