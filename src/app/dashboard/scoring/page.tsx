@@ -113,6 +113,8 @@ export default function ScoringSetupPage() {
     const [userExperience, setUserExperience] = useState<string | null>(null);
     const [hasClub, setHasClub] = useState<boolean>(true); // ✅ default true until checked
     const [spotDropdownOpen, setSpotDropdownOpen] = useState(false);
+    const [closingDropdown, setClosingDropdown] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
 
     // 🧠 Load user category & experience
     useEffect(() => {
@@ -182,13 +184,15 @@ export default function ScoringSetupPage() {
         loadRounds();
     }, [supabase]);
 
-    // 🔍 Autofilter rounds based on search
     useEffect(() => {
+        // Stop filtering while dropdown is closing
+        if (closingDropdown) return;
+
         const search = searchTerm.toLowerCase();
         setFilteredRounds(
             rounds.filter((r) => r.name.toLowerCase().includes(search))
         );
-    }, [searchTerm, rounds]);
+    }, [searchTerm, rounds, closingDropdown]);
 
     // ⚙️ Handle round selection
     const handleSelectRound = (round: Round) => {
@@ -249,6 +253,7 @@ export default function ScoringSetupPage() {
                     placeholder="Type round name..."
                     value={searchTerm}
                     onChange={(e) => {
+                        setIsTyping(true); // user is typing again
                         setSearchTerm(e.target.value);
                         setSelectedRound(null);
                     }}
@@ -264,7 +269,7 @@ export default function ScoringSetupPage() {
                 />
                 {/* DROPDOWN */}
                 <AnimatePresence>
-                    {filteredRounds.length > 0 && searchTerm && (
+                    {isTyping && filteredRounds.length > 0 && searchTerm && (
                         <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -278,11 +283,15 @@ export default function ScoringSetupPage() {
                                 <button
                                     key={r.name}
                                     onClick={() => {
+                                        setClosingDropdown(true);
+                                        setIsTyping(false);   // ⬅️ STOP dropdown from reopening
                                         handleSelectRound(r);
-                                        setFilteredRounds([]);       // HIDE OPTIONS
+                                        setFilteredRounds([]);
+
                                         setTimeout(() => {
-                                            setSearchTerm(r.name);   // Set input text AFTER hide
-                                        }, 0);
+                                            setSearchTerm(r.name);
+                                            setClosingDropdown(false);
+                                        }, 120); // aligns with dropdown animation
                                     }}
                                     className={`block w-full text-left px-3 py-2 text-sm transition ${selectedRound?.name === r.name
                                             ? "bg-[hsl(var(--muted))]/40 text-[hsl(var(--foreground))]"
@@ -301,19 +310,51 @@ export default function ScoringSetupPage() {
                 <>
                     {/* 🏹 Options */}
                     <div className="space-y-3">
-                        <label className="flex items-center gap-2 text-sm">
-                            <input
-                                type="checkbox"
-                                checked={useTargetFace}
-                                onChange={(e) => setUseTargetFace(e.target.checked)}
-                            />
-                            Use interactive target face
-                        </label>
+                        {/* Animated Input Method Toggle */}
+                        <div className="">
+                            <label className="block text-sm mb-1">Input Method</label>
+
+                            <div
+                                className="relative flex items-center w-full bg-[hsl(var(--muted))]/20 
+                   border border-[hsl(var(--border))]/50 rounded-lg p-1"
+                            >
+                                {/* Background slider */}
+                                <motion.div
+                                    layout
+                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    className="absolute top-1 bottom-1 w-1/2 bg-[hsl(var(--primary))]/20 
+                       rounded-md"
+                                    animate={{
+                                        left: useTargetFace ? "50%" : "0%",
+                                    }}
+                                />
+
+                                {/* Arrow Values */}
+                                <button
+                                    onClick={() => setUseTargetFace(false)}
+                                    className={`relative z-10 flex-1 py-2 text-sm font-medium transition
+                        ${!useTargetFace
+                                            ? "text-[hsl(var(--foreground))]"
+                                            : "text-[hsl(var(--muted-foreground))]"}`}
+                                >
+                                    Arrow Values
+                                </button>
+
+                                {/* Target Face */}
+                                <button
+                                    onClick={() => setUseTargetFace(true)}
+                                    className={`relative z-10 flex-1 py-2 text-sm font-medium transition
+                        ${useTargetFace
+                                            ? "text-[hsl(var(--foreground))]"
+                                            : "text-[hsl(var(--muted-foreground))]"}`}
+                                >
+                                    Target Face
+                                </button>
+                            </div>
+                        </div>
 
                         {selectedRound.supports_triple && (
-                            <div>
-                                <label className="block text-sm mb-1">Spot Type</label>
-                                {/* Spot Type Styled Dropdown */}
+                            <div>                                {/* Spot Type Styled Dropdown */}
                                 <div className="relative">
                                     <label className="block text-sm mb-1">Spot Type</label>
 
@@ -394,21 +435,27 @@ export default function ScoringSetupPage() {
             )}
 
            
-            {/* Divider like Club Records page */}
-            <div className="flex items-center my-8">
-                <div className="flex-1 h-px bg-[hsl(var(--border))]/40"></div>
-                <span className="px-4 text-sm text-muted-foreground">or</span>
-                <div className="flex-1 h-px bg-[hsl(var(--border))]/40"></div>
+            <div className="flex items-center my-10">
+                <div className="flex-1 h-px bg-[hsl(var(--border))]/60"></div>
+
+                <span className="px-4 text-sm font-medium text-[hsl(var(--muted-foreground))] 
+                    bg-[hsl(var(--card))] rounded-full shadow-sm border 
+                    border-[hsl(var(--border))]/40">
+                    or
+                </span>
+
+                <div className="flex-1 h-px bg-[hsl(var(--border))]/60"></div>
             </div>
 
-            {/* Exact styling like Club Feed */}
             <button
                 onClick={() => (window.location.href = "/dashboard/new-score")}
-                className="bg-[hsl(var(--primary))]
-               text-[hsl(var(--primary-foreground))]
-               rounded-lg px-6 py-3 font-medium
-               hover:opacity-90 transition
-               w-full"
+                className="
+        bg-indigo-600 
+        hover:bg-indigo-700 
+        text-white 
+        rounded-lg px-6 py-3 font-medium 
+        shadow-sm transition w-full
+    "
             >
                 Submit New Score
             </button>

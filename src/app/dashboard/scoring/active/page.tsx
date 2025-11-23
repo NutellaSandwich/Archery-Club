@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Delete } from "lucide-react";
+import TargetFaceInput from "@/components/TargetFaceInput"; // adjust path as needed
 
 type ScoringConfig = {
     round: {
@@ -19,13 +20,21 @@ type ScoringConfig = {
 
 type ArrowInput = number | "M" | "X";
 
+type TargetFaceArrow = {
+    score: ArrowInput;
+    xPct: number;   // 0–100 SVG position
+    yPct: number;
+    faceIndex: number;  // 0–2 for triple spot
+};
+
 export default function ActiveScoringPage() {
     const router = useRouter();
 
     const [config, setConfig] = useState<ScoringConfig | null>(null);
     const [currentEnd, setCurrentEnd] = useState(1);
-    const [ends, setEnds] = useState<ArrowInput[][]>([]);
-    const [currentArrows, setCurrentArrows] = useState<ArrowInput[]>([]);
+    type EndData = (ArrowInput | TargetFaceArrow)[];
+    const [ends, setEnds] = useState<EndData[]>([]);
+    const [currentArrows, setCurrentArrows] = useState<EndData>([]);
     const [editingEndIndex, setEditingEndIndex] = useState<number | null>(null);
     const [roundComplete, setRoundComplete] = useState(false);
 
@@ -54,9 +63,8 @@ export default function ActiveScoringPage() {
             ? ["X", 10, 9, 8, 7, 6, "M"]
             : ["X", 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, "M"];
 
-    // 🎨 Colour map (with Worcester-specific override)
-    // 🎨 Colour map (with Worcester-specific override)
     const getScoreColor = (val: ArrowInput) => {
+        // --- WORCESTER LOGIC (unchanged) ---
         if (isWorcester) {
             switch (val) {
                 case 5:
@@ -67,38 +75,43 @@ export default function ActiveScoringPage() {
                 case 1:
                     return "bg-black text-white";
                 case "M":
-                    return "bg-[#2ECC40] text-black"; // ✅ Misses are green now
-                default:
-                    return "bg-muted/30";
-            }
-        } else {
-            switch (val) {
-                case "X":
-                case 10:
-                case 9:
-                case 8:
-                    return "bg-yellow-400 text-black";
-                case 7:
-                case 6:
-                    return "bg-red-500 text-white";
-                case 5:
-                case 4:
-                    return "bg-blue-500 text-white";
-                case 3:
-                case 2:
-                    return "bg-black text-white";
-                case 1:
-                    return "bg-white text-black border";
-                case "M":
-                    return "bg-[#2ECC40] text-black"; // ✅ Misses are green now
+                    return "bg-[#74c96a] text-black"; // softer bright green
                 default:
                     return "bg-muted/30";
             }
         }
+
+        // --- WA TARGET COLOURS (new vivid versions matching target face) ---
+
+        // Yellow (X, 10, 9)
+        if (val === "X" || val === 10 || val === 9)
+            return "bg-[#f5cc2d] text-black";
+
+        // Red (8, 7)
+        if (val === 8 || val === 7)
+            return "bg-[#df4b4b] text-white";
+
+        // Blue (6, 5)
+        if (val === 6 || val === 5)
+            return "bg-[#5e84e0] text-white";
+
+        // Black (4, 3)
+        if (val === 4 || val === 3)
+            return "bg-[#1f1f1f] text-white";
+
+        // White (2, 1)
+        if (val === 2 || val === 1)
+            return "bg-white text-black border";
+
+        // Miss
+        if (val === "M")
+            return "bg-[#74c96a] text-black";
+
+        return "bg-muted/30";
     };
 
     // 🏹 Handle arrow click
-    const handleArrowClick = (val: ArrowInput) => {
+    const handleArrowClick = (val: ArrowInput | TargetFaceArrow) => {
         const perEnd = config?.arrowsPerEnd || 3;
         if (currentArrows.length >= perEnd) return;
         setCurrentArrows((prev) => [...prev, val]);
@@ -144,17 +157,22 @@ export default function ActiveScoringPage() {
         setCurrentEnd(index + 1);
     };
 
-    // 🧮 Totals
     const totalScore = ends
         .flat()
-        .reduce<number>(
-            (acc, v) => acc + (typeof v === "number" ? v : v === "X" ? 10 : 0),
-            0
-        );
+        .reduce<number>((acc, v) => {
+            const s = typeof v === "object" ? v.score : v;
+
+            if (s === "X") return acc + 10;
+            if (typeof s === "number") return acc + s;
+            return acc; // "M" or invalid
+        }, 0);
 
     const golds = isWorcester
         ? 0
-        : ends.flat().filter((v) => v === 10 || v === "X").length;
+        : ends.flat().filter((v) => {
+            const s = typeof v === "object" ? v.score : v;
+            return s === 10 || s === "X";
+        }).length;
 
     // ✅ Auto-save full end
     useEffect(() => {
@@ -177,7 +195,10 @@ export default function ActiveScoringPage() {
             roundName: config.round.name,
             total: totalScore,
             golds,
-            hits: ends.flat().filter((v) => v !== "M").length,
+            hits: ends.flat().filter((v) => {
+                const s = typeof v === "object" ? v.score : v;
+                return s !== "M";
+            }).length,
             ends,
             arrowsPerEnd: config.arrowsPerEnd,
             isTripleSpot: config.isTripleSpot ?? false,
@@ -207,23 +228,32 @@ export default function ActiveScoringPage() {
                 </p>
             </div>
 
-            {/* 🔢 Arrow Input Buttons (only visible for editing or active input) */}
             {(canInputNewEnd || editingEndIndex !== null) && (
-                <div className="grid grid-cols-6 gap-2">
-                    {arrowValues.map((val) => (
-                        <Button
-                            key={val}
-                            onClick={() => handleArrowClick(val)}
-                            className={`py-4 text-lg font-semibold ${getScoreColor(
-                                val
-                            )} hover:opacity-80`}
-                        >
-                            {val}
-                        </Button>
-                    ))}
-                </div>
+                config.useTargetFace ? (
+                    <TargetFaceInput
+                        arrowsPerEnd={config.arrowsPerEnd}
+                        isTripleSpot={!!config.isTripleSpot}
+                        currentArrows={currentArrows as TargetFaceArrow[]}
+                        onSelectArrow={(arrow) => handleArrowClick(arrow)}
+                    />
+                ) : (
+                    <div className="grid grid-cols-6 gap-2">
+                        {arrowValues.map((val) => (
+                            <Button
+                                key={val}
+                                onClick={() => handleArrowClick(val)}
+                                className={`py-4 text-lg font-semibold ${getScoreColor(val)} hover:opacity-80`}                         >
+                                {val}
+                            </Button>
+                        ))}
+                    </div>
+                )
             )}
-
+            {config.useTargetFace && (
+                <p className="text-sm mb-2 text-muted-foreground">
+                    Click the target face to register each arrow.
+                </p>
+            )}
             {/* 🏹 Current End — only shown if editing or adding */}
             {(canInputNewEnd || editingEndIndex !== null) && (
                 <div className="border rounded-lg p-4 mt-4">
@@ -237,6 +267,7 @@ export default function ActiveScoringPage() {
                         <div className="flex gap-2 flex-wrap">
                             {Array.from({ length: config.arrowsPerEnd }).map((_, i) => {
                                 const val = currentArrows[i];
+                                const display = typeof val === "object" ? val.score : val;
                                 return (
                                     <div
                                         key={i}
@@ -250,11 +281,11 @@ export default function ActiveScoringPage() {
                                             }
                                         }}
                                         className={`w-10 h-10 flex items-center justify-center rounded-md border text-lg font-semibold cursor-pointer transition ${val
-                                                ? `${getScoreColor(val)} hover:opacity-75`
+                                                ? `${getScoreColor(typeof val === "object" ? val.score : val)} hover:opacity-75`
                                                 : "bg-muted/30 cursor-default"
                                             }`}
                                     >
-                                        {val ?? "-"}
+                                        {typeof val === "object" ? val.score : val}
                                     </div>
                                 );
                             })}
@@ -283,7 +314,7 @@ export default function ActiveScoringPage() {
                 <div className="border rounded-lg p-4 space-y-2">
                     <h3 className="font-medium">Saved Ends</h3>
                     {[...ends]
-                        .map((end, i): [ArrowInput[], number] => [end, i])
+                        .map((end, i): [EndData, number] => [end, i])
                         .reverse()
                         .map(([end, i]) => (
                             <div
@@ -293,24 +324,28 @@ export default function ActiveScoringPage() {
                             >
                                 <span>
                                     End {i + 1}:{" "}
-                                    {end.map((val, j) => (
-                                        <span
-                                            key={j}
-                                            className={`inline-block w-6 h-6 text-center rounded-md mr-1 ${getScoreColor(
-                                                val
-                                            )}`}
-                                        >
-                                            {val}
-                                        </span>
-                                    ))}
+                                    {end.map((val, j) => {
+                                        const score = typeof val === "object" ? val.score : val;
+                                        return (
+                                            <div
+                                                key={j}
+                                                className={`inline-flex w-10 h-10 items-center justify-center rounded-md border text-lg font-semibold mr-1 ${getScoreColor(score)}`}
+                                            >
+                                                {score}
+                                            </div>
+                                        );
+                                    })}
                                 </span>
                                 <span className="font-semibold">
                                     Total:{" "}
-                                    {end.reduce(
-                                        (a: number, v: ArrowInput) =>
-                                            a + (typeof v === "number" ? v : v === "X" ? 10 : 0),
-                                        0
-                                    )}
+                                    {
+                                        end.reduce((a: number, v) => {
+                                            const s = typeof v === "object" ? v.score : v;
+                                            if (s === "X") return a + 10;
+                                            if (typeof s === "number") return a + s;
+                                            return a;
+                                        }, 0)
+                                    }
                                 </span>
                             </div>
                         ))}
