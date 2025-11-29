@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Delete } from "lucide-react";
 import TargetFaceInput from "@/components/TargetFaceInput"; // adjust path as needed
+import { Crosshair, Target } from "lucide-react"; 
+import html2canvas from "html2canvas";
 
 type ScoringConfig = {
     round: {
@@ -37,11 +39,24 @@ export default function ActiveScoringPage() {
     const [currentArrows, setCurrentArrows] = useState<EndData>([]);
     const [editingEndIndex, setEditingEndIndex] = useState<number | null>(null);
     const [roundComplete, setRoundComplete] = useState(false);
-
     const shownRoundCompleteToast = useRef(false);
+    const [showArrowMap, setShowArrowMap] = useState(false);
 
     const totalEnds = config ? config.round.total_arrows / config.arrowsPerEnd : 0;
 
+
+    async function renderTargetImage(): Promise<string | null> {
+        const targetEl = document.getElementById("active-target-preview");
+        if (!targetEl) return null;
+
+        const canvas = await html2canvas(targetEl, {
+            backgroundColor: null,
+            scale: 3,
+            logging: false,
+        });
+
+        return canvas.toDataURL("image/png");
+    }
     // 🔹 Load config
     useEffect(() => {
         const stored = sessionStorage.getItem("scoringConfig");
@@ -204,8 +219,17 @@ export default function ActiveScoringPage() {
             isTripleSpot: config.isTripleSpot ?? false,
         };
 
-        localStorage.setItem("lastScoreData", JSON.stringify(summaryData));
-        router.push("/dashboard/scoring/summary");
+        (async () => {
+            const targetImage = await renderTargetImage();
+
+            const finalPayload = {
+                ...summaryData,
+                targetImage,   // ← ADD THIS FIELD
+            };
+
+            localStorage.setItem("lastScoreData", JSON.stringify(finalPayload));
+            router.push("/dashboard/scoring/summary");
+        })();
     };
 
     if (!config) {
@@ -219,13 +243,26 @@ export default function ActiveScoringPage() {
     const canInputNewEnd =
         !roundComplete && ends.length < totalEnds && editingEndIndex === null;
 
+    
     return (
         <main className="max-w-3xl mx-auto p-6 space-y-8">
             <div className="flex justify-between items-center">
                 <h1 className="text-xl font-semibold">{config.round.name}</h1>
-                <p className="text-sm text-muted-foreground">
-                    End {currentEnd} of {totalEnds}
-                </p>
+
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setShowArrowMap(true)}
+                        className="p-2 rounded-md bg-primary/10 hover:bg-primary/20 text-primary transition flex items-center gap-2"
+                        title="Show Arrow Placement Map"
+                    >
+                        <Target size={22} />
+                        <span className="hidden sm:inline text-sm font-medium">Arrow Map</span>
+                    </button>
+
+                    <p className="text-sm text-muted-foreground">
+                        End {currentEnd} of {totalEnds}
+                    </p>
+                </div>
             </div>
 
             {(canInputNewEnd || editingEndIndex !== null) && (
@@ -364,6 +401,227 @@ export default function ActiveScoringPage() {
                     <Button className="mt-2 px-8" onClick={handleSubmitRound}>
                         Complete
                     </Button>
+                </div>
+            )}
+
+            {/* Hidden live target render for capturing */}
+            <div
+                id="active-target-preview"
+                style={{
+                    position: "absolute",
+                    top: "-9999px",
+                    left: "-9999px"
+                }}
+            >
+                {config.isTripleSpot ? (
+                    <div>
+                        {[0, 1, 2].map(faceIndex => (
+                            <svg key={faceIndex} viewBox="0 0 200 200" width="200" height="200">
+                                {/* Rings */}
+                                {[6, 7, 8, 9, 10, "X"].map((s, i) => {
+                                    const score = s === "X" ? 10 : Number(s);
+                                    return (
+                                        <circle
+                                            key={i}
+                                            cx={100}
+                                            cy={100}
+                                            r={100 - i * (100 / 6)}
+                                            fill={
+                                                score >= 9 ? "#f5cc2d" :         // 10/9/X gold
+                                                    score >= 7 ? "#df4b4b" :         // 8/7 red
+                                                        "#5e84e0"                         // 6 blue
+                                            }
+                                            stroke="#000"
+                                            strokeWidth="0.6"
+                                        />
+                                    );
+                                })}
+
+                                {/* Arrow Dots */}
+                                {ends
+                                    .flat()
+                                    .filter((a): a is TargetFaceArrow => typeof a === "object" && a.faceIndex === faceIndex)
+                                    .map((a, j) => (
+                                        <circle
+                                            key={`${a.xPct}-${a.yPct}-${a.faceIndex}-${j}`}
+                                            cx={(a.xPct / 100) * 200}
+                                            cy={(a.yPct / 100) * 200}
+                                            r={5}
+                                            fill="lime"
+                                            stroke="black"
+                                            strokeWidth="1.5"
+                                        />
+                                    ))}
+                            </svg>
+                        ))}
+                    </div>
+                ) : (
+                    <svg viewBox="0 0 200 200" width="200" height="200">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, "X"].map((s, i) => {
+                            const score = s === "X" ? 10 : Number(s);
+                            return (
+                                <circle
+                                    key={i}
+                                    cx={100}
+                                    cy={100}
+                                    r={100 - i * (100 / 11)}
+                                    fill={
+                                        score >= 9 ? "#f5cc2d"
+                                            : score >= 7 ? "#df4b4b"
+                                                : score >= 5 ? "#5e84e0"
+                                                    : score >= 3 ? "#1f1f1f"
+                                                        : "#ffffff"
+                                    }
+                                    stroke="#000"
+                                    strokeWidth="0.6"
+                                />
+                            );
+                        })}
+
+                        {/* Arrow Dots */}
+                        {ends
+                            .flat()
+                            .filter(a => typeof a === "object")
+                            .map((a, j) => (
+                                <circle
+                                    key={`${a.xPct}-${a.yPct}-${j}`}
+                                    cx={(a.xPct / 100) * 200}
+                                    cy={(a.yPct / 100) * 200}
+                                    r={5}
+                                    fill="lime"
+                                    stroke="black"
+                                    strokeWidth="1.5"
+                                />
+                            ))}
+                    </svg>
+                )}
+            </div>
+
+            {/* 🎯 Arrow Map Modal — actual target face preview */}
+            {showArrowMap && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-white dark:bg-neutral-900 border dark:border-neutral-700 rounded-lg shadow-xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto">
+
+                        <h2 className="text-lg font-semibold mb-4 text-center">
+                            Arrow Placement
+                        </h2>
+
+                        <div className="flex justify-center mb-4">
+                            <div className="flex bg-muted rounded-lg p-1 space-x-1">
+                                <button
+                                    className="px-4 py-1 rounded-md text-sm font-medium bg-primary text-white"
+                                >
+                                    Map
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* MAP CONTENT ONLY (NO HEATMAP) */}
+                        <div className="flex justify-center">
+
+                            {config.isTripleSpot ? (
+                                <div className="space-y-4">
+                                    {[0, 1, 2].map((faceIndex) => (
+                                        <svg
+                                            key={faceIndex}
+                                            viewBox="0 0 200 200"
+                                            width="200"
+                                            height="200"
+                                        >
+                                            {Array.from({ length: 6 }).map((_, i) => {
+                                                const raw = [6, 7, 8, 9, 10, "X"][i];
+                                                const score = Number(raw === "X" ? 10 : raw);
+
+                                                return (
+                                                    <circle
+                                                        key={i}
+                                                        cx={100}
+                                                        cy={100}
+                                                        r={100 - i * (100 / 6)}
+                                                        fill={
+                                                            score >= 9
+                                                                ? "#f5cc2d"
+                                                                : score >= 7
+                                                                    ? "#df4b4b"
+                                                                    : "#5e84e0"
+                                                        }
+                                                        stroke="#000"
+                                                        strokeWidth="0.6"
+                                                    />
+                                                );
+                                            })}
+
+                                            {/* Arrow dots */}
+                                            {ends
+                                                .flat()
+                                                .filter(
+                                                    (a): a is TargetFaceArrow =>
+                                                        typeof a === "object" &&
+                                                        a.faceIndex === faceIndex
+                                                )
+                                                .map((a, j) => (
+                                                    <circle
+                                                        key={`${a.xPct}-${a.yPct}-${a.faceIndex}-${j}`}
+                                                        cx={(a.xPct / 100) * 200}
+                                                        cy={(a.yPct / 100) * 200}
+                                                        r={5}
+                                                        fill="lime"
+                                                        stroke="black"
+                                                        strokeWidth="1.5"
+                                                    />
+                                                ))}
+                                        </svg>
+                                    ))}
+                                </div>
+                            ) : (
+                                <svg viewBox="0 0 200 200" width="260" height="260">
+                                    {/* WA SINGLE FACE */}
+                                    {Array.from({ length: 11 }).map((_, i) => {
+                                        const raw = [1,2,3,4,5,6,7,8,9,10,"X"][i];
+                                        const score = Number(raw === "X" ? 10 : raw);
+
+                                        return (
+                                            <circle
+                                                key={i}
+                                                cx={100}
+                                                cy={100}
+                                                r={100 - i * (100 / 11)}
+                                                fill={
+                                                    score >= 9 ? "#f5cc2d" :
+                                                        score >= 7 ? "#df4b4b" :
+                                                            score >= 5 ? "#5e84e0" :
+                                                                score >= 3 ? "#1f1f1f" :
+                                                                    "#ffffff"
+                                                }
+                                                stroke="#000"
+                                                strokeWidth="0.6"
+                                            />
+                                        );
+                                    })}
+
+                                    {/* Arrow dots */}
+                                    {ends
+                                        .flat()
+                                        .filter((a) => typeof a === "object")
+                                        .map((a, j) => (
+                                            <circle
+                                                key={`${a.xPct}-${a.yPct}-${j}`}
+                                                cx={(a.xPct / 100) * 200}
+                                                cy={(a.yPct / 100) * 200}
+                                                r={5}
+                                                fill="lime"
+                                                stroke="black"
+                                                strokeWidth="1.5"
+                                            />
+                                        ))}
+                                </svg>
+                            )}
+                        </div>
+
+                        <div className="flex justify-center mt-6">
+                            <Button onClick={() => setShowArrowMap(false)}>Close</Button>
+                        </div>
+                    </div>
                 </div>
             )}
         </main>

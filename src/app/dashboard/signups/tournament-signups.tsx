@@ -19,6 +19,7 @@ export default function TournamentSignups() {
     const [userId, setUserId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [clubId, setClubId] = useState<string | null>(null);
+    const [showOlder, setShowOlder] = useState(false);
 
     // ✅ Load tournaments
     async function loadData() {
@@ -64,7 +65,6 @@ export default function TournamentSignups() {
       profiles (username)
     )
   `)
-                .gte("event_date", today)
                 .order("event_date", { ascending: true });
             
                 
@@ -246,6 +246,93 @@ export default function TournamentSignups() {
         );
     }
 
+
+    function renderTournamentCard(t: any) {
+        const isSignedUp = t.tournament_signups.some(
+            (su: any) => su.user_id === userId
+        );
+
+        const closed =
+            t.signup_close_at && new Date(t.signup_close_at) < new Date();
+
+        const eventDate = new Date(t.event_date).toLocaleDateString();
+        const signupClose = t.signup_close_at
+            ? new Date(t.signup_close_at).toLocaleString()
+            : "N/A";
+
+        return (
+            <Card
+                key={t.id}
+                className={`transition hover:shadow-md ${closed ? "opacity-75" : ""}`}
+            >
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle>{t.title}</CardTitle>
+                            <CardDescription>{eventDate}</CardDescription>
+                            <p className="text-xs text-muted-foreground">
+                                Sign-ups close: {signupClose}
+                            </p>
+
+                            {t.max_signups && (
+                                <p className="text-xs text-muted-foreground">
+                                    Capacity: {t.tournament_signups.length}/{t.max_signups}
+                                </p>
+                            )}
+
+                            <p className="text-xs text-muted-foreground mt-1">
+                                {t.tournament_signups.length} signed up
+                            </p>
+                        </div>
+
+                        {closed && (
+                            <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-md">
+                                Closed
+                            </span>
+                        )}
+                    </div>
+                </CardHeader>
+
+                <CardFooter className="justify-end">
+                    {closed ? (
+                        isSignedUp && (
+                            <span className="text-xs text-green-600 font-medium">
+                                You’re signed up ✅
+                            </span>
+                        )
+                    ) : isSignedUp ? (
+                        <button
+                            onClick={() => handleCancel(t.id)}
+                            className="rounded-md border px-3 py-1 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
+                        >
+                            Cancel Sign-up
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => handleSignup(t.id)}
+                            className="rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] px-3 py-1 text-sm hover:opacity-90"
+                        >
+                            Sign Up
+                        </button>
+                    )}
+                </CardFooter>
+            </Card>
+        );
+    }
+
+    // ---------- Split recent vs older tournaments ----------
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // start of today
+
+    const olderTournaments = tournaments.filter(
+        (t) => new Date(t.event_date) < today
+    );
+
+    const recentAndUpcoming = tournaments.filter(
+        (t) => new Date(t.event_date) >= today
+    );
+    // -------------------------------------------------------
+
     if (tournaments.length === 0)
         return (
             <p className="text-center text-muted-foreground mt-10">
@@ -256,77 +343,32 @@ export default function TournamentSignups() {
     // 🎨 Render UI
     return (
         <section>
-            <div className="space-y-4">
-                {tournaments.map((t) => {
-                    const isSignedUp = t.tournament_signups.some(
-                        (su: any) => su.user_id === userId
-                    );
-                    const closed =
-                        t.signup_close_at && new Date(t.signup_close_at) < new Date();
+            {/* 🟢 Recent & upcoming tournaments */}
+            {recentAndUpcoming.length > 0 && (
+                <div className="space-y-4">
+                    {recentAndUpcoming.map((t) => renderTournamentCard(t))}
+                </div>
+            )}
 
-                    const eventDate = new Date(t.event_date).toLocaleDateString();
-                    const signupClose = t.signup_close_at
-                        ? new Date(t.signup_close_at).toLocaleString()
-                        : "N/A";
+            {/* 🕗 Older tournaments toggle */}
+            {olderTournaments.length > 0 && (
+                <div className="mt-6">
+                    <button
+                        onClick={() => setShowOlder((v) => !v)}
+                        className="rounded-md border px-3 py-2 text-sm hover:bg-muted"
+                    >
+                        {showOlder
+                            ? "Hide older tournaments"
+                            : `Show older tournaments (${olderTournaments.length})`}
+                    </button>
 
-                    return (
-                        <Card
-                            key={t.id}
-                            className={`transition hover:shadow-md ${closed ? "opacity-75" : ""
-                                }`}
-                        >
-                            <CardHeader>
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <CardTitle>{t.title}</CardTitle>
-                                        <CardDescription>{eventDate}</CardDescription>
-                                        <p className="text-xs text-muted-foreground">
-                                            Sign-ups close: {signupClose}
-                                        </p>
-                                        {t.max_signups && (
-                                            <p className="text-xs text-muted-foreground">
-                                                Capacity: {t.tournament_signups.length}/{t.max_signups}
-                                            </p>
-                                        )}
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {t.tournament_signups.length} signed up
-                                        </p>
-                                    </div>
-                                    {closed && (
-                                        <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-md">
-                                            Closed
-                                        </span>
-                                    )}
-                                </div>
-                            </CardHeader>
-
-                            <CardFooter className="justify-end">
-                                {closed ? (
-                                    isSignedUp && (
-                                        <span className="text-xs text-green-600 font-medium">
-                                            You’re signed up ✅
-                                        </span>
-                                    )
-                                ) : isSignedUp ? (
-                                    <button
-                                        onClick={() => handleCancel(t.id)}
-                                        className="rounded-md border px-3 py-1 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
-                                    >
-                                        Cancel Sign-up
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => handleSignup(t.id)}
-                                        className="rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] px-3 py-1 text-sm hover:opacity-90"
-                                    >
-                                        Sign Up
-                                    </button>
-                                )}
-                            </CardFooter>
-                        </Card>
-                    );
-                })}
-            </div>
+                    {showOlder && (
+                        <div className="space-y-4 mt-3">
+                            {olderTournaments.map((t) => renderTournamentCard(t))}
+                        </div>
+                    )}
+                </div>
+            )}
         </section>
     );
 }

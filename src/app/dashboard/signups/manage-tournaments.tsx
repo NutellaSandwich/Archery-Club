@@ -41,6 +41,18 @@ export default function ManageTournaments() {
     const [signups, setSignups] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
+    const [isEditing, setIsEditing] = useState(false);
+
+    const [editFields, setEditFields] = useState({
+        title: "",
+        event_date: "",
+        signup_close_at: "",
+        description: "",
+        max_signups: "",
+    });
+
+    const [editingTournament, setEditingTournament] = useState<any | null>(null);
+
     // 🔁 Load tournaments from DB (with signup relations)
     async function loadTournaments() {
         setLoading(true);
@@ -233,6 +245,15 @@ export default function ManageTournaments() {
     async function openTournamentDetails(tournament: any) {
         setSelectedTournament(tournament);
 
+        setEditFields({
+            title: tournament.title,
+            event_date: tournament.event_date,
+            signup_close_at: tournament.signup_close_at || "",
+            description: tournament.description || "",
+            max_signups: tournament.max_signups?.toString() || "",
+        });
+        setIsEditing(false);
+
         const { data, error } = await supabase
             .from("tournament_signups")
             .select("user_id, profiles(username, avatar_url)")
@@ -245,6 +266,36 @@ export default function ManageTournaments() {
         }
 
         setSignups(data || []);
+    }
+
+    async function handleUpdateTournament() {
+        if (!selectedTournament) return;
+
+        const { error } = await supabase
+            .from("club_tournaments")
+            .update({
+                title: editFields.title,
+                event_date: editFields.event_date,
+                signup_close_at: editFields.signup_close_at || null,
+                description: editFields.description,
+                max_signups: editFields.max_signups
+                    ? parseInt(editFields.max_signups)
+                    : null,
+            })
+            .eq("id", selectedTournament.id);
+
+        if (error) {
+            console.error(error);
+            toast.error("Error updating tournament");
+            return;
+        }
+
+        toast.success("Tournament updated!");
+
+        setIsEditing(false);
+
+        // refresh the list
+        loadTournaments();
     }
 
     return (
@@ -362,7 +413,25 @@ export default function ManageTournaments() {
                                 {t.tournament_signups?.length || 0} signed up
                             </p>
                         </CardHeader>
-                        <CardFooter className="justify-end">
+                        <CardFooter className="justify-end gap-4">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingTournament(t);
+                                    setEditFields({
+                                        title: t.title,
+                                        event_date: t.event_date,
+                                        signup_close_at: t.signup_close_at || "",
+                                        description: t.description || "",
+                                        max_signups: t.max_signups?.toString() || "",
+                                    });
+                                    setIsEditing(true);
+                                }}
+                                className="text-blue-600 text-sm underline"
+                            >
+                                Edit
+                            </button>
+
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -402,54 +471,112 @@ export default function ManageTournaments() {
                                 : "N/A"}
                         </p>
 
-                        <h4 className="font-medium mb-2">Signed Up:</h4>
-                        <ul className="max-h-40 overflow-y-auto border rounded-md p-2 text-sm space-y-1">
-                            {signups.length > 0 ? (
-                                [...signups]
-                                    .sort((a, b) =>
-                                        (a.profiles?.username || "").localeCompare(b.profiles?.username || "")
-                                    )
-                                    .map((su) => (
-                                        <li
-                                            key={su.user_id}
-                                            className="flex items-center gap-2 border-b py-1 px-1"
-                                        >
-                                            <a
-                                                href={`/profile/${su.user_id}`}
-                                                className="flex items-center gap-2 hover:opacity-80 transition"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                            >
-                                                {su.profiles?.avatar_url ? (
-                                                    <img
-                                                        src={su.profiles.avatar_url}
-                                                        alt={su.profiles.username}
-                                                        className="w-8 h-8 rounded-full object-cover border border-gray-300"
-                                                    />
-                                                ) : (
-                                                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-[11px] text-gray-600">
-                                                        ?
-                                                    </div>
-                                                )}
-                                                <span className="font-medium text-blue-600 hover:underline">
-                                                    {su.profiles?.username || su.user_id}
-                                                </span>
-                                            </a>
-                                        </li>
-                                    ))
-                            ) : (
-                                <li className="text-muted-foreground text-sm">
-                                    No one signed up yet
-                                </li>
-                            )}
-                        </ul>
 
+                        
                         <button
                             className="mt-4 bg-red-600 text-white w-full py-2 rounded-md"
                             onClick={() => setSelectedTournament(null)}
                         >
                             Close
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {editingTournament && (
+                <div
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                    onClick={() => setEditingTournament(null)}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl w-[90%] max-w-md"
+                    >
+                        <h3 className="text-lg font-semibold mb-4">Edit Tournament</h3>
+
+                        <div className="space-y-3 mb-4">
+                            <div>
+                                <label className="text-sm font-medium">Title</label>
+                                <input
+                                    className="w-full border rounded-md px-2 py-1"
+                                    value={editFields.title}
+                                    onChange={(e) =>
+                                        setEditFields({ ...editFields, title: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium">Event Date</label>
+                                <input
+                                    type="date"
+                                    className="w-full border rounded-md px-2 py-1"
+                                    value={editFields.event_date}
+                                    onChange={(e) =>
+                                        setEditFields({ ...editFields, event_date: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium">Signup Close (Date & Time)</label>
+                                <input
+                                    type="datetime-local"
+                                    className="w-full border rounded-md px-2 py-1"
+                                    value={editFields.signup_close_at}
+                                    onChange={(e) =>
+                                        setEditFields({
+                                            ...editFields,
+                                            signup_close_at: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium">Max Signups</label>
+                                <input
+                                    type="number"
+                                    className="w-full border rounded-md px-2 py-1"
+                                    value={editFields.max_signups}
+                                    onChange={(e) =>
+                                        setEditFields({
+                                            ...editFields,
+                                            max_signups: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium">Description</label>
+                                <textarea
+                                    rows={2}
+                                    className="w-full border rounded-md px-2 py-1"
+                                    value={editFields.description}
+                                    onChange={(e) =>
+                                        setEditFields({
+                                            ...editFields,
+                                            description: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleUpdateTournament}
+                                className="w-full rounded-md bg-primary text-primary-foreground py-2 hover:opacity-90"
+                            >
+                                Save Changes
+                            </button>
+
+                            <button
+                                onClick={() => setEditingTournament(null)}
+                                className="w-full rounded-md border py-2 text-sm hover:bg-muted"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

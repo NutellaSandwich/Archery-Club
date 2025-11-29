@@ -9,6 +9,24 @@ import SignaturePad from "react-signature-canvas";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { toast } from "sonner";
 
+// --- Add these types right under your imports ---
+type ArrowObj = {
+    score: string | number;
+    xPct: number;
+    yPct: number;
+    faceIndex: number;
+};
+
+type ScoreData = {
+    roundName: string;
+    total: number;
+    golds: number;
+    hits: number;
+    isTripleSpot: boolean;
+    ends: (string | number | ArrowObj)[][];
+    targetImage?: string | null;   // 👈 ADD THIS
+};
+
 /* 🧩 Adaptive signature pad */
 function OptimizedSignaturePad({
     label,
@@ -48,16 +66,15 @@ function OptimizedSignaturePad({
     );
 }
 
-// 🎯 Colour mapping (World Archery standard)
 function getArrowColor(value: string | number, isDark: boolean): string {
     const v = String(value).toUpperCase();
 
-    if (v === "X" || v === "10" || v === "9" || v === "8") return "#FFD700"; // Gold
-    if (v === "7" || v === "6") return "#FF4136"; // Red
-    if (v === "5" || v === "4") return "#0074D9"; // Blue
-    if (v === "3" || v === "2") return "#222"; // Black
-    if (v === "1") return isDark ? "#BBB" : "#EEE"; // White/gray
-    if (v === "M") return "#2ECC40"; // ✅ Miss (green)
+    if (v === "X" || v === "10" || v === "9") return "#FFD700"; // Gold
+    if (v === "8" || v === "7") return "#DF4B4B"; // Red
+    if (v === "6" || v === "5") return "#0074D9"; // Blue
+    if (v === "4" || v === "3") return "#222"; // Black
+    if (v === "2" || v === "1") return isDark ? "#BBB" : "#EEE"; // White
+    if (v === "M") return "#2ECC40"; // Miss
     return isDark ? "#FFF" : "#000";
 }
 
@@ -113,8 +130,7 @@ export default function ScoringSummaryPage() {
     const router = useRouter();
     const supabase = supabaseBrowser();
 
-    const [scoreData, setScoreData] = useState<any | null>(null);
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [scoreData, setScoreData] = useState<ScoreData | null>(null);    const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const [competitionName, setCompetitionName] = useState("");
     const [showSignatureModal, setShowSignatureModal] = useState(false);
@@ -126,6 +142,7 @@ export default function ScoringSummaryPage() {
     const sigArcherRef = useRef<SignaturePad | null>(null);
     const sigCounterRef = useRef<SignaturePad | null>(null);
 
+
     /* 🌗 Track color scheme */
     useEffect(() => {
         const mql = window.matchMedia("(prefers-color-scheme: dark)");
@@ -135,15 +152,51 @@ export default function ScoringSummaryPage() {
         return () => mql.removeEventListener("change", update);
     }, []);
 
-    /* 📦 Load score data */
     useEffect(() => {
         const stored = localStorage.getItem("lastScoreData");
         if (!stored) return;
+
         const parsed = JSON.parse(stored);
-        const hits = parsed.ends?.flat()?.filter((v: string | number) => v !== "M")
-            .length;
-        setScoreData({ ...parsed, hits });
+        const hits = parsed.ends?.flat()?.filter((v: string | number) => v !== "M").length;
+
+        setScoreData({
+            ...parsed,
+            hits,
+            targetImage: parsed.targetImage ?? null,   // 👈 ADD THIS
+        });
     }, []);
+
+
+    useEffect(() => {
+        if (!scoreData) return;
+
+        if (
+            scoreData.ends?.length &&
+            typeof scoreData.ends[0][0] === "object" &&
+            scoreData.ends[0][0] !== null &&
+            "xPct" in scoreData.ends[0][0]
+        ) {
+            return;
+        }
+
+        const normalisedEnds = scoreData.ends.map((end) =>
+            end.map((a: any) =>
+                typeof a === "object"
+                    ? a
+                    : {
+                        score: a,
+                        xPct: 100,
+                        yPct: 100,
+                        faceIndex: 0,
+                    }
+            )
+        );
+
+        // ---- THE IMPORTANT TYPE ANNOTATION FIX IS RIGHT HERE ----
+        setScoreData((prev: ScoreData | null) =>
+            prev ? { ...prev, ends: normalisedEnds } : prev
+        );
+    }, [scoreData]);
 
     /* 🎨 Capture scoresheet (wait for layout + fonts) */
     useEffect(() => {
@@ -151,33 +204,62 @@ export default function ScoringSummaryPage() {
         let cancelled = false;
 
         const capture = async () => {
-            const el = document.getElementById("scoresheet");
-            if (!el) return;
+            const sheet = document.getElementById("scoresheet");
+            if (!sheet || !scoreData?.targetImage) return;
 
-            // Wait 2 RAFs so layout/paint fully settle
-            await new Promise<void>((resolve) =>
+            await new Promise<void>((r) =>
                 requestAnimationFrame(() =>
-                    requestAnimationFrame(() => resolve())
+                    requestAnimationFrame(() => r())
                 )
             );
 
-            // Wait for fonts to be ready
-            if ("fonts" in document) {
-                try {
-                    // @ts-ignore
-                    await (document as any).fonts.ready;
-                } catch { }
-            }
-
-            const canvas = await html2canvas(el, {
+            const sheetCanvas = await html2canvas(sheet, {
                 backgroundColor: null,
-                useCORS: true,
-                scale: Math.max(2, window.devicePixelRatio || 1),
+                scale: 2,
                 logging: false,
-                removeContainer: true,
-            } as any);
+            });
 
-            if (!cancelled) setImageUrl(canvas.toDataURL("image/png"));
+            const targetImg = new Image();
+            targetImg.src = scoreData.targetImage;
+
+            await new Promise((r) => (targetImg.onload = r));
+
+            // create a canvas from the image
+            const targetCanvas = document.createElement("canvas");
+            targetCanvas.width = targetImg.width;
+            targetCanvas.height = targetImg.height;
+            targetCanvas.getContext("2d")!.drawImage(targetImg, 0, 0);
+
+            // --- SCALE TARGET FACE TO MATCH SCORESHEET HEIGHT ---
+            const scaleFactor = sheetCanvas.height / targetCanvas.height;
+            const scaledTargetWidth = targetCanvas.width * scaleFactor;
+            const scaledTargetHeight = sheetCanvas.height;
+
+            // --- FINAL IMAGE SIZE ---
+            const padding = 40;
+
+            const combined = document.createElement("canvas");
+            combined.width = sheetCanvas.width + scaledTargetWidth + padding;
+            combined.height = sheetCanvas.height;  // same height, no tall white space
+            const ctx = combined.getContext("2d")!;
+
+            // --- CENTER BOTH ---
+            const sheetY = 0;
+            const targetY = 0;
+
+            // --- DRAW ---
+            ctx.drawImage(sheetCanvas, 0, sheetY);
+            ctx.drawImage(
+                targetCanvas,
+                sheetCanvas.width + padding,
+                targetY,
+                scaledTargetWidth,
+                scaledTargetHeight
+            );
+
+            if (!cancelled) {
+                setImageUrl(combined.toDataURL("image/png"));
+            }
         };
 
         capture();
@@ -232,8 +314,7 @@ export default function ScoringSummaryPage() {
             setShowSignatureModal(false);
 
             if (pendingFormality) {
-                await handleUploadToFeed(pendingFormality, finalSignedDataUrl);
-                setPendingFormality(null);
+                await handleUploadToFeed(pendingFormality, finalSignedDataUrl);                setPendingFormality(null);
             }
         } catch (err) {
             console.error("❌ handleSaveSignatures failed:", err);
@@ -246,8 +327,13 @@ export default function ScoringSummaryPage() {
         formality: "formal" | "informal" | "competition",
         signedImageUrl?: string
     ) {
-        if (!scoreData || !(signedImageUrl || imageUrl)) return;
-        setUploading(true);
+        const finalImage = signedImageUrl || imageUrl;
+
+        if (!scoreData || !finalImage) {
+            toast.error("No scoresheet image available.");
+            return;
+        }
+            setUploading(true);
 
         try {
             const {
@@ -279,7 +365,7 @@ export default function ScoringSummaryPage() {
                     ? "novice"
                     : "experienced";
 
-            const blob = await (await fetch(signedImageUrl || imageUrl!)).blob();
+            const blob = await (await fetch(finalImage)).blob();
             const fileName = `${user.id}-${Date.now()}.png`;
 
             const { data: uploadData, error: uploadError } = await supabase.storage
@@ -341,6 +427,7 @@ export default function ScoringSummaryPage() {
             {/* 📋 Scorecard */}
             <Card
                 id="scoresheet"
+                
                 className={`p-4 space-y-4 shadow-md [contain:layout_paint] [isolation:isolate] ${imageUrl ? "hidden" : ""
                     }`}
                 style={{
@@ -349,6 +436,10 @@ export default function ScoringSummaryPage() {
                     transition: "none",
                 }}
             >
+                
+                
+
+
                 <CardHeader>
                     <h1 className="text-xl font-semibold text-center">
                         {scoreData.roundName} – {scoreData.total} points
@@ -363,9 +454,10 @@ export default function ScoringSummaryPage() {
                         <div key={i} className="p-2 border rounded-md">
                             <p className="font-semibold text-center">End {i + 1}</p>
                             <div className="flex justify-center gap-[3px] mt-2">
-                                {end.map((arrow: string | number, j: number) => (
-                                    <ScoreCell key={j} value={arrow} isDark={isDark} />
-                                ))}
+                                {end.map((arrow: any, j: number) => {
+                                    const score = typeof arrow === "object" ? arrow.score : arrow;
+                                    return <ScoreCell key={j} value={score} isDark={isDark} />;
+                                })}
                             </div>
                         </div>
                     ))}
@@ -396,21 +488,18 @@ export default function ScoringSummaryPage() {
 
                     <div className="flex flex-wrap justify-center gap-2 mt-2">
                         <Button
-                            onClick={() => handleUploadToFeed("informal")}
-                            disabled={uploading}
-                        >
+                            onClick={() => handleUploadToFeed("informal", imageUrl!)}
+                            disabled={uploading || !imageUrl}                        >
                             Upload Informal
                         </Button>
                         <Button
                             onClick={() => handleFormalOrCompetition("formal")}
-                            disabled={uploading}
-                        >
+                            disabled={uploading || !imageUrl}                        >
                             Upload Formal
                         </Button>
                         <Button
                             onClick={() => handleFormalOrCompetition("competition")}
-                            disabled={uploading}
-                        >
+                            disabled={uploading || !imageUrl}                        >
                             Upload Competition
                         </Button>
                     </div>

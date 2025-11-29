@@ -57,7 +57,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 text-center">
-      <h1 className="text-4xl font-bold tracking-tight">Archery Club</h1>
+      <h1 className="text-4xl font-bold tracking-tight">Arcus</h1>
       <p className="text-muted-foreground text-sm">
         Manage your club, track your progress, and connect with other archers.
       </p>

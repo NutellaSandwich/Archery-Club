@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useMemo } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
+import { useRouter, usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
+import { useState, useEffect, useMemo, useRef } from "react";
+
 import {
     Moon,
     Sun,
@@ -17,14 +19,13 @@ import {
     UserCircle2,
     BowArrow,
     Menu,
-    X,
 } from "lucide-react";
-import { useTheme } from "next-themes";
+
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { supabaseBrowser } from "@/lib/supabase-browser";
 import NotificationsDropdown from "@/components/notifications-dropdown";
-import { Button } from "@/components/ui/button";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { motion, AnimatePresence } from "framer-motion";
 
 type UserProfile = {
     id: string;
@@ -35,6 +36,12 @@ type UserProfile = {
     club_id?: string | null;
 };
 
+type NavItem = {
+    href: string;
+    label: string;
+    icon: any;
+};
+
 export default function Navbar() {
     const router = useRouter();
     const pathname = usePathname();
@@ -42,432 +49,420 @@ export default function Navbar() {
     const supabase = useMemo(() => supabaseBrowser(), []);
 
     const [profile, setProfile] = useState<UserProfile | null>(null);
-    const [loading, setLoading] = useState(true);
     const [mounted, setMounted] = useState(false);
-    const [menuOpen, setMenuOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
 
+    /* -----------------------------------------
+       NAV LAYOUT STATE
+    ------------------------------------------ */
+    const [visibleCount, setVisibleCount] = useState(999);
+    const navbarRef = useRef<HTMLDivElement>(null);
+    const measureRef = useRef<HTMLDivElement>(null);
+    const rightRef = useRef<HTMLDivElement>(null);
+
+    /* -----------------------------------------
+       SEARCH BAR STATE
+    ------------------------------------------ */
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<any[]>([]);
     const [showResults, setShowResults] = useState(false);
-    const [searching, setSearching] = useState(false);
-    const [loggingOut, setLoggingOut] = useState(false);
+    const [layoutReady, setLayoutReady] = useState(false);
 
-    useEffect(() => {
-        const { data: listener } = supabase.auth.onAuthStateChange(
-            async (event: AuthChangeEvent, session: Session | null) => {
-                if (event === "SIGNED_OUT") {
-                    console.warn("🔴 Signed out detected, clearing session");
-                    localStorage.removeItem("sb-pivysrujmfjxaauahclj-auth-token");
-                    sessionStorage.clear();
-                    router.push("/");
-                }
-
-                if (event === "TOKEN_REFRESHED" && !session) {
-                    console.warn("🔴 Invalid refresh token — forcing logout");
-                    await supabase.auth.signOut({ scope: "local" });
-                    localStorage.removeItem("sb-pivysrujmfjxaauahclj-auth-token");
-                    sessionStorage.clear();
-                    router.push("/");
-                }
-
-                if (event === "SIGNED_IN") {
-                    console.log("✅ Signed in event received");
-                }
-            }
-        );
-
-        return () => listener?.subscription?.unsubscribe?.();
-    }, [supabase, router]);
-
+    /* -----------------------------------------
+       MOUNT
+    ------------------------------------------ */
     useEffect(() => setMounted(true), []);
 
+    /* -----------------------------------------
+       LOAD PROFILE ONCE
+    ------------------------------------------ */
     useEffect(() => {
-        let isMounted = true;
+        async function load() {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const user = sessionData.session?.user;
 
-        async function loadProfile() {
-            try {
-                setLoading(true);
-                const {
-                    data: { session },
-                } = await supabase.auth.getSession();
-
-                const user = session?.user;
-                if (!user) {
-                    if (isMounted) {
-                        setProfile(null);
-                        setLoading(false);
-                    }
-                    return;
-                }
-                
-                // Fetch profile from database
-                const { data: profileData, error } = await supabase
-                    .from("profiles")
-                    .select("id, username, avatar_url, role, bow_type, club_id")                    .eq("id", user.id)
-                    .maybeSingle();
-
-                console.log("Loaded profile:", profileData, user.user_metadata);
-
-                const finalProfile: UserProfile = {
-                    id: user.id,
-                    username:
-                        profileData?.username ||
-                        user.user_metadata?.username ||
-                        user.email?.split("@")[0] ||
-                        "Archer",
-                    avatar_url:
-                        profileData?.avatar_url ||
-                        user.user_metadata?.avatar_url ||
-                        null,
-                    role: profileData?.role || null,
-                    bow_type: profileData?.bow_type || null,
-                    club_id: profileData?.club_id || null,
-                };
-
-                if (isMounted) setProfile(finalProfile);
-            } catch (err) {
-                console.error("Navbar profile load error:", err);
-            } finally {
-                if (isMounted) setLoading(false);
+            if (!user) {
+                setProfile(null);
+                setLoading(false);
+                return;
             }
+
+            const { data: profileData } = await supabase
+                .from("profiles")
+                .select("id, username, avatar_url, role, bow_type, club_id")
+                .eq("id", user.id)
+                .maybeSingle();
+
+            setProfile({
+                id: user.id,
+                username:
+                    profileData?.username ??
+                    user.user_metadata?.username ??
+                    user.email?.split("@")[0] ??
+                    "Archer",
+                avatar_url:
+                    profileData?.avatar_url ??
+                    user.user_metadata?.avatar_url ??
+                    null,
+                role: profileData?.role ?? null,
+                bow_type: profileData?.bow_type ?? null,
+                club_id: profileData?.club_id ?? null,
+            });
+
+            setLoading(false);
         }
 
-        loadProfile();
+        load();
 
-        const { data: authListener } = supabase.auth.onAuthStateChange(
-            (event: AuthChangeEvent, session: Session | null) => {
-                if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-                    loadProfile();
-                }
-                if (event === "SIGNED_OUT") {
-                    setProfile(null);
-                }
-            }
+        const { data: listener } = supabase.auth.onAuthStateChange(
+            (_event: AuthChangeEvent, _session: Session | null) => load()
         );
 
-        return () => {
-            isMounted = false;
-            authListener?.subscription?.unsubscribe?.();
-        };
+        return () => listener?.subscription?.unsubscribe();
     }, [supabase]);
 
-    async function handleLogoutAnimated() {
-        try {
-            setLoggingOut(true);
+    /* -----------------------------------------
+       NAV ITEMS
+    ------------------------------------------ */
+    const navItems = useMemo(() => {
+        if (!profile) return [];
+        return [
+            { href: "/dashboard", label: "Feed", icon: LayoutDashboard },
+            { href: "/dashboard/signups", label: "Signups", icon: ClipboardList },
+            { href: "/dashboard/club-records", label: "Club Records", icon: Award },
+            { href: "/dashboard/coaching", label: "Coaching", icon: Target },
+            { href: "/dashboard/scoring", label: "Scoring", icon: BowArrow },
+            ...(profile.role === "admin"
+                ? [
+                    { href: "/dashboard/trophies", label: "Trophies", icon: Trophy },
+                    { href: "/dashboard/join-requests", label: "Join Requests", icon: User },
+                ]
+                : []),
+            { href: "/profile", label: "Profile", icon: UserCircle2 },
+        ];
+    }, [profile]);
 
-            // Small delay for animation
-            await new Promise((resolve) => setTimeout(resolve, 300));
+    /* -----------------------------------------
+       LAYOUT CALCULATION
+    ------------------------------------------ */
+    function updateLayout() {
+        if (!navbarRef.current || !measureRef.current || !rightRef.current) return;
 
-            await supabase.auth.signOut({ scope: "local" });
-            localStorage.removeItem("sb-pivysrujmfjxaauahclj-auth-token");
-            sessionStorage.clear();
+        const totalWidth = navbarRef.current.clientWidth;
+        const rightWidth = rightRef.current.clientWidth + 24;
+        const available = totalWidth - rightWidth;
 
-            await fetch("/logout", { method: "POST" });
+        const children = Array.from(
+            measureRef.current.children
+        ) as HTMLElement[];
 
-            // Fade out before redirect
-            await new Promise((resolve) => setTimeout(resolve, 400));
+        let used = 0;
+        let count = 0;
 
-            router.push("/");
-            router.refresh();
-        } catch (error) {
-            console.error("Logout failed:", error);
-            setLoggingOut(false);
+        for (const el of children) {
+            used += el.clientWidth + 12;
+            if (used <= available) count++;
+            else break;
         }
+
+        setVisibleCount(count);
     }
 
-    function NavLink({
-        href,
-        label,
-        icon: Icon,
-    }: {
-        href: string;
-        label: string;
-        icon?: any;
-    }) {
-        const isDashboardRoot = href === "/dashboard";
-        const active = isDashboardRoot
-            ? pathname === href
-            : pathname === href || pathname.startsWith(href + "/");
+    useEffect(() => {
+        const obs = new ResizeObserver(updateLayout);
+        if (navbarRef.current) obs.observe(navbarRef.current);
+        updateLayout();
+        return () => obs.disconnect();
+    }, [profile]);
+
+    /* -----------------------------------------
+       SEARCH LOGIC (debounced)
+    ------------------------------------------ */
+    useEffect(() => {
+        if (!profile?.club_id || query.length < 2) {
+            setResults([]);
+            setShowResults(false);
+            return;
+        }
+
+        const timeout = setTimeout(async () => {
+            const { data } = await supabase
+                .from("profiles")
+                .select("id, username, avatar_url, bow_type")
+                .eq("club_id", profile.club_id)
+                .ilike("username", `%${query}%`)
+                .limit(5);
+
+            setResults(data || []);
+            setShowResults(true);
+        }, 250);
+
+        return () => clearTimeout(timeout);
+    }, [query, profile?.club_id]);
+
+    useEffect(() => {
+        const obs = new ResizeObserver(() => {
+            updateLayout();
+            setLayoutReady(true); // allow animation once measured
+        });
+
+        if (navbarRef.current) obs.observe(navbarRef.current);
+        updateLayout();
+        setLayoutReady(true); // first measurement
+
+        return () => obs.disconnect();
+    }, [profile]);
+
+    /* -----------------------------------------
+       NAV LINK
+    ------------------------------------------ */
+    function NavLink({ href, label, icon: Icon }: NavItem) {
+        const isActive =
+            pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
 
         return (
             <Link
                 href={href}
-                onClick={() => setMenuOpen(false)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${active
-                        ? "text-[hsl(var(--primary))] underline underline-offset-4"
-                        : "text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary))]"
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm transition ${isActive
+                        ? "text-primary underline underline-offset-4"
+                        : "text-foreground hover:text-primary"
                     }`}
             >
-                {Icon && <Icon size={16} strokeWidth={2} />} {label}
+                {Icon && <Icon size={16} />}
+                {label}
             </Link>
         );
     }
 
+    /* -----------------------------------------
+       SHARED OVERFLOW DROPDOWN
+    ------------------------------------------ */
+    const OverflowDropdown = ({ items }: { items: NavItem[] }) => (
+        <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+                <button className="flex items-center px-2 py-2 hover:bg-muted/30 rounded-md">
+                    <Menu size={18} />
+                </button>
+            </DropdownMenu.Trigger>
+
+            <DropdownMenu.Content
+                className="min-w-[180px] p-2 rounded-xl border shadow-md bg-background"
+            >
+                {items.map((item) => (
+                    <DropdownMenu.Item key={item.href} asChild>
+                        <Link
+                            href={item.href}
+                            className="px-3 py-2 flex items-center gap-2 rounded-md hover:bg-muted/30"
+                        >
+                            <item.icon size={16} />
+                            {item.label}
+                        </Link>
+                    </DropdownMenu.Item>
+                ))}
+            </DropdownMenu.Content>
+        </DropdownMenu.Root>
+    );
+
+    /* -----------------------------------------
+       THEME TOGGLE
+    ------------------------------------------ */
     function ThemeToggle() {
         if (!mounted) return null;
-
-        const currentTheme = theme === "system" ? systemTheme : theme;
-        const isDark = currentTheme === "dark";
+        const current = theme === "system" ? systemTheme : theme;
+        const isDark = current === "dark";
 
         return (
             <button
                 onClick={() => setTheme(isDark ? "light" : "dark")}
-                className="p-2 rounded-lg hover:bg-[hsl(var(--muted))]/40 transition-all duration-300"
+                className="p-2 rounded-lg hover:bg-muted/40"
             >
                 {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
         );
     }
 
-    useEffect(() => {
-        if (!profile?.club_id) return;            // ✅ prevent TS error & prevents bad query
-        if (query.length < 2) {
-            setResults([]);
-            setShowResults(false);
-            return;
-        }
+    /* -----------------------------------------
+       LOGOUT
+    ------------------------------------------ */
+    async function logout() {
+        await supabase.auth.signOut({ scope: "local" });
+        localStorage.clear();
+        sessionStorage.clear();
+        router.push("/");
+    }
 
-        const delay = setTimeout(async () => {
-            setSearching(true);
-
-            const { data, error } = await supabase
-                .from("profiles")
-                .select("id, username, avatar_url, bow_type, club_id")
-                .ilike("username", `%${query}%`)
-                .eq("club_id", profile.club_id)   // now safe
-                .limit(5);
-
-            if (!error) {
-                setResults(data || []);
-                setShowResults(true);
-            }
-
-            setSearching(false);
-        }, 250);
-
-        return () => clearTimeout(delay);
-    }, [query, profile?.club_id]);
-
+    /* -----------------------------------------
+       RENDER
+    ------------------------------------------ */
     return (
         <nav
-            className="sticky top-0 z-50 mx-auto mt-2 mb-4 flex items-center justify-between
-        rounded-2xl border border-[hsl(var(--border))]/50
-        bg-[hsl(var(--background))]/70 backdrop-blur-md
-        px-4 sm:px-6 py-3 shadow-md transition-all duration-300"
+            ref={navbarRef}
+            className="sticky top-0 z-50 mt-2 mb-4 flex items-center justify-between 
+            rounded-2xl border bg-background/70 backdrop-blur-md shadow-md px-4 sm:px-6 py-3"
         >
-            {/* Left section */}
-            <div className="flex items-center gap-4">
-                <Link
-                    href="/"
-                    className="text-lg font-semibold hover:text-[hsl(var(--primary))]"
-                >
-                    Archery Club
+            {/* LEFT */}
+            <div className="flex items-center gap-4 min-w-max">
+                <Link href="/" className="text-lg font-semibold hover:text-primary">
+                    Arcus
                 </Link>
 
-                {/* Desktop navigation */}
-                {!loading && profile && (
-                    <div className="hidden md:flex items-center gap-3">
-                        <NavLink href="/dashboard" label="Feed" icon={LayoutDashboard} />
-                        <NavLink href="/dashboard/signups" label="Signups" icon={ClipboardList} />
-                        <NavLink href="/dashboard/club-records" label="Club Records" icon={Award} />
-                        <NavLink href="/dashboard/coaching" label="Coaching" icon={Target} />
-                        <NavLink href="/dashboard/scoring" label="Scoring" icon={BowArrow} />
-                        {profile.role === "admin" && (
-                            <>
-                                <NavLink href="/dashboard/trophies" label="Trophies" icon={Trophy} />
-                                <NavLink
-                                    href="/dashboard/join-requests"
-                                    label="Join Requests"
-                                    icon={User}
-                                />
-                            </>
+                {!loading && profile && layoutReady && (
+                    <div className="hidden md:flex items-center gap-3 relative">
+
+                        {/* Static inline items (all except the last visible) */}
+                        <div className="flex items-center gap-3">
+                            {navItems.slice(0, Math.max(0, visibleCount - 1)).map((item) => (
+                                <NavLink key={item.href} {...item} />
+                            ))}
+
+                            {/* Animated transition item (only one that disappears) */}
+                            <AnimatePresence mode="popLayout" initial={false}>
+                                {visibleCount > 0 && visibleCount <= navItems.length && (
+                                    <motion.div
+                                        key={navItems[visibleCount - 1].href}
+                                        initial={{ opacity: 1, x: 0 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 12 }}   // ← move toward dropdown
+                                        transition={{ duration: 0.18, ease: "easeOut" }}
+                                    >
+                                        <NavLink {...navItems[visibleCount - 1]} />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        {/* Dropdown for overflow items */}
+                        {visibleCount < navItems.length && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                <OverflowDropdown items={navItems.slice(visibleCount)} />
+                            </motion.div>
                         )}
-                        <NavLink href="/profile" label="Profile" icon={UserCircle2} />
+                    </div>
+                )}
+
+                {/* Mobile dropdown */}
+                {!loading && profile && (
+                    <div className="md:hidden">
+                        <OverflowDropdown items={navItems} />
                     </div>
                 )}
             </div>
 
-            {/* 🔍 User Search Bar with Dropdown */}
-            {!loading && profile && (
-                <div className="relative hidden md:block">
-                    <input
-                        type="text"
-                        placeholder="Search users..."
-                        className="w-56 rounded-full border border-[hsl(var(--border))]/40 
-                       bg-[hsl(var(--muted))]/30 px-3 py-1.5 text-sm
-                       focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        onBlur={() => setTimeout(() => setShowResults(false), 150)}
-                        onFocus={() => query.length > 1 && setShowResults(true)}
-                    />
+            {/* MEASUREMENT */}
+            <div
+                ref={measureRef}
+                className="absolute opacity-0 pointer-events-none h-0 overflow-hidden"
+            >
+                {navItems.map((item) => (
+                    <div key={item.href} className="flex items-center px-3 py-2 text-sm">
+                        {item.label}
+                    </div>
+                ))}
+            </div>
 
-                    {/* 🔽 Results dropdown */}
-                    {showResults && results.length > 0 && (
-                        <div className="absolute mt-2 w-64 bg-[hsl(var(--popover))] 
-                            border border-[hsl(var(--border))]/40 rounded-xl 
-                            shadow-lg p-2 z-50">
-                            {results.map((u) => (
-                                <Link
-                                    key={u.id}
-                                    href={`/profile/${u.id}`}
-                                    className="flex items-center gap-3 p-2 rounded-lg
-                                   hover:bg-[hsl(var(--muted))]/30 transition"
-                                >
-                                    <Image
-                                        src={u.avatar_url || "/default-avatar.png"}
-                                        alt="Avatar"
-                                        width={32}
-                                        height={32}
-                                        className="h-8 w-8 rounded-full object-cover border border-[hsl(var(--border))] bg-gray-100"
-                                    />
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium">{u.username}</span>                                        {u.bow_type && (
-                                            <span className="text-xs uppercase text-[hsl(var(--muted-foreground))]">
-                                                {u.bow_type}
-                                            </span>
-                                        )}
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    )}
+            {/* RIGHT */}
+            <div ref={rightRef} className="flex items-center gap-3 min-w-max">
 
-                    {/* No results */}
-                    {showResults && query.length > 1 && results.length === 0 && (
-                        <div className="absolute mt-2 w-64 bg-[hsl(var(--popover))] 
-                            border border-[hsl(var(--border))]/40 rounded-xl 
-                            shadow-lg p-3 text-sm text-center z-50">
-                            No users found
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Right section */}
-            <div className="flex items-center gap-3">
-                <ThemeToggle />
-                {!loading && profile && <NotificationsDropdown userId={profile.id} />}
-
-                {/* Mobile menu toggle */}
+                {/* SEARCH */}
                 {!loading && profile && (
-                    <button
-                        onClick={() => setMenuOpen((p) => !p)}
-                        className="md:hidden p-2 rounded-lg hover:bg-[hsl(var(--muted))]/40"
-                    >
-                        {menuOpen ? <X size={20} /> : <Menu size={20} />}
-                    </button>
+                    <div className="relative w-56">
+                        <input
+                            type="text"
+                            placeholder="Search users..."
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            onFocus={() => results.length && setShowResults(true)}
+                            onBlur={() => setTimeout(() => setShowResults(false), 200)}
+                            className="w-full rounded-full border bg-muted/30 px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary"
+                        />
+
+                        {showResults && results.length > 0 && (
+                            <div className="absolute mt-2 w-64 bg-popover border rounded-xl shadow-lg p-2 z-50">
+                                {results.map((u) => (
+                                    <Link
+                                        key={u.id}
+                                        href={`/profile/${u.id}`}
+                                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30"
+                                    >
+                                        <Image
+                                            src={u.avatar_url ?? "/default-avatar.png"}
+                                            alt="Avatar"
+                                            width={32}
+                                            height={32}
+                                            className="rounded-full h-8 w-8 object-cover border"
+                                        />
+                                        <div>
+                                            <span className="text-sm font-medium">{u.username}</span>
+                                            {u.bow_type && (
+                                                <span className="block text-xs text-muted-foreground uppercase">
+                                                    {u.bow_type}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 )}
 
-                {/* Profile dropdown (desktop only) */}
+                {/* THEME */}
+                <ThemeToggle />
+
+                {/* NOTIFICATIONS */}
+                {!loading && profile && (
+                    <NotificationsDropdown userId={profile.id} />
+                )}
+
+                {/* PROFILE DROPDOWN */}
                 {!loading && profile && (
                     <DropdownMenu.Root>
                         <DropdownMenu.Trigger asChild>
-                            <button className="hidden md:flex items-center gap-2 rounded-full focus:outline-none hover:opacity-80 transition-opacity">
-                                {profile.avatar_url ? (
-                                    <Image
-                                        src={profile.avatar_url.startsWith("http")
+                            <div className="cursor-pointer flex items-center hover:opacity-80 transition">
+                                <Image
+                                    src={
+                                        profile.avatar_url?.startsWith("http")
                                             ? profile.avatar_url
-                                            : `/default-avatar.png`}
-                                        alt="Avatar"
-                                        width={34}
-                                        height={34}
-                                        className="h-8 w-8 rounded-full object-cover border border-[hsl(var(--border))] bg-gray-100"
-                                    />
-                                ) : (
-                                    <Image
-                                        src="/default-avatar.png"
-                                        alt="Default Avatar"
-                                        width={34}
-                                        height={34}
-                                        className="h-8 w-8 rounded-full object-cover border border-[hsl(var(--border))] bg-gray-100"
-                                    />
-                                )}
-                            </button>
+                                            : "/default-avatar.png"
+                                    }
+                                    alt="Avatar"
+                                    width={34}
+                                    height={34}
+                                    className="h-8 w-8 rounded-full object-cover border"
+                                />
+                            </div>
                         </DropdownMenu.Trigger>
 
-                        <DropdownMenu.Portal>
-                            <DropdownMenu.Content
-                                className="min-w-[180px] rounded-xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--popover))] p-2 shadow-md"
-                                sideOffset={6}
-                            >
-                                <DropdownMenu.Label className="px-3 py-2 text-xs text-[hsl(var(--muted-foreground))] flex flex-col">
-                                    <span>{profile.username || "Archer"}</span>                                </DropdownMenu.Label>
+                        <DropdownMenu.Content className="min-w-[180px] p-2 border rounded-xl shadow-md bg-background">                            <DropdownMenu.Label className="px-3 py-2 text-xs text-muted-foreground">
+                                {profile.username}
+                            </DropdownMenu.Label>
 
-                                <DropdownMenu.Item asChild>
-                                    <Link
-                                        href="/profile/edit"
-                                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-[hsl(var(--muted))]/40"
-                                    >
-                                        <User size={14} /> Edit Profile
-                                    </Link>
-                                </DropdownMenu.Item>
-
-                                <DropdownMenu.Separator className="h-px bg-[hsl(var(--border))]/40 my-1" />
-
-                                <DropdownMenu.Item
-                                    disabled={loggingOut}
-                                    onSelect={handleLogoutAnimated}
-                                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm 
-               text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 
-               cursor-pointer transition-all duration-300"
+                            <DropdownMenu.Item asChild>
+                                <Link
+                                    href="/profile/edit"
+                                    className="px-3 py-2 text-sm flex items-center gap-2 hover:bg-muted/30 rounded-md"
                                 >
-                                    {loggingOut ? (
-                                        <div className="flex items-center gap-2 animate-fade-in">
-                                            <span className="h-3 w-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></span>
-                                            Signing out…
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <LogOut size={14} />
-                                            Logout
-                                        </>
-                                    )}
-                                </DropdownMenu.Item>
-                            </DropdownMenu.Content>
-                        </DropdownMenu.Portal>
+                                    <User size={14} /> Edit Profile
+                                </Link>
+                            </DropdownMenu.Item>
+
+                            <DropdownMenu.Separator className="h-px bg-border my-1" />
+
+                            <DropdownMenu.Item
+                                onSelect={logout}
+                                className="px-3 py-2 text-sm text-red-500 flex gap-2 items-center rounded-md hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
+                            >
+                                <LogOut size={14} /> Logout
+                            </DropdownMenu.Item>
+                        </DropdownMenu.Content>
                     </DropdownMenu.Root>
                 )}
-
-                {!loading && !profile && (
-                    <Link
-                        href="/login"
-                        className="rounded-md bg-[hsl(var(--primary))] px-4 py-1.5 text-[hsl(var(--primary-foreground))] text-sm font-medium hover:opacity-90 transition-opacity"
-                    >
-                        Login
-                    </Link>
-                )}
             </div>
-
-            {/* Mobile dropdown menu */}
-            {menuOpen && !loading && profile && (
-                <div className="absolute top-[100%] left-0 w-full border-t border-[hsl(var(--border))]/40 bg-[hsl(var(--background))] shadow-lg md:hidden animate-in fade-in slide-in-from-top-2 p-4">
-                    <div className="flex flex-col space-y-2">
-                        <NavLink href="/dashboard" label="Feed" icon={LayoutDashboard} />
-                        <NavLink href="/dashboard/signups" label="Signups" icon={ClipboardList} />
-                        <NavLink href="/dashboard/club-records" label="Club Records" icon={Award} />
-                        <NavLink href="/dashboard/coaching" label="Coaching" icon={Target} />
-                        <NavLink href="/dashboard/scoring" label="Scoring" icon={BowArrow} />
-                        {profile.role === "admin" && (
-                            <>
-                                <NavLink href="/dashboard/trophies" label="Trophies" icon={Trophy} />
-                                <NavLink
-                                    href="/dashboard/join-requests"
-                                    label="Join Requests"
-                                    icon={User}
-                                />
-                            </>
-                        )}
-                        <NavLink href="/profile" label="Profile" icon={UserCircle2} />
-                        <button
-                            onClick={handleLogoutAnimated}
-                            className="flex items-center gap-2 text-sm text-red-500 font-medium hover:underline mt-2"
-                        >
-                            <LogOut size={14} /> Logout
-                        </button>
-                    </div>
-                </div>
-            )}
         </nav>
     );
 }

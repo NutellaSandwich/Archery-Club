@@ -149,6 +149,8 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
         setEditRoundMax(null);
     }
 
+    
+
     useEffect(() => {
         if (!editingPost) return;
 
@@ -703,7 +705,6 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                     <motion.article
                         key={p.id}
                         layout
-                        initial={{ opacity: 0, y: 20 }}
                         animate={{
                             opacity: p._deleting ? 0 : 1,
                             y: p._deleting ? -10 : 0,
@@ -761,11 +762,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
 
                         {/* Details */}
                         <div className="flex flex-col items-center text-center border-t border-b py-4 mb-3 space-y-4">
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true, amount: 0.4 }}
-                                transition={{ duration: 0.4, ease: "easeOut" }}
+                            <div
                                 className="flex flex-col items-center"
                             >
                                 <p className="font-bold text-3xl text-foreground/90 leading-none">{p.score}</p>
@@ -879,33 +876,23 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                         </motion.span>
                                     </motion.div>
                                 )}
-                            </motion.div>
+                            </div>
 
                             <motion.div
-                                initial={{ opacity: 0, y: 15 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true, amount: 0.4 }}
-                                transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
-                                className="grid grid-cols-2 gap-8 w-full max-w-xs mx-auto"
+                                initial={false}
+                                animate={false}
+                                className="flex items-start justify-center gap-24"
                             >
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true, amount: 0.4 }}
-                                    transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
-                                    className="flex flex-col items-center"
-                                >
+                                {/* Round */}
+                                <motion.div initial={false} animate={false} className="flex flex-col items-center">
                                     <Link
                                         href={`/dashboard/club-records?round=${encodeURIComponent(p.round_name)}`}
                                         onClick={(e) => e.stopPropagation()}
-                                        title={`View club records for ${p.round_name}`}
-                                        aria-label={`View club records for ${p.round_name}`}
                                         className="inline-flex items-center px-3 py-1.5 rounded-full
-               border border-[hsl(var(--border))]/60
-               bg-transparent text-[hsl(var(--primary))] font-medium
-               hover:bg-[hsl(var(--muted))]/30 hover:border-[hsl(var(--primary))]/60 hover:underline
-               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--primary))]
-               transition cursor-pointer"
+                border border-[hsl(var(--border))]/60
+                bg-transparent text-[hsl(var(--primary))] font-medium
+                hover:bg-[hsl(var(--muted))]/30 hover:border-[hsl(var(--primary))]/60 hover:underline
+                transition cursor-pointer"
                                     >
                                         {p.round_name}
                                     </Link>
@@ -914,15 +901,10 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                     </p>
                                 </motion.div>
 
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true, amount: 0.4 }}
-                                    transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
-                                    className="flex flex-col items-center"
-                                >
+                                {/* Bowstyle */}
+                                <motion.div initial={false} animate={false} className="flex flex-col items-center">
                                     <span
-                                        className={`px-4 py-1 rounded-full text-white text-xs leading-none ${p.bow_type.toLowerCase() === "recurve"
+                                        className={`px-4 py-1 rounded-full text-white text-xs ${p.bow_type.toLowerCase() === "recurve"
                                                 ? "bg-red-500"
                                                 : p.bow_type.toLowerCase() === "compound"
                                                     ? "bg-blue-500"

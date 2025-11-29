@@ -170,3 +170,43 @@ h3 {
 .animate-fade-in {
   animation: fade-in 200ms ease-out forwards;
 }
+
+@layer utilities {
+  .nav-item-enter {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  .nav-item-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 150ms ease, transform 150ms ease;
+  }
+
+  .nav-item-exit {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .nav-item-exit-active {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 150ms ease, transform 150ms ease;
+  }
+}
+
+/* This is an example of what your CSS should look like for accurate width measurement */
+.nav-hidden-measure {
+  /* Hide the content visually */
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+
+  /* CRUCIAL: Must have the original dimensions */
+  visibility: hidden;
+  /* Often sufficient, but safer to use the above */
+  height: auto !important;
+  width: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
