@@ -449,10 +449,10 @@ export default function Navbar() {
         <nav
             ref={navbarRef}
             className="sticky top-0 z-50 mt-2 mb-4 flex items-center justify-between 
-            rounded-2xl border bg-background/70 backdrop-blur-md shadow-md px-4 sm:px-6 py-3"
+            rounded-2xl border bg-background/70 backdrop-blur-md shadow-md px-3 sm:px-6 py-2.5"
         >
             {/* LEFT */}
-            <div className="flex items-center gap-4 min-w-max">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                 <Link href="/" className="text-lg font-semibold hover:text-primary">
                     Arcus
                 </Link>
@@ -514,7 +514,10 @@ export default function Navbar() {
             </div>
 
             {/* RIGHT */}
-            <div ref={rightRef} className="flex items-center gap-3 min-w-max">
+            <div
+                ref={rightRef}
+                className="flex items-center gap-2 sm:gap-3 min-w-0 shrink"
+            >
 
                 {/* SEARCH */}
                 {!loading && profile && (
@@ -583,7 +586,7 @@ focus:ring-2 focus:ring-primary"                        />
                                     alt="Avatar"
                                     width={34}
                                     height={34}
-                                    className="h-8 w-8 rounded-full object-cover border"
+                                    className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover border"
                                 />
                             </div>
                         </DropdownMenu.Trigger>
