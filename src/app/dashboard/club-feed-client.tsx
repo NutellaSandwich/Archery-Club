@@ -881,14 +881,14 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             <motion.div
                                 initial={false}
                                 animate={false}
-                                className="flex items-start justify-center gap-24"
+                                className="flex items-start justify-center gap-6 sm:gap-24"
                             >
                                 {/* Round */}
                                 <motion.div initial={false} animate={false} className="flex flex-col items-center">
                                     <Link
                                         href={`/dashboard/club-records?round=${encodeURIComponent(p.round_name)}`}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="inline-flex items-center px-3 py-1.5 rounded-full
+                                        className="inline-flex items-center px-3 py-1.5 rounded-full max-w-[90%] overflow-hidden text-ellipsis whitespace-nowrap sm:max-w-none
                 border border-[hsl(var(--border))]/60
                 bg-transparent text-[hsl(var(--primary))] font-medium
                 hover:bg-[hsl(var(--muted))]/30 hover:border-[hsl(var(--primary))]/60 hover:underline
@@ -957,7 +957,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
 
                         {/* Footer + Likes */}
                         <div className="flex justify-between items-center text-sm">
-                            <div className="flex gap-4 items-center relative overflow-visible">
+                            <div className="flex gap-4 items-center relative overflow-hidden">
                                 <AnimatePresence>
                                     {animatingLike === p.id && (
                                         <motion.div
@@ -1043,7 +1043,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                         .slice(0, expandedPost === p.id ? (p.comments?.length ?? 0) : 2)
                                         .map((c) => (
                                             <div key={c.id} className="group relative">
-                                                <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                                                <div className="flex items-start gap-2 text-sm text-muted-foreground flex-wrap">
                                                     <div className="relative h-6 w-6 rounded-full overflow-hidden border border-[hsl(var(--border))]/40 flex-shrink-0 bg-gray-200">
                                                         {c.profiles?.avatar_url ? (
                                                             <Image
@@ -1081,13 +1081,13 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                                                     .map((r) => (
                                                                         <div
                                                                             key={r.id}
-                                                                            className="flex items-start gap-2 text-sm text-muted-foreground"
+                                                                            className="flex items-start gap-2 text-sm text-muted-foreground flex-wrap"
                                                                         >
                                                                             <CornerDownRight
                                                                                 size={12}
                                                                                 className="mt-1 text-gray-400 flex-shrink-0"
                                                                             />
-                                                                            <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                                                                            <div className="flex items-start gap-2 text-sm text-muted-foreground flex-wrap">
                                                                                 {r.profiles?.avatar_url ? (
                                                                                     <div className="relative h-6 w-6 rounded-full overflow-hidden border border-[hsl(var(--border))]/40 flex-shrink-0">
                                                                                         <Image
