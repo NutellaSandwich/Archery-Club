@@ -26,6 +26,7 @@ import NotificationsDropdown from "@/components/notifications-dropdown";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 
 type UserProfile = {
     id: string;
@@ -291,6 +292,156 @@ export default function Navbar() {
         router.push("/");
     }
 
+    function MobileFullScreenMenu({ items }: { items: NavItem[] }) {
+        const [open, setOpen] = useState(false);
+        const [mounted, setMounted] = useState(false);
+
+        useEffect(() => setMounted(true), []);
+
+        async function handleLogout() {
+            await supabase.auth.signOut({ scope: "local" });
+            localStorage.clear();
+            sessionStorage.clear();
+            router.push("/");
+        }
+
+        const containerVariants = {
+            hidden: { opacity: 0 },
+            show: {
+                opacity: 1,
+                transition: { staggerChildren: 0.05, delayChildren: 0.1 }
+            }
+        };
+
+        const itemVariants = {
+            hidden: { opacity: 0, y: 6 },
+            show: {
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.18 }
+            }
+        };
+
+        return (
+            <>
+                {/* Trigger */}
+                <button
+                    onClick={() => setOpen(true)}
+                    className="md:hidden flex items-center px-2 py-2 hover:bg-muted/30 rounded-md"
+                >
+                    <Menu size={20} />
+                </button>
+
+                {mounted &&
+                    createPortal(
+                        <AnimatePresence>
+                            {open && (
+                                <>
+                                    {/* BACKDROP */}
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="
+                                        fixed inset-0 z-[998]
+                                        bg-white/0
+                                        backdrop-blur-[6px]
+                                        md:hidden
+                                    "
+                                        onClick={() => setOpen(false)}
+                                    />
+
+                                    {/* CONTENT */}
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.97 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.97 }}
+                                        transition={{ duration: 0.18 }}
+                                        className="
+                                        fixed inset-0 z-[999]
+                                        flex flex-col items-center justify-center
+                                        px-15
+                                    "
+                                        onClick={() => setOpen(false)}
+                                    >
+                                        {/* CLOSE BUTTON (NO BOX, JUST ✕) */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpen(false);
+                                            }}
+                                            className="
+                                            absolute top-6 right-6 
+                                            text-white text-2xl 
+                                            transition-transform
+                                            hover:scale-[1.22]
+                                            active:scale-[0.90]
+                                            drop-shadow-[0_0_6px_rgba(255,255,255,0.6)]
+                                        "
+                                        >
+                                            ✕
+                                        </button>
+
+                                        {/* MENU */}
+                                        <motion.div
+                                            onClick={(e) => e.stopPropagation()}
+                                            variants={containerVariants}
+                                            initial="hidden"
+                                            animate="show"
+                                            className="flex flex-col gap-5 text-base font-medium text-white"
+                                        >
+                                            {items.map((item) => (
+                                                <motion.div
+                                                    key={item.href}
+                                                    variants={itemVariants}
+                                                    whileHover={{ scale: 1.15 }}
+                                                    whileTap={{ scale: 0.90 }}
+                                                    transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                                                >
+                                                    <Link
+                                                        href={item.href}
+                                                        onClick={() => setOpen(false)}
+                                                        className="
+                                                            flex items-center gap-3
+                                                            text-white
+                                                            drop-shadow-[0_0_4px_rgba(255,255,255,0.28)]
+                                                            hover:opacity-80
+                                                        "
+                                                    >
+                                                        <item.icon size={30} />
+                                                        {item.label}
+                                                    </Link>
+                                                </motion.div>
+                                            ))}
+
+                                            <motion.button
+                                                variants={itemVariants}
+                                                whileHover={{ scale: 1.15 }}
+                                                whileTap={{ scale: 0.90 }}
+                                                transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                                                onClick={handleLogout}
+                                                className="
+        flex items-center gap-3
+        text-red-300
+        drop-shadow-[0_0_6px_rgba(255,60,60,0.5)]
+        hover:opacity-80
+    "
+                                            >
+                                                <LogOut size={30} />
+                                                Logout
+                                            </motion.button>
+                                        </motion.div>
+                                    </motion.div>
+                                </>
+                            )}
+                        </AnimatePresence>,
+                        document.body
+                    )}
+            </>
+        );
+    }
+
     /* -----------------------------------------
        RENDER
     ------------------------------------------ */
@@ -345,11 +496,8 @@ export default function Navbar() {
                     </div>
                 )}
 
-                {/* Mobile dropdown */}
                 {!loading && profile && (
-                    <div className="md:hidden">
-                        <OverflowDropdown items={navItems} />
-                    </div>
+                    <MobileFullScreenMenu items={navItems} />
                 )}
             </div>
 
@@ -370,7 +518,7 @@ export default function Navbar() {
 
                 {/* SEARCH */}
                 {!loading && profile && (
-                    <div className="relative w-56">
+                    <div className="relative w-40 sm:w-48 md:w-56">
                         <input
                             type="text"
                             placeholder="Search users..."
@@ -378,8 +526,10 @@ export default function Navbar() {
                             onChange={(e) => setQuery(e.target.value)}
                             onFocus={() => results.length && setShowResults(true)}
                             onBlur={() => setTimeout(() => setShowResults(false), 200)}
-                            className="w-full rounded-full border bg-muted/30 px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary"
-                        />
+                            className="w-full rounded-full border bg-muted/30 
+px-2 py-1 text-xs
+sm:px-3 sm:py-1.5 sm:text-sm
+focus:ring-2 focus:ring-primary"                        />
 
                         {showResults && results.length > 0 && (
                             <div className="absolute mt-2 w-64 bg-popover border rounded-xl shadow-lg p-2 z-50">
