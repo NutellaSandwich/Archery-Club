@@ -741,7 +741,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
 
                             {/* Owner actions */}
                             {p.profiles?.id === userId && (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-shrink-0">
                                     <button
                                         onClick={() => openEdit(p)}
                                         className="text-muted-foreground hover:text-blue-600 transition"
@@ -956,7 +956,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                         </div>
 
                         {/* Footer + Likes */}
-                        <div className="flex justify-between items-center text-sm">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-sm gap-2">
                             <div className="flex gap-4 items-center relative overflow-hidden">
                                 <AnimatePresence>
                                     {animatingLike === p.id && (
