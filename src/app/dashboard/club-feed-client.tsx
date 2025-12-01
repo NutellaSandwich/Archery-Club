@@ -22,6 +22,7 @@ import Link from "next/link";
 import RoundNameSelect from "@/components/RoundNameSelect";
 import { getRoundMaxScore } from "@/lib/rounds";
 import { Button } from "@/components/ui/button";
+
 interface ClubFeedClientProps {
     userId: string;
     clubId: string | null;
@@ -31,7 +32,7 @@ type Profile = {
     id: string;
     username: string;
     avatar_url: string | null;
-    role?: string | null; // ✅ Added this line
+    role?: string | null;
 };
 
 type Reply = {
@@ -68,7 +69,7 @@ type Post = {
     score_type?: "Informal Practice" | "Formal Practice" | "Competition" | null;
     competition_name?: string | null;
     scoresheet_url?: string | null;
-    spot_type?: string | null; // ⬅️ added
+    spot_type?: string | null;
 };
 
 type RawComment = {
@@ -96,12 +97,10 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
     const [animatingComment, setAnimatingComment] = useState<string | null>(null);
     const [animatingLike, setAnimatingLike] = useState<string | null>(null);
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-    // 🗑️ New states for deleting comments/replies
     const [confirmDeleteComment, setConfirmDeleteComment] = useState<string | null>(null);
     const [confirmDeleteReply, setConfirmDeleteReply] = useState<string | null>(null);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-    // ✏️ Editing state (mirrors New Score rules)
     const [editingPost, setEditingPost] = useState<{
         id: string;
         round_name: string;
@@ -109,22 +108,19 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
         spot_type: string;
         score: string;
         golds: string;
-        score_date: string; // yyyy-mm-dd
+        score_date: string;
         score_type: Post["score_type"];
         competition_name: string;
         existingScoresheetUrl: string | null;
         newScoresheetFile: File | null;
     } | null>(null);
 
-    const [editAvailableSpotTypes, setEditAvailableSpotTypes] = useState<string[]>(
-        []
-    );
+    const [editAvailableSpotTypes, setEditAvailableSpotTypes] = useState<string[]>([]);
     const [editRoundMax, setEditRoundMax] = useState<number | null>(null);
     const isEditFormalOrComp =
         editingPost?.score_type === "Formal Practice" ||
         editingPost?.score_type === "Competition";
 
-    
     const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
 
     function openEdit(post: Post) {
@@ -149,12 +145,9 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
         setEditRoundMax(null);
     }
 
-    
-
     useEffect(() => {
         if (!editingPost) return;
 
-        // 👇 snapshot after the null-check so TS knows it's non-null
         const ep = editingPost;
 
         setEditRoundMax(getRoundMaxScore(ep.round_name) ?? null);
@@ -188,7 +181,6 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                 return;
             }
 
-            // fallback fetch when no cache
             const { data, error } = await supabase!
                 .from("handicaps")
                 .select("round_name, spot_type");
@@ -268,7 +260,11 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                 .order("created_at", { ascending: false });
 
             if (postError) throw postError;
-            if (!posts) return setPosts([]), setLoading(false);
+            if (!posts) {
+                setPosts([]);
+                setLoading(false);
+                return;
+            }
 
             const [{ data: likesData, error: likesError }, { data: userLikes, error: userLikesError }] =
                 await Promise.all([
@@ -354,7 +350,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
             if (!supabase || !userId) return;
             const { data, error } = await supabase
                 .from("profiles")
-                .select("id, username, avatar_url, role") // ✅ include role
+                .select("id, username, avatar_url, role")
                 .eq("id", userId)
                 .single();
             if (!error && data) setCurrentProfile(data);
@@ -497,16 +493,13 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
         }
     }
 
-    // 🗑️ Delete comment (and its replies)
     async function handleDeleteComment(commentId: string) {
         if (!supabase) return;
         setConfirmDeleteComment(null);
 
         try {
-            // Delete replies first
             await supabase.from("comment_replies").delete().eq("comment_id", commentId);
 
-            // Delete comment itself
             const { error } = await supabase
                 .from("post_comments")
                 .delete()
@@ -527,7 +520,6 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
         }
     }
 
-    // 🗑️ Delete reply
     async function handleDeleteReply(replyId: string, commentId: string) {
         if (!supabase) return;
         setConfirmDeleteReply(null);
@@ -560,11 +552,9 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
         }
     }
 
-    // ✅ Edit: apply same rules as New Score page
     async function handleUpdatePost() {
         if (!supabase || !editingPost) return;
 
-        // round max constraint
         const scoreNum = parseInt(editingPost.score || "0", 10);
         if (Number.isNaN(scoreNum)) return toast.error("Please enter a valid score.");
         if (editRoundMax && scoreNum > editRoundMax) {
@@ -573,12 +563,10 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
             );
         }
 
-        // spot-type selection required when multiple exist
         if (editAvailableSpotTypes.length > 1 && !editingPost.spot_type) {
             return toast.error("Please select a spot type for this round.");
         }
 
-        // scoresheet requirement for Formal/Competition
         const needsSheet =
             isEditFormalOrComp &&
             !editingPost.existingScoresheetUrl &&
@@ -587,7 +575,6 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
             return toast.error("A scoresheet is required for this type of score.");
         }
 
-        // upload new scoresheet if present
         let scoresheet_url = editingPost.existingScoresheetUrl ?? null;
         try {
             if (editingPost.newScoresheetFile) {
@@ -628,7 +615,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
             .from("club_posts")
             .update(payload)
             .eq("id", editingPost.id)
-            .eq("user_id", userId) // owner-only
+            .eq("user_id", userId)
             .select(
                 "id, round_name, bow_type, spot_type, score, golds, score_date, score_type, competition_name, scoresheet_url, is_club_record, is_personal_best"
             )
@@ -646,7 +633,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
 
     if (!clubId) {
         return (
-            <main className="flex flex-col items-center justify-center h-[70vh] text-center space-y-4">
+            <main className="flex flex-col items-center justify-center h-[70vh] text-center space-y-4 px-4">
                 <div className="flex items-center gap-2 text-red-600">
                     <BowArrow className="w-8 h-8" />
                     <h1 className="text-2xl font-semibold">Club Membership Required</h1>
@@ -661,10 +648,11 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
     }
 
     return (
-        <main className="max-w-3xl mx-auto p-6 space-y-6">
-            <section className="bg-[hsl(var(--card))] border border-[hsl(var(--border))]/40 rounded-2xl p-6 shadow-sm text-center">
+        <main className="w-full max-w-3xl mx-auto px-4 sm:px-6 space-y-6 pb-6 pt-3">
+            {/* Top card */}
+            <section className="bg-[hsl(var(--card))] border border-[hsl(var(--border))]/40 rounded-2xl p-5 sm:p-6 shadow-sm text-center">
                 <motion.h1
-                    className="text-2xl font-semibold mb-6 flex items-center justify-center gap-2"
+                    className="text-xl sm:text-2xl font-semibold mb-4 flex items-center justify-center gap-2"
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, ease: "easeOut" }}
@@ -679,18 +667,22 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                     Club Feed
                 </motion.h1>
 
+                <p className="text-xs text-muted-foreground mb-4 sm:mb-5">
+                    Share scores with your club, track PBs and celebrate records.
+                </p>
+
                 {/* Button container */}
-                <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:justify-center gap-3 w-full max-w-md mx-auto">
                     <button
                         onClick={() => router.push("/dashboard/new-score")}
-                        className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg px-6 py-3 font-medium hover:opacity-90 transition w-full sm:w-auto"
+                        className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-xl px-6 py-3 text-sm sm:text-base font-medium hover:opacity-90 transition w-full sm:w-auto"
                     >
                         Submit New Score
                     </button>
 
                     <button
                         onClick={() => router.push("/dashboard/club-records")}
-                        className="inline-flex items-center justify-center gap-2 bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] rounded-lg px-6 py-3 font-medium hover:opacity-90 transition w-full sm:w-auto"
+                        className="inline-flex items-center justify-center gap-2 bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] rounded-xl px-6 py-3 text-sm sm:text-base font-medium hover:opacity-90 transition w-full sm:w-auto"
                     >
                         <Trophy size={18} />
                         View Club Records
@@ -699,7 +691,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
             </section>
 
             {loading ? (
-                <p className="text-muted-foreground text-center py-10">Loading feed...</p>
+                <p className="text-muted-foreground text-center py-10 text-sm">Loading feed...</p>
             ) : (
                 posts.map((p) => (
                     <motion.article
@@ -710,12 +702,15 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             y: p._deleting ? -10 : 0,
                         }}
                         transition={{ duration: 0.4 }}
-                        className="rounded-xl bg-[hsl(var(--card))] border border-[hsl(var(--border))]/40 shadow-sm p-5 mb-4 hover:shadow-md transition"
+                        className="rounded-2xl bg-[hsl(var(--card))] border border-[hsl(var(--border))]/40 shadow-sm p-4 sm:p-6 mb-4 sm:mb-5 w-full"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                                <Link href={`/profile/${p.profiles?.id}`} className="flex items-center gap-3 group">
+                        <div className="flex items-start justify-between mb-3 w-full gap-3">
+                            <div className="flex flex-1 min-w-0 items-center gap-3">
+                                <Link
+                                    href={`/profile/${p.profiles?.id}`}
+                                    className="flex items-center gap-3 group min-w-0"
+                                >
                                     {p.profiles?.avatar_url ? (
                                         <div className="relative h-9 w-9 rounded-full overflow-hidden border border-[hsl(var(--border))]/40 flex-shrink-0">
                                             <Image
@@ -727,16 +722,19 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                             />
                                         </div>
                                     ) : (
-                                        <div className="h-9 w-9 bg-gray-300 rounded-full flex items-center justify-center text-xs text-gray-600">
+                                        <div className="h-9 w-9 bg-gray-300 rounded-full flex items-center justify-center text-xs text-gray-600 flex-shrink-0">
                                             ?
                                         </div>
                                     )}
-                                    <span className="font-semibold text-blue-600 group-hover:underline">
-                                        {p.profiles?.username}
-                                    </span>
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="font-semibold text-blue-500 group-hover:underline truncate">
+                                            {p.profiles?.username}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                            submitted a score
+                                        </span>
+                                    </div>
                                 </Link>
-
-                                <span className="text-muted-foreground text-sm">submitted a score:</span>
                             </div>
 
                             {/* Owner actions */}
@@ -744,7 +742,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <button
                                         onClick={() => openEdit(p)}
-                                        className="text-muted-foreground hover:text-blue-600 transition"
+                                        className="text-muted-foreground hover:text-blue-500 transition"
                                         title="Edit this post"
                                     >
                                         <Pencil size={18} />
@@ -760,13 +758,13 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             )}
                         </div>
 
-                        {/* Details */}
-                        <div className="flex flex-col items-center text-center border-t border-b py-4 mb-3 space-y-4">
-                            <div
-                                className="flex flex-col items-center"
-                            >
-                                <p className="font-bold text-3xl text-foreground/90 leading-none">{p.score}</p>
-                                <p className="uppercase text-[9px] text-muted-foreground/50 tracking-[0.15em] mt-1">
+                        {/* Score + tags */}
+                        <div className="flex flex-col items-center text-center border-y border-[hsl(var(--border))]/40 py-4 mb-3 space-y-4">
+                            <div className="flex flex-col items-center">
+                                <p className="font-bold text-3xl text-foreground leading-none">
+                                    {p.score}
+                                </p>
+                                <p className="uppercase text-[9px] text-muted-foreground/60 tracking-[0.18em] mt-1">
                                     score
                                 </p>
 
@@ -838,7 +836,11 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                             />
                                         </motion.div>
 
-                                        <motion.span initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                                        <motion.span
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.2 }}
+                                        >
                                             New Club Record!
                                         </motion.span>
                                     </motion.div>
@@ -871,40 +873,43 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                             />
                                         </motion.div>
 
-                                        <motion.span initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                                        <motion.span
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.2 }}
+                                        >
                                             Personal Best!
                                         </motion.span>
                                     </motion.div>
                                 )}
                             </div>
 
+                            {/* Round + bowstyle */}
                             <motion.div
                                 initial={false}
                                 animate={false}
-                                className="flex items-start justify-center gap-6 sm:gap-24"
+                                className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-8 w-full max-w-sm mx-auto justify-items-center"
                             >
-                                {/* Round */}
-                                <motion.div initial={false} animate={false} className="flex flex-col items-center">
+                                <motion.div initial={false} animate={false} className="flex flex-col items-center w-full">
                                     <Link
                                         href={`/dashboard/club-records?round=${encodeURIComponent(p.round_name)}`}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="inline-flex items-center px-3 py-1.5 rounded-full max-w-[90%] overflow-hidden text-ellipsis whitespace-nowrap sm:max-w-none
+                                        className="inline-flex items-center px-3 py-1.5 rounded-full w-full justify-center text-xs sm:text-sm
                 border border-[hsl(var(--border))]/60
                 bg-transparent text-[hsl(var(--primary))] font-medium
                 hover:bg-[hsl(var(--muted))]/30 hover:border-[hsl(var(--primary))]/60 hover:underline
-                transition cursor-pointer"
+                transition cursor-pointer truncate"
                                     >
                                         {p.round_name}
                                     </Link>
-                                    <p className="uppercase text-[9px] text-muted-foreground/40 tracking-[0.12em] mt-1">
+                                    <p className="uppercase text-[9px] text-muted-foreground/50 tracking-[0.12em] mt-1">
                                         round
                                     </p>
                                 </motion.div>
 
-                                {/* Bowstyle */}
-                                <motion.div initial={false} animate={false} className="flex flex-col items-center">
+                                <motion.div initial={false} animate={false} className="flex flex-col items-center w-full">
                                     <span
-                                        className={`px-4 py-1 rounded-full text-white text-xs ${p.bow_type.toLowerCase() === "recurve"
+                                        className={`px-4 py-1 rounded-full text-white text-xs sm:text-sm w-full max-w-[180px] text-center ${p.bow_type.toLowerCase() === "recurve"
                                                 ? "bg-red-500"
                                                 : p.bow_type.toLowerCase() === "compound"
                                                     ? "bg-blue-500"
@@ -913,14 +918,15 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                     >
                                         {p.bow_type}
                                     </span>
-                                    <p className="uppercase text-[9px] text-muted-foreground/40 tracking-[0.12em] mt-1">
+                                    <p className="uppercase text-[9px] text-muted-foreground/50 tracking-[0.12em] mt-1">
                                         bowstyle
                                     </p>
                                 </motion.div>
                             </motion.div>
                         </div>
 
-                        <div className="mt-2 text-center space-y-1">
+                        {/* Meta info */}
+                        <div className="mt-3 text-center space-y-1 px-1">
                             {p.score_type === "Competition" && p.competition_name && (
                                 <p className="text-sm font-medium text-[hsl(var(--primary))] flex items-center justify-center gap-1">
                                     <Trophy size={14} className="text-yellow-500" />
@@ -930,10 +936,10 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             {p.score_type && (
                                 <p
                                     className={`text-xs font-medium ${p.score_type === "Competition"
-                                            ? "text-yellow-600"
+                                            ? "text-yellow-500"
                                             : p.score_type === "Formal Practice"
-                                                ? "text-blue-600"
-                                                : "text-gray-500"
+                                                ? "text-blue-500"
+                                                : "text-gray-400"
                                         }`}
                                 >
                                     {p.score_type}
@@ -947,16 +953,16 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             {p.scoresheet_url && (
                                 <button
                                     onClick={() => setPreviewImage(p.scoresheet_url!)}
-                                    className="text-xs text-blue-500 hover:underline"
+                                    className="text-xs text-blue-500 hover:underline flex items-center justify-center gap-1 mx-auto"
                                 >
-                                    <Camera size={14} className="inline-block" />
+                                    <Camera size={14} />
                                     View Scoresheet
                                 </button>
                             )}
                         </div>
 
-                        {/* Footer + Likes */}
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-sm gap-2">
+                        {/* Likes / comments summary */}
+                        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm w-full">
                             <div className="flex gap-4 items-center relative overflow-hidden">
                                 <AnimatePresence>
                                     {animatingLike === p.id && (
@@ -1024,11 +1030,12 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                 </div>
                             </div>
 
-                            <span className="text-muted-foreground text-xs">
+                            <span className="text-muted-foreground text-xs text-right">
                                 {new Date(p.created_at).toLocaleDateString()}
                             </span>
                         </div>
 
+                        {/* Comments */}
                         <AnimatePresence initial={false}>
                             {p.comments?.length! > 0 && (
                                 <motion.div
@@ -1043,7 +1050,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                         .slice(0, expandedPost === p.id ? (p.comments?.length ?? 0) : 2)
                                         .map((c) => (
                                             <div key={c.id} className="group relative">
-                                                <div className="flex items-start gap-2 text-sm text-muted-foreground flex-wrap">
+                                                <div className="flex items-start gap-2 text-sm text-muted-foreground flex-wrap bg-[hsl(var(--muted))]/10 rounded-xl px-3 py-2">
                                                     <div className="relative h-6 w-6 rounded-full overflow-hidden border border-[hsl(var(--border))]/40 flex-shrink-0 bg-gray-200">
                                                         {c.profiles?.avatar_url ? (
                                                             <Image
@@ -1055,7 +1062,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                                             />
                                                         ) : (
                                                             <Image
-                                                                src="/default-avatar.png" // ✅ fallback image
+                                                                src="/default-avatar.png"
                                                                 alt="Default Avatar"
                                                                 fill
                                                                 sizes="24px"
@@ -1063,8 +1070,8 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                                             />
                                                         )}
                                                     </div>
-                                                    <div className="flex-1">
-                                                        <p>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="break-words">
                                                             <span className="font-medium text-foreground">
                                                                 {c.profiles?.username || "User"}
                                                             </span>
@@ -1072,7 +1079,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                                         </p>
 
                                                         {c.replies && c.replies.length > 0 && (
-                                                            <div className="pl-6 mt-1 space-y-1">
+                                                            <div className="pl-6 mt-2 space-y-1">
                                                                 {c.replies
                                                                     .slice(
                                                                         0,
@@ -1087,7 +1094,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                                                                 size={12}
                                                                                 className="mt-1 text-gray-400 flex-shrink-0"
                                                                             />
-                                                                            <div className="flex items-start gap-2 text-sm text-muted-foreground flex-wrap">
+                                                                            <div className="flex items-start gap-2 text-sm text-muted-foreground flex-wrap flex-1 min-w-0">
                                                                                 {r.profiles?.avatar_url ? (
                                                                                     <div className="relative h-6 w-6 rounded-full overflow-hidden border border-[hsl(var(--border))]/40 flex-shrink-0">
                                                                                         <Image
@@ -1104,22 +1111,22 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                                                                     </div>
                                                                                 )}
 
-                                                                                <div className="flex-1">
+                                                                                <div className="flex-1 min-w-0">
                                                                                     <span className="font-medium text-foreground">
                                                                                         {r.profiles?.username || "Unknown User"}
                                                                                     </span>
                                                                                     : {r.content}
                                                                                 </div>
-                                                                                {(r.profiles?.id === userId || currentProfile?.role === "admin") && (
-                                                                                    <button
-                                                                                        onClick={() => setConfirmDeleteReply(r.id)}
-                                                                                        className="text-gray-400 hover:text-red-500 transition ml-1"
-                                                                                        title="Delete reply"
-                                                                                    >
-                                                                                        <Trash2 size={12} />
-                                                                                    </button>
-                                                                                )}
-                                                                                
+                                                                                {(r.profiles?.id === userId ||
+                                                                                    currentProfile?.role === "admin") && (
+                                                                                        <button
+                                                                                            onClick={() => setConfirmDeleteReply(r.id)}
+                                                                                            className="text-gray-400 hover:text-red-500 transition ml-1"
+                                                                                            title="Delete reply"
+                                                                                        >
+                                                                                            <Trash2 size={12} />
+                                                                                        </button>
+                                                                                    )}
                                                                             </div>
                                                                         </div>
                                                                     ))}
@@ -1142,27 +1149,30 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                                         )}
                                                     </div>
 
-                                                    <button
-                                                        onClick={() => {
-                                                            setExpandedComment(
-                                                                expandedComment === `reply-${c.id}` ? null : `reply-${c.id}`
-                                                            );
-                                                        }}
-                                                        className="opacity-0 group-hover:opacity-100 transition text-blue-500 hover:text-blue-600 ml-2"
-                                                        title="Reply"
-                                                    >
-                                                        <CornerDownRight size={16} />
-                                                    </button>
-
-                                                    {(c.profiles?.id === userId || currentProfile?.role === "admin") && (
+                                                    <div className="flex items-center gap-1 ml-auto">
                                                         <button
-                                                            onClick={() => setConfirmDeleteComment(c.id)}
-                                                            className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-red-500 ml-2"
-                                                            title="Delete comment"
+                                                            onClick={() => {
+                                                                setExpandedComment(
+                                                                    expandedComment === `reply-${c.id}` ? null : `reply-${c.id}`
+                                                                );
+                                                            }}
+                                                            className="opacity-60 group-hover:opacity-100 transition text-blue-500 hover:text-blue-600"
+                                                            title="Reply"
                                                         >
-                                                            <Trash2 size={14} />
+                                                            <CornerDownRight size={16} />
                                                         </button>
-                                                    )}
+
+                                                        {(c.profiles?.id === userId ||
+                                                            currentProfile?.role === "admin") && (
+                                                                <button
+                                                                    onClick={() => setConfirmDeleteComment(c.id)}
+                                                                    className="opacity-60 group-hover:opacity-100 transition text-gray-400 hover:text-red-500"
+                                                                    title="Delete comment"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            )}
+                                                    </div>
                                                 </div>
 
                                                 <AnimatePresence>
@@ -1173,7 +1183,10 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                                             animate={{ opacity: 1, y: 0 }}
                                                             exit={{ opacity: 0, y: -5 }}
                                                             transition={{ duration: 0.2 }}
-                                                            className="flex gap-2 pl-8 mt-2 items-center"
+                                                            className="
+        flex flex-wrap gap-2 pl-8 mt-2 items-center
+        w-full
+    "
                                                         >
                                                             <input
                                                                 type="text"
@@ -1192,7 +1205,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                                                         setExpandedComment(null);
                                                                     }
                                                                 }}
-                                                                className="flex-1 rounded-md border border-[hsl(var(--border))]/40 px-3 py-1 text-sm"
+                                                                className="flex-1 rounded-lg border border-[hsl(var(--border))]/40 px-3 py-1 text-sm bg-[hsl(var(--muted))]/10"
                                                             />
 
                                                             <button
@@ -1244,7 +1257,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             )}
                         </AnimatePresence>
 
-                        {/* 📝 Main Comment Input */}
+                        {/* Main Comment Input */}
                         <motion.div
                             key={`comment-input-${p.id}`}
                             initial={{ opacity: 0, y: 8 }}
@@ -1258,54 +1271,57 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                 y: { duration: 0.25 },
                                 scale: { duration: 0.4 },
                             }}
-                            className="relative mt-3 flex gap-2"
+                            className="mt-3 space-y-2 w-full"
                         >
-                            <input
-                                id={`comment-input-${p.id}`}
-                                type="text"
-                                placeholder="Add a comment..."
-                                value={newComments[p.id] || ""}
-                                onChange={(e) =>
-                                    setNewComments((prev) => ({
-                                        ...prev,
-                                        [p.id]: e.target.value,
-                                    }))
-                                }
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter" && newComments[p.id]?.trim()) {
-                                        e.preventDefault();
-                                        submitComment(p.id);
-                                    }
-                                }}
-                                className="flex-1 rounded-md border border-[hsl(var(--border))]/40 px-3 py-2 pr-7 bg-[hsl(var(--muted))]/20"
-                            />
-
-                            {newComments[p.id] && (
-                                <button
-                                    onClick={() =>
+                            <div className="flex items-center gap-2 w-full rounded-xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/15 px-3 py-1.5">
+                                <input
+                                    type="text"
+                                    placeholder="Add a comment..."
+                                    value={newComments[p.id] || ""}
+                                    onChange={(e) =>
                                         setNewComments((prev) => ({
                                             ...prev,
-                                            [p.id]: "",
+                                            [p.id]: e.target.value,
                                         }))
                                     }
-                                    className="absolute right-20 top-2 text-gray-400 hover:text-red-500"
-                                    title="Clear"
-                                >
-                                    ✕
-                                </button>
-                            )}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && newComments[p.id]?.trim()) {
+                                            e.preventDefault();
+                                            submitComment(p.id);
+                                        }
+                                    }}
+                                    className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-sm"
+                                />
 
-                            <button
-                                onClick={() => {
-                                    submitComment(p.id);
-                                    setAnimatingComment(p.id);
-                                    setTimeout(() => setAnimatingComment(null), 400);
-                                }}
-                                disabled={!newComments[p.id]?.trim()}
-                                className="rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] px-4 py-2 hover:opacity-90 disabled:opacity-50"
-                            >
-                                Post
-                            </button>
+                                {newComments[p.id] && (
+                                    <button
+                                        onClick={() =>
+                                            setNewComments((prev) => ({
+                                                ...prev,
+                                                [p.id]: "",
+                                            }))
+                                        }
+                                        className="text-gray-400 hover:text-red-500 text-sm"
+                                        title="Clear"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={() => {
+                                        submitComment(p.id);
+                                        setAnimatingComment(p.id);
+                                        setTimeout(() => setAnimatingComment(null), 400);
+                                    }}
+                                    disabled={!newComments[p.id]?.trim()}
+                                    className="rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] px-4 py-2 text-sm font-medium disabled:opacity-50"
+                                >
+                                    Post
+                                </button>
+                            </div>
                         </motion.div>
                     </motion.article>
                 ))
@@ -1325,7 +1341,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             transition={{ duration: 0.25 }}
-                            className="bg-[hsl(var(--card))] rounded-xl shadow-lg border border-[hsl(var(--border))]/50 p-6 max-w-sm text-center"
+                            className="bg-[hsl(var(--card))] rounded-xl shadow-lg border border-[hsl(var(--border))]/50 p-6 max-w-sm text-center w-[90%]"
                         >
                             <h2 className="text-lg font-semibold mb-2 text-[hsl(var(--foreground))]">
                                 Delete this post?
@@ -1353,7 +1369,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                 )}
             </AnimatePresence>
 
-            {/* 🗑️ Delete Comment Modal */}
+            {/* Delete Comment Modal */}
             <AnimatePresence>
                 {confirmDeleteComment && (
                     <motion.div
@@ -1367,7 +1383,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             transition={{ duration: 0.25 }}
-                            className="bg-[hsl(var(--card))] rounded-xl shadow-lg border border-[hsl(var(--border))]/50 p-6 max-w-sm text-center"
+                            className="bg-[hsl(var(--card))] rounded-xl shadow-lg border border-[hsl(var(--border))]/50 p-6 max-w-sm text-center w-[90%]"
                         >
                             <h2 className="text-lg font-semibold mb-2">Delete this comment?</h2>
                             <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
@@ -1392,7 +1408,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                 )}
             </AnimatePresence>
 
-            {/* 🗑️ Delete Reply Modal */}
+            {/* Delete Reply Modal */}
             <AnimatePresence>
                 {confirmDeleteReply && (
                     <motion.div
@@ -1406,7 +1422,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             transition={{ duration: 0.25 }}
-                            className="bg-[hsl(var(--card))] rounded-xl shadow-lg border border-[hsl(var(--border))]/50 p-6 max-w-sm text-center"
+                            className="bg-[hsl(var(--card))] rounded-xl shadow-lg border border-[hsl(var(--border))]/50 p-6 max-w-sm text-center w-[90%]"
                         >
                             <h2 className="text-lg font-semibold mb-2">Delete this reply?</h2>
                             <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
@@ -1431,11 +1447,11 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                 )}
             </AnimatePresence>
 
-            {/* ✏️ Edit Post Modal */}
+            {/* Edit Post Modal */}
             <AnimatePresence>
                 {editingPost && (
                     <motion.div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-3"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -1452,7 +1468,6 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             <h2 className="text-lg font-semibold mb-3">Edit Post</h2>
 
                             <div className="space-y-3">
-                                {/* Round (shared component) */}
                                 <div>
                                     <label className="block text-sm mb-1">Round</label>
                                     <RoundNameSelect
@@ -1466,7 +1481,6 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                     )}
                                 </div>
 
-                                {/* Spot Type */}
                                 {editAvailableSpotTypes.length > 1 && (
                                     <div>
                                         <label className="block text-sm mb-1">Spot Type</label>
@@ -1489,13 +1503,14 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                     </div>
                                 )}
 
-                                {/* Bow Type */}
                                 <div>
                                     <label className="block text-sm mb-1">Bow Type</label>
                                     <select
                                         value={editingPost.bow_type}
                                         onChange={(e) =>
-                                            setEditingPost((prev) => (prev ? { ...prev, bow_type: e.target.value } : prev))
+                                            setEditingPost((prev) =>
+                                                prev ? { ...prev, bow_type: e.target.value } : prev
+                                            )
                                         }
                                         className="w-full rounded-md border border-[hsl(var(--border))]/40 px-3 py-2 bg-[hsl(var(--muted))]/20"
                                     >
@@ -1506,7 +1521,6 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                     </select>
                                 </div>
 
-                                {/* Score + Golds */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-sm mb-1">Score</label>
@@ -1535,14 +1549,15 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                             type="number"
                                             value={editingPost.golds}
                                             onChange={(e) =>
-                                                setEditingPost((prev) => (prev ? { ...prev, golds: e.target.value } : prev))
+                                                setEditingPost((prev) =>
+                                                    prev ? { ...prev, golds: e.target.value } : prev
+                                                )
                                             }
                                             className="w-full rounded-md border border-[hsl(var(--border))]/40 px-3 py-2 bg-[hsl(var(--muted))]/20"
                                         />
                                     </div>
                                 </div>
 
-                                {/* Date + Score Type */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-sm mb-1">Date</label>
@@ -1550,7 +1565,9 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                             type="date"
                                             value={editingPost.score_date}
                                             onChange={(e) =>
-                                                setEditingPost((prev) => (prev ? { ...prev, score_date: e.target.value } : prev))
+                                                setEditingPost((prev) =>
+                                                    prev ? { ...prev, score_date: e.target.value } : prev
+                                                )
                                             }
                                             className="w-full rounded-md border border-[hsl(var(--border))]/40 px-3 py-2 bg-[hsl(var(--muted))]/20"
                                         />
@@ -1561,7 +1578,12 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                             value={editingPost.score_type ?? "Informal Practice"}
                                             onChange={(e) =>
                                                 setEditingPost((prev) =>
-                                                    prev ? { ...prev, score_type: e.target.value as Post["score_type"] } : prev
+                                                    prev
+                                                        ? {
+                                                            ...prev,
+                                                            score_type: e.target.value as Post["score_type"],
+                                                        }
+                                                        : prev
                                                 )
                                             }
                                             className="w-full rounded-md border border-[hsl(var(--border))]/40 px-3 py-2 bg-[hsl(var(--muted))]/20"
@@ -1573,10 +1595,11 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                     </div>
                                 </div>
 
-                                {/* Competition Name */}
                                 {editingPost.score_type === "Competition" && (
                                     <div>
-                                        <label className="block text-sm mb-1">Competition Name (optional)</label>
+                                        <label className="block text-sm mb-1">
+                                            Competition Name (optional)
+                                        </label>
                                         <input
                                             type="text"
                                             value={editingPost.competition_name}
@@ -1590,11 +1613,11 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                     </div>
                                 )}
 
-                                {/* Scoresheet upload (required if Formal/Competition and none attached) */}
                                 {isEditFormalOrComp && (
                                     <div>
                                         <label className="block text-sm mb-1">
-                                            Scoresheet {editingPost.existingScoresheetUrl ? "(attached)" : "(required)"}
+                                            Scoresheet{" "}
+                                            {editingPost.existingScoresheetUrl ? "(attached)" : "(required)"}
                                         </label>
                                         {editingPost.existingScoresheetUrl && (
                                             <p className="text-xs text-muted-foreground mb-1">
@@ -1607,7 +1630,10 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                             onChange={(e) =>
                                                 setEditingPost((prev) =>
                                                     prev
-                                                        ? { ...prev, newScoresheetFile: e.target.files?.[0] || null }
+                                                        ? {
+                                                            ...prev,
+                                                            newScoresheetFile: e.target.files?.[0] || null,
+                                                        }
                                                         : prev
                                                 )
                                             }
@@ -1636,7 +1662,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                 )}
             </AnimatePresence>
 
-            {/* 🖼️ Scoresheet Preview Modal */}
+            {/* Scoresheet Preview Modal */}
             <AnimatePresence>
                 {previewImage && (
                     <motion.div

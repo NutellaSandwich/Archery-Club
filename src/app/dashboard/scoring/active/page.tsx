@@ -43,7 +43,7 @@ export default function ActiveScoringPage() {
     const [showArrowMap, setShowArrowMap] = useState(false);
 
     const totalEnds = config ? config.round.total_arrows / config.arrowsPerEnd : 0;
-
+    
 
     async function renderTargetImage(): Promise<string | null> {
         const targetEl = document.getElementById("active-target-preview");
@@ -189,6 +189,10 @@ export default function ActiveScoringPage() {
             return s === 10 || s === "X";
         }).length;
 
+
+    const totalArrowsShot = ends.flat().length;
+    const avgArrow = totalArrowsShot > 0 ? (totalScore / totalArrowsShot).toFixed(2) : "0.00";
+
     // ✅ Auto-save full end
     useEffect(() => {
         const perEnd = config?.arrowsPerEnd || 3;
@@ -245,7 +249,7 @@ export default function ActiveScoringPage() {
 
     
     return (
-        <main className="max-w-3xl mx-auto p-6 space-y-8">
+        <main className="w-full px-4 sm:px-6 md:max-w-3xl mx-auto space-y-8">
             <div className="flex justify-between items-center">
                 <h1 className="text-xl font-semibold">{config.round.name}</h1>
 
@@ -274,7 +278,7 @@ export default function ActiveScoringPage() {
                         onSelectArrow={(arrow) => handleArrowClick(arrow)}
                     />
                 ) : (
-                    <div className="grid grid-cols-6 gap-2">
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                         {arrowValues.map((val) => (
                             <Button
                                 key={val}
@@ -346,46 +350,59 @@ export default function ActiveScoringPage() {
                 </div>
             )}
 
-            {/* 📋 Saved Ends */}
             {ends.length > 0 && (
-                <div className="border rounded-lg p-4 space-y-2">
-                    <h3 className="font-medium">Saved Ends</h3>
-                    {[...ends]
-                        .map((end, i): [EndData, number] => [end, i])
-                        .reverse()
-                        .map(([end, i]) => (
-                            <div
-                                key={i}
-                                className="flex justify-between items-center border-b py-1 text-sm cursor-pointer hover:bg-muted/40 rounded-md px-2"
-                                onClick={() => handleEditEnd(i)}
-                            >
-                                <span>
-                                    End {i + 1}:{" "}
-                                    {end.map((val, j) => {
-                                        const score = typeof val === "object" ? val.score : val;
-                                        return (
-                                            <div
-                                                key={j}
-                                                className={`inline-flex w-10 h-10 items-center justify-center rounded-md border text-lg font-semibold mr-1 ${getScoreColor(score)}`}
-                                            >
-                                                {score}
-                                            </div>
-                                        );
-                                    })}
-                                </span>
-                                <span className="font-semibold">
-                                    Total:{" "}
-                                    {
-                                        end.reduce((a: number, v) => {
+                <div className="w-full flex justify-center">
+                    <div className="border rounded-lg p-4 space-y-2 w-[85vw] sm:w-full max-w-[600px]">
+
+                        {/* Header with AVG */}
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-medium">Saved Ends</h3>
+                            <span className="text-xs text-muted-foreground">
+                                avg: {avgArrow}
+                            </span>
+                        </div>
+
+                        {[...ends]
+                            .map((end, i): [EndData, number] => [end, i])
+                            .reverse()
+                            .map(([end, i]) => (
+                                <div
+                                    key={i}
+                                    className="flex items-center justify-between border-b py-2 text-sm cursor-pointer hover:bg-muted/40 rounded-md px-2 w-full"
+                                    onClick={() => handleEditEnd(i)}
+                                >
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <span className="whitespace-nowrap font-medium">
+                                            End {i + 1}:
+                                        </span>
+
+                                        <div className="flex gap-2 flex-nowrap overflow-x-auto no-scrollbar">
+                                            {end.map((val, j) => {
+                                                const score = typeof val === "object" ? val.score : val;
+                                                return (
+                                                    <div
+                                                        key={j}
+                                                        className={`flex-shrink-0 flex w-10 h-10 items-center justify-center rounded-md border text-lg font-semibold ${getScoreColor(score)}`}
+                                                    >
+                                                        {score}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <span className="font-semibold pl-4 whitespace-nowrap">
+                                        Total:{" "}
+                                        {end.reduce((a: number, v) => {
                                             const s = typeof v === "object" ? v.score : v;
                                             if (s === "X") return a + 10;
                                             if (typeof s === "number") return a + s;
                                             return a;
-                                        }, 0)
-                                    }
-                                </span>
-                            </div>
-                        ))}
+                                        }, 0)}
+                                    </span>
+                                </div>
+                            ))}
+                    </div>
                 </div>
             )}
 

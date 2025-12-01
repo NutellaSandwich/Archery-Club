@@ -300,26 +300,44 @@ export default function ClubRecordsPage() {
                             No records found for this round.
                         </p>
                     ) : (
-                        <div className="grid sm:grid-cols-2 gap-4">
+                                <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 mt-4">
                             {records.map((r) => (
                                 <motion.div
                                     key={r.id}
                                     whileHover={{ scale: 1.02 }}
                                     transition={{ duration: 0.2 }}
-                                    className="p-4 bg-[hsl(var(--card))] border border-[hsl(var(--border))]/40 rounded-xl shadow-sm hover:shadow-md"
+                                    className="
+    p-5 sm:p-6 
+    rounded-3xl 
+    bg-gradient-to-br from-gray-900/40 via-gray-800/40 to-gray-900/40
+    backdrop-blur-xl
+    border border-white/10
+    shadow-[0_4px_20px_rgba(0,0,0,0.55)]
+    hover:shadow-[0_6px_26px_rgba(0,0,0,0.7)]
+    transition-all
+    active:scale-[0.985]
+    space-y-3
+    relative overflow-hidden
+"
                                 >
-                                    <div className="flex justify-between items-center mb-2">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <div className="pointer-events-none absolute inset-0 rounded-3xl 
+    bg-gradient-to-br from-white/15 via-transparent to-white/5"></div>
+                                    <div className="flex justify-between items-center mb-3 sm:mb-2">
+                                        <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-muted-foreground">
                                             <span>
                                                 {r.experience.charAt(0).toUpperCase() + r.experience.slice(1)} •{" "}
                                                 {r.category.charAt(0).toUpperCase() + r.category.slice(1)}
                                             </span>
                                             <BowTypeTag bow={r.bow_type} />
                                         </div>
-                                        <Trophy className="text-yellow-500" size={18} />
+
+                                        <Trophy
+                                            className="text-yellow-500 shrink-0 ml-1 sm:ml-2"
+                                            size={18}
+                                        />
                                     </div>
 
-                                    <div className="flex items-center gap-3 mt-1">
+                                    <div className="flex items-center gap-3 mt-2 sm:mt-1">
                                         {r.profiles?.avatar_url && (
                                             <img
                                                 src={r.profiles.avatar_url}
@@ -328,13 +346,13 @@ export default function ClubRecordsPage() {
                                             />
                                         )}
                                         <div>
-                                            <p className="text-3xl font-bold text-foreground">
+                                            <p className="text-3xl sm:text-4xl font-bold leading-tight text-foreground">
                                                 {r.score}
                                             </p>
-                                            <p className="text-sm mt-1 text-muted-foreground">
+                                            <p className="text-sm mt-1 sm:mt-0.5 text-muted-foreground leading-snug">
                                                 {r.profiles?.username || "Unknown Archer"}
                                             </p>
-                                            <p className="text-xs text-muted-foreground/70 mt-1">
+                                            <p className="text-[11px] sm:text-xs text-muted-foreground/70 mt-0.5">
                                                 {new Date(r.score_date ?? r.created_at).toLocaleDateString()}
                                             </p>
                                         </div>
@@ -343,7 +361,7 @@ export default function ClubRecordsPage() {
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        className="mt-3 text-xs"
+                                        className="mt-4 sm:mt-3 text-xs w-full sm:w-auto py-2"
                                         onClick={() => loadHistory(r)}
                                     >
                                         <Clock size={14} className="mr-1" /> View History

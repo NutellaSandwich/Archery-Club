@@ -624,6 +624,31 @@ export default function NewScorePage() {
                 </button>
             </form>
 
+            <div className="flex items-center my-10">
+                <div className="flex-1 h-px bg-[hsl(var(--border))]/60"></div>
+
+                <span className="px-4 text-sm font-medium text-[hsl(var(--muted-foreground))] 
+                    bg-[hsl(var(--card))] rounded-full shadow-sm border 
+                    border-[hsl(var(--border))]/40">
+                    or
+                </span>
+
+                <div className="flex-1 h-px bg-[hsl(var(--border))]/60"></div>
+            </div>
+
+            <button
+                onClick={() => router.push("/dashboard/scoring")}
+                className="
+                    bg-indigo-600 
+                    hover:bg-indigo-700 
+                    text-white 
+                    rounded-lg px-6 py-3 font-medium 
+                    shadow-sm transition w-full
+                "
+            >
+                Start Scoring
+            </button>
+
             {showCompetitionModal && (
                 <div
                     className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"

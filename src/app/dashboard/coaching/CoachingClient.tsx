@@ -412,7 +412,7 @@ export default function CoachingClient() {
         );
     }
     return (
-        <main className="max-w-5xl mx-auto p-6 space-y-8">
+        <main className="max-w-[90rem] mx-auto p-6 space-y-8">
             <h1 className="text-2xl font-bold flex items-center gap-2">
                 <Target className="text-primary" /> Coaching
             </h1>
@@ -451,7 +451,7 @@ export default function CoachingClient() {
 
                             {myGoals.map((g) => (
                                 <div key={g.id} className="border rounded-md p-3 space-y-2">
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                                         <div>
                                             <p className="font-medium">{g.title}</p>
                                             {g.target_date && (
@@ -460,7 +460,7 @@ export default function CoachingClient() {
                                                 </p>
                                             )}
                                         </div>
-                                        <div className="flex gap-2 items-center">
+                                        <div className="flex flex-wrap gap-2 items-center justify-end">
                                             <Button variant="ghost" size="sm" onClick={() => toggleThread(g.id, "goal")}>
                                                 {expandedThreads[g.id] ? (
                                                     <>
@@ -577,132 +577,132 @@ export default function CoachingClient() {
 
                             <div className="space-y-2">
                                 {myLogs.map((l) =>
-                                    editLog?.id === l.id ? (
-                                        <div
-                                            key={l.id}
-                                            className="border rounded-md p-3 space-y-2 bg-muted/30"
-                                        >
-                                            <Input
-                                                type="date"
-                                                value={editLog.date || ""}
-                                                onChange={(e) =>
-                                                    setEditLog((prev) =>
-                                                        prev ? { ...prev, date: e.target.value } : prev
-                                                    )
-                                                }
-                                            />
-                                            <Input
-                                                placeholder="Arrows shot"
-                                                value={editLog.arrows_shot || ""}
-                                                onChange={(e) =>
-                                                    setEditLog((prev) =>
-                                                        prev
-                                                            ? { ...prev, arrows_shot: Number(e.target.value) }
-                                                            : prev
-                                                    )
-                                                }
-                                            />
-                                            <Textarea
-                                                placeholder="Notes..."
-                                                value={editLog.notes || ""}
-                                                onChange={(e) =>
-                                                    setEditLog((prev) =>
-                                                        prev ? { ...prev, notes: e.target.value } : prev
-                                                    )
-                                                }
-                                            />
-                                            <Button size="sm" onClick={saveLogEdit}>
-                                                Save
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <div
-                                            key={l.id}
-                                            className="border rounded-md p-3 flex justify-between items-center"
-                                        >
-                                            <div>
-                                                <p className="font-medium">
-                                                    {new Date(l.date).toLocaleDateString()} •{" "}
-                                                    {l.arrows_shot || 0} arrows
-                                                </p>
-                                                {l.notes && (
-                                                    <p className="text-sm text-muted-foreground">{l.notes}</p>
-                                                )}
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setEditLog(l)}
-                                                >
-                                                    <Edit size={14} />
+                                    <div key={l.id} className="border rounded-md p-3 space-y-3">
+                                        {editLog?.id === l.id ? (
+                                            <>
+                                                <Input
+                                                    type="date"
+                                                    value={editLog.date || ""}
+                                                    onChange={(e) =>
+                                                        setEditLog((prev) =>
+                                                            prev ? { ...prev, date: e.target.value } : prev
+                                                        )
+                                                    }
+                                                />
+                                                <Input
+                                                    placeholder="Arrows shot"
+                                                    value={editLog.arrows_shot || ""}
+                                                    onChange={(e) =>
+                                                        setEditLog((prev) =>
+                                                            prev
+                                                                ? { ...prev, arrows_shot: Number(e.target.value) }
+                                                                : prev
+                                                        )
+                                                    }
+                                                />
+                                                <Textarea
+                                                    placeholder="Notes..."
+                                                    value={editLog.notes || ""}
+                                                    onChange={(e) =>
+                                                        setEditLog((prev) =>
+                                                            prev ? { ...prev, notes: e.target.value } : prev
+                                                        )
+                                                    }
+                                                />
+                                                <Button size="sm" onClick={saveLogEdit}>
+                                                    Save
                                                 </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => deleteLog(l.id)}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </Button>
-                                            </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div>
+                                                    <p className="font-medium">
+                                                        {new Date(l.date).toLocaleDateString()} • {l.arrows_shot || 0} arrows
+                                                    </p>
+                                                    {l.notes && (
+                                                        <p className="text-sm text-muted-foreground">{l.notes}</p>
+                                                    )}
+                                                </div>
 
-                                            <div className="w-full mt-3">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
+                                                <div className="flex gap-2">
+                                                    <Button variant="ghost" size="sm" onClick={() => setEditLog(l)}>
+                                                        <Edit size={14} />
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" onClick={() => deleteLog(l.id)}>
+                                                        <Trash2 size={14} />
+                                                    </Button>
+                                                </div>
+
+                                                <div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
                                                         onClick={() => toggleThread(l.id, "log")}
                                                     >
-                                                
-                                                    {expandedThreads[l.id] ? (
-                                                        <>
-                                                            <ChevronUp size={14} /> Hide Replies
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <ChevronDown size={14} /> Show Replies
-                                                        </>
-                                                    )}
-                                                </Button>
-
-                                                {expandedThreads[l.id] && (
-                                                    <div className="ml-4 mt-2 space-y-2 border-l pl-3">
-                                                            {loadingThreads[l.id] ? (
-                                                                <p className="text-xs text-muted-foreground">Loading replies...</p>
-                                                            ) : logComments[l.id]?.length ? (
-                                                            logComments[l.id].map((c) => (
-                                                                <p key={c.id} className="text-sm text-muted-foreground">
-                                                                    <strong>{c.author?.username || "User"}:</strong> {c.content}
-                                                                </p>
-                                                            ))
+                                                        {expandedThreads[l.id] ? (
+                                                            <>
+                                                                <ChevronUp size={14} /> Hide Replies
+                                                            </>
                                                         ) : (
-                                                            <p className="text-xs text-muted-foreground">No replies yet.</p>
+                                                            <>
+                                                                <ChevronDown size={14} /> Show Replies
+                                                            </>
                                                         )}
-                                                        <Textarea
-                                                            placeholder="Write a reply..."
-                                                            value={commentInputs[l.id] || ""}
-                                                            onChange={(e) =>
-                                                                setCommentInputs((p) => ({ ...p, [l.id]: e.target.value }))
-                                                            }
-                                                        />
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                addLogReply(l.id, commentInputs[l.id], l.coach_id || l.user_id)
-                                                            }
-                                                        >
-                                                            <MessageSquare size={14} /> Reply
-                                                        </Button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )
+                                                    </Button>
+
+                                                    {expandedThreads[l.id] && (
+                                                        <div className="ml-4 mt-2 space-y-2 border-l pl-3">
+                                                            {loadingThreads[l.id] ? (
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    Loading replies...
+                                                                </p>
+                                                            ) : logComments[l.id]?.length ? (
+                                                                logComments[l.id].map((c) => (
+                                                                    <p key={c.id} className="text-sm text-muted-foreground">
+                                                                        <strong>{c.author?.username || "User"}:</strong>{" "}
+                                                                        {c.content}
+                                                                    </p>
+                                                                ))
+                                                            ) : (
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    No replies yet.
+                                                                </p>
+                                                            )}
+
+                                                            <Textarea
+                                                                placeholder="Write a reply..."
+                                                                value={commentInputs[l.id] || ""}
+                                                                onChange={(e) =>
+                                                                    setCommentInputs((p) => ({
+                                                                        ...p,
+                                                                        [l.id]: e.target.value,
+                                                                    }))
+                                                                }
+                                                            />
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    addLogReply(
+                                                                        l.id,
+                                                                        commentInputs[l.id],
+                                                                        l.coach_id || l.user_id
+                                                                    )
+                                                                }
+                                                            >
+                                                                <MessageSquare size={14} /> Reply
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
                             {/* GRAPH */}
                             {myLogs.length > 0 && (
-                                <div className="mt-6">
+                                <div className="mt-6 min-w-full md:min-w-[700px]">
                                     <h3 className="font-semibold mb-2">Arrows Shot Over Time</h3>
                                     <ResponsiveContainer width="100%" height={300}>
                                         <LineChart data={myLogs.map((l) => ({

@@ -571,10 +571,24 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
 
             {/* Tabs */}
             <Tabs defaultValue="graph" className="w-full">
-                <TabsList className="flex justify-center gap-4 mb-4">
-                    <TabsTrigger value="graph">Performance Graph</TabsTrigger>
-                    <TabsTrigger value="recent">Recent Scores</TabsTrigger>
-                    <TabsTrigger value="bests">Personal Bests</TabsTrigger>
+                <TabsList
+                    className="
+        flex gap-2 mb-4 px-2 py-1
+        overflow-x-auto overflow-y-hidden
+        whitespace-nowrap
+        scrollbar-none
+        w-full
+    "
+                >
+                    <TabsTrigger value="graph" className="text-sm sm:text-base">
+                        Graphs
+                    </TabsTrigger>
+                    <TabsTrigger value="recent" className="text-sm sm:text-base">
+                        Recent Scores
+                    </TabsTrigger>
+                    <TabsTrigger value="bests" className="text-sm sm:text-base">
+                        PBs
+                    </TabsTrigger>
                 </TabsList>
 
                 {/* Graph Tab */}
@@ -582,7 +596,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                     {scores.length === 0 ? (
                         <p className="text-center text-muted-foreground">No scores yet.</p>
                     ) : (
-                        <Card className="p-6 space-y-4">
+                            <Card className="p-3 sm:p-6 space-y-4">
                                 <div className="flex flex-col md:flex-row items-center justify-between gap-3">
                                     <h2 className="text-lg font-semibold">Performance Over Time</h2>
 
@@ -623,22 +637,27 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                     exit={{ opacity: 0 }}
                                     transition={{ duration: 0.5 }}
                                 >
-                                    <ResponsiveContainer width="100%" height={420}>
-                                        <ScatterChart
-                                            margin={{ top: 20, right: 20, bottom: 20, left: 10 }}
-                                        >
+                                        <ResponsiveContainer width="100%" minHeight={350}>
+                                            <ScatterChart
+                                                margin={{ top: 10, right: 10, bottom: 40, left: 0 }}
+                                            >
                                                 <XAxis
                                                     dataKey="date"
                                                     type="number"
                                                     scale="time"
                                                     domain={xDomain}
-                                                    ticks={xTicks}                 // <- custom, de-duplicated ticks
-                                                    minTickGap={12}                // let Recharts hide overlapping labels if needed
+                                                    ticks={xTicks}
+                                                    minTickGap={20}
+                                                    interval="preserveStartEnd"
                                                     tickFormatter={(d) =>
-                                                        d ? new Date(d).toLocaleDateString("en-GB", { month: "short", year: "2-digit" }) : ""
+                                                        d
+                                                            ? new Date(d).toLocaleDateString("en-GB", {
+                                                                month: "short",
+                                                                year: "2-digit",
+                                                            })
+                                                            : ""
                                                     }
-                                                    name="Date"
-                                                    tick={{ fontSize: 12 }}
+                                                    tick={{ fontSize: 11 }}
                                                 />
                                                 <YAxis
                                                     dataKey="handicap"
@@ -649,8 +668,8 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                                     label={{
                                                         value: "Handicap ↑",
                                                         angle: -90,
-                                                        position: "insideLeft",
-                                                        style: { textAnchor: "middle", fontSize: 13 },
+                                                        position: "outsideLeft",
+                                                        style: { textAnchor: "middle", fontSize: 12 },
                                                     }}
                                                     tick={{ fontSize: 12 }}
                                                 />
@@ -693,7 +712,11 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                                     />
                                                 ))}
 
-                                            <Legend verticalAlign="top" align="center" />
+                                            <Legend
+    verticalAlign="bottom"
+    align="center"
+    wrapperStyle={{ paddingTop: 12 }}
+/>
 
                                             {filter !== "outdoor" && (
                                                     <Scatter

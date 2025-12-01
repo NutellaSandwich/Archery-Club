@@ -366,24 +366,36 @@ export default function SessionSignups() {
         return (
             <Card
                 key={s.id}
-                className={`transition hover:shadow-md ${s.cancelled ? "opacity-70" : ""} cursor-pointer`}
+                className={`
+        transition hover:shadow-md cursor-pointer
+        ${s.cancelled ? "opacity-70" : ""}
+        
+        rounded-2xl
+        border border-white/5
+        bg-background/40 backdrop-blur-sm
+        
+        px-4 py-3         /* mobile padding */
+        sm:px-6 sm:py-4   /* desktop stays spacious */
+    `}
                 onClick={() => openSignupDetails(s)}
             >
-                <CardHeader>
+                <CardHeader className="pb-2 space-y-1 sm:space-y-2">
                     <div className="flex justify-between items-start">
                         <div>
-                            <CardTitle>{s.title}</CardTitle>
-                            <CardDescription className="flex items-center gap-2">
-                                <span className="text-white font-semibold text-base">
-                                    {new Date(s.session_date).toLocaleDateString(undefined, {
-                                        weekday: "long",
-                                    })}
+                            <CardTitle className="text-base sm:text-lg font-semibold leading-tight">
+                                {s.title}
+                            </CardTitle>
+                            <CardDescription className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2">
+                                <span className="text-white font-medium text-sm sm:text-base">
+                                    {new Date(s.session_date).toLocaleDateString(undefined, { weekday: "long" })}
                                 </span>
-                                <span className="text-muted-foreground text-sm">
-                                    {sessionDate} — {s.start_time} to {s.end_time}
+
+                                <span className="text-muted-foreground text-xs sm:text-sm">
+                                    {sessionDate} · {s.start_time}–{s.end_time}
                                 </span>
                             </CardDescription>
-                            <p className="text-xs text-muted-foreground">
+
+                            <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">
                                 Capacity: {totalSignups}/{s.capacity}
                             </p>
                         </div>
@@ -395,7 +407,7 @@ export default function SessionSignups() {
                     </div>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="mt-2 space-y-1.5 sm:space-y-2">
                     {s.cancelled ? (
                         <p className="text-sm text-red-500">
                             {s.cancellation_reason
@@ -446,7 +458,14 @@ export default function SessionSignups() {
                     )}
                 </CardContent>
 
-                <CardFooter className="justify-end flex flex-wrap gap-2">
+                <CardFooter
+                    className="
+        mt-2 
+        flex flex-col sm:flex-row 
+        gap-2 sm:gap-3 
+        justify-end items-stretch sm:items-center
+    "
+                >
                     {!s.cancelled && (
                         <>
                             {/* 🎯 Regular sign-up button */}
@@ -536,7 +555,9 @@ export default function SessionSignups() {
     return (
         <section>
             {recentAndUpcoming.length > 0 && (
-                <div className="space-y-4">{recentAndUpcoming.map(renderSessionCard)}</div>
+                <div className="flex flex-col gap-5 sm:gap-6">
+                    {recentAndUpcoming.map(renderSessionCard)}
+                </div>
             )}
 
             {olderSessions.length > 0 && (

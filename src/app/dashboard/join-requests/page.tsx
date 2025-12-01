@@ -235,55 +235,59 @@ export default function JoinRequestsPage() {
                 </p>
             ) : (
                 requests.map((r) => (
-                    <Card key={r.id} className="border border-[hsl(var(--border))]/40">
+                    <Card
+    key={r.id}
+    className="border border-[hsl(var(--border))]/40 px-4 py-3 sm:px-6 sm:py-4"
+>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-lg">
+                            <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:gap-2 text-base sm:text-lg leading-snug">
                                 <User size={18} /> {r.profiles?.username || "Unknown"}{" "}
                                 <span className="text-sm text-muted-foreground">
                                     ({r.clubs?.name || "Unknown Club"})
                                 </span>
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-2">
-                            <p><strong>Category:</strong> {r.category || "—"}</p>
-                            <p><strong>Experience:</strong> {r.experience || "—"}</p>
-                            {r.agb_number && <p><strong>AGB Number:</strong> {r.agb_number}</p>}
-                            {r.dob && <p><strong>DOB:</strong> {new Date(r.dob).toLocaleDateString()}</p>}
-                            <p className="text-sm text-muted-foreground">
+                        <CardContent className="space-y-3 text-sm">
+                            <div className="grid grid-cols-2 gap-y-1">
+                                <span className="font-medium text-muted-foreground">Category:</span>
+                                <span>{r.category || "—"}</span>
+
+                                <span className="font-medium text-muted-foreground">Experience:</span>
+                                <span>{r.experience || "—"}</span>
+
+                                {r.agb_number && (
+                                    <>
+                                        <span className="font-medium text-muted-foreground">AGB #:</span>
+                                        <span>{r.agb_number}</span>
+                                    </>
+                                )}
+
+                                {r.dob && (
+                                    <>
+                                        <span className="font-medium text-muted-foreground">DOB:</span>
+                                        <span>{new Date(r.dob).toLocaleDateString()}</span>
+                                    </>
+                                )}
+                            </div>
+
+                            <p className="text-xs text-muted-foreground mt-1">
                                 Requested on {new Date(r.created_at).toLocaleDateString()}
                             </p>
 
                             {r.status === "pending" ? (
-                                <div className="flex gap-2">
-                                    <Button
-                                        size="sm"
-                                        onClick={() => updateStatus(r.id, "accepted")}
-                                        className="flex items-center gap-1"
-                                    >
-                                        <CheckCircle size={14} /> Accept
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                    <Button size="sm" className="flex-1 min-w-[110px]">
+                                        Accept
                                     </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        onClick={() => updateStatus(r.id, "rejected")}
-                                        className="flex items-center gap-1"
-                                    >
-                                        <XCircle size={14} /> Reject
+                                    <Button size="sm" variant="destructive" className="flex-1 min-w-[110px]">
+                                        Reject
                                     </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        onClick={() => setEditingRequest(r)}
-                                        className="flex items-center gap-1"
-                                    >
-                                        <Pencil size={14} /> Edit
+                                    <Button size="sm" variant="secondary" className="flex-1 min-w-[110px]">
+                                        Edit
                                     </Button>
                                 </div>
                             ) : (
-                                <span
-                                    className={`text-sm font-medium ${r.status === "accepted" ? "text-green-500" : "text-red-500"
-                                        }`}
-                                >
+                                <span className={`text-sm font-medium ${r.status === "accepted" ? "text-green-500" : "text-red-500"}`}>
                                     {r.status.toUpperCase()}
                                 </span>
                             )}

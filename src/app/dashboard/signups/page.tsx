@@ -61,16 +61,43 @@ export default function SignupsPage() {
                 <p className="text-center text-muted-foreground">Loading...</p>
             ) : (
                 <Tabs value={tab} onValueChange={setTab}>
-                    <TabsList className="flex justify-center mb-6 flex-wrap gap-2">
-                        <TabsTrigger value="sessions">Sessions</TabsTrigger>
-                        <TabsTrigger value="tournaments">Tournaments</TabsTrigger>
-                        {isAdmin && (
-                            <>
-                                <TabsTrigger value="manage-sessions">Manage Sessions</TabsTrigger>
-                                <TabsTrigger value="manage-tournaments">Manage Tournaments</TabsTrigger>
-                            </>
-                        )}
-                    </TabsList>
+                        <TabsList
+                            className="
+        mb-6 
+        w-full 
+        no-scrollbar 
+        overflow-x-auto 
+        flex-nowrap 
+        gap-1 
+        rounded-xl 
+        bg-muted/30 
+        p-1
+
+        justify-start        
+        sm:justify-center     
+    "
+                        >
+                        
+                            <TabsTrigger value="sessions" className="whitespace-nowrap px-4">
+                                Sessions
+                            </TabsTrigger>
+
+                            <TabsTrigger value="tournaments" className="whitespace-nowrap px-4">
+                                Tournaments
+                            </TabsTrigger>
+
+                            {isAdmin && (
+                                <>
+                                    <TabsTrigger value="manage-sessions" className="whitespace-nowrap px-4">
+                                        Manage Sessions
+                                    </TabsTrigger>
+
+                                    <TabsTrigger value="manage-tournaments" className="whitespace-nowrap px-4">
+                                        Manage Tournaments
+                                    </TabsTrigger>
+                                </>
+                            )}
+                        </TabsList>
 
                     <TabsContent value="sessions"><SessionSignups /></TabsContent>
                     <TabsContent value="tournaments"><TournamentSignups /></TabsContent>
