@@ -162,7 +162,7 @@ export default function TrophiesPage() {
             {/* 🏗️ Trophy Creation */}
             <Card className="p-4 flex gap-3 items-center">
                 <Input
-                    placeholder="New trophy name"
+                    placeholder="New Trophy"
                     value={newTrophy}
                     onChange={(e) => setNewTrophy(e.target.value)}
                 />
