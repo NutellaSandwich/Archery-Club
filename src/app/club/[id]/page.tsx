@@ -74,6 +74,7 @@ export default function ClubPage() {
     // 🔁 Fetch all club posts
     async function fetchPosts(showToast: boolean = false) {
         try {
+            if (refreshing) return;
             setRefreshing(true);
             const { data: postsData } = await supabase
                 .from("club_posts")
@@ -95,12 +96,14 @@ export default function ClubPage() {
                         .select("*", { count: "exact", head: true })
                         .eq("post_id", post.id);
 
-                    const { data: liked } = await supabase
-                        .from("post_likes")
-                        .select("id")
-                        .eq("post_id", post.id)
-                        .eq("user_id", userId)
-                        .maybeSingle();
+                    const { data: liked } = userId
+                        ? await supabase
+                            .from("post_likes")
+                            .select("id")
+                            .eq("post_id", post.id)
+                            .eq("user_id", userId)
+                            .maybeSingle()
+                        : { data: null };
 
                     return {
                         ...post,
@@ -124,36 +127,29 @@ export default function ClubPage() {
     // 🚀 Initial load
     useEffect(() => {
         async function init() {
-            if (!id) return;
+            try {
+                if (!id) return;
 
-            const { data: clubData } = await supabase
-                .from("clubs")
-                .select("*")
-                .eq("id", id)
-                .single();
-            setClub(clubData);
+                const { data: clubData } = await supabase
+                    .from("clubs")
+                    .select("*")
+                    .eq("id", id)
+                    .single();
+                setClub(clubData);
 
-            const {
-                data: { session },
-            } = await supabase.auth.getSession();
-            const user = session?.user;
-            setUserId(user?.id ?? null);
+                // session + profile go here
 
-            if (user) {
-                const { data: profile } = await supabase
-                    .from("profiles")
-                    .select("club_id")
-                    .eq("id", user.id)
-                    .maybeSingle();
-                setUserClubId(profile?.club_id ?? null);
+                await fetchPosts();
+            } catch (err) {
+                console.error("Init error:", err);
+                toast.error("Failed to load club.");
+            } finally {
+                setLoading(false);
             }
-
-            await fetchPosts();
-            setLoading(false);
         }
 
         init();
-    }, [id, supabase, userId]);
+    }, [id]);
 
     // 💬 Load comments for a specific post
     async function loadComments(postId: string) {

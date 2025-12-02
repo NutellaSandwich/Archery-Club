@@ -185,14 +185,26 @@ export default function ScoringSetupPage() {
     }, [supabase]);
 
     useEffect(() => {
-        // Stop filtering while dropdown is closing
+        if (!rounds.length) return;            // <-- prevents empty results
         if (closingDropdown) return;
 
         const search = searchTerm.toLowerCase();
-        setFilteredRounds(
-            rounds.filter((r) => r.name.toLowerCase().includes(search))
+        const results = rounds.filter((r) =>
+            r.name.toLowerCase().includes(search)
         );
+
+        setFilteredRounds(results);
     }, [searchTerm, rounds, closingDropdown]);
+
+    useEffect(() => {
+        if (searchTerm && rounds.length && isTyping) {
+            setFilteredRounds(
+                rounds.filter((r) =>
+                    r.name.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+            );
+        }
+    }, [rounds]);
 
     // ⚙️ Handle round selection
     const handleSelectRound = (round: Round) => {
@@ -253,7 +265,8 @@ export default function ScoringSetupPage() {
                     placeholder="Type round name..."
                     value={searchTerm}
                     onChange={(e) => {
-                        setIsTyping(true); // user is typing again
+                        setIsTyping(true);
+                        setSpotDropdownOpen(false);   // prevents overlap with spot dropdown
                         setSearchTerm(e.target.value);
                         setSelectedRound(null);
                     }}
@@ -284,14 +297,14 @@ export default function ScoringSetupPage() {
                                     key={r.name}
                                     onClick={() => {
                                         setClosingDropdown(true);
-                                        setIsTyping(false);   // ⬅️ STOP dropdown from reopening
                                         handleSelectRound(r);
                                         setFilteredRounds([]);
 
                                         setTimeout(() => {
+                                            setIsTyping(false);              // move AFTER closing animation
                                             setSearchTerm(r.name);
                                             setClosingDropdown(false);
-                                        }, 120); // aligns with dropdown animation
+                                        }, 120);
                                     }}
                                     className={`block w-full text-left px-3 py-2 text-sm transition ${selectedRound?.name === r.name
                                             ? "bg-[hsl(var(--muted))]/40 text-[hsl(var(--foreground))]"

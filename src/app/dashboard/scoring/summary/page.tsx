@@ -190,6 +190,10 @@ export default function ScoringSummaryPage() {
                     bow_type: profile.bow_type ?? null,
                     club_name: clubName,
                 });
+
+                setTimeout(() => {
+                    setProfileInfo((p) => p);
+                }, 50);
             } catch (e) {
                 console.error("Profile load failed:", e);
             }

@@ -23,6 +23,7 @@ import { Target, Calendar, Activity } from "lucide-react";
 import BowTypeTag from "@/components/BowTypeTag";
 import { Sparkles } from "lucide-react";
 import { BowArrow } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type ClubPost = {
     id: string;
@@ -39,6 +40,7 @@ type ClubPost = {
 };
 
 export default function ProfileViewClient({ userId }: { userId?: string }) {
+    const router = useRouter();                    // <-- ADD THIS
     const supabase = useMemo(() => supabaseBrowser(), []);
     const [user, setUser] = useState<any>(null);
     const [profile, setProfile] = useState<any>(null);
@@ -81,16 +83,18 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
 
 
     useEffect(() => {
+        if (!supabase) return;       // <-- ADD THIS
         async function loadData() {
             const { data: session } = await supabase.auth.getSession();
-            const sessionUser = session?.session?.user;
+            const sessionUser = session?.session?.user || null;
 
             if (!sessionUser && !userId) {
-                window.location.href = "/login";
+                router.push("/login");   // safer than window.location
                 return;
             }
 
-            const viewedUserId = userId || sessionUser!.id;
+            const viewedUserId = userId || sessionUser?.id;
+            if (!viewedUserId) return;        // <-- ADD THIS
             setUser(sessionUser);
 
             // Load viewer profile
@@ -121,7 +125,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
             if (profileError) toast.error("Error loading profile");
             setProfile(profileData);
 
-            if (profileData?.club_id) {
+            if (profileData && profileData.club_id) {
                 const { data: clubData } = await supabase
                     .from("clubs")
                     .select("name")
@@ -149,7 +153,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                     const bowType = p.bow_type || profileData?.bow_type || "recurve";
                     const bowGroup = bowType === "compound" ? "compound" : "non-compound";
 
-                    const rawSpot = p.spot_type?.toLowerCase().trim() || "";
+                    const rawSpot = (p.spot_type || "").toLowerCase().trim();
                     const spotType =
                         rawSpot.includes("triple")
                             ? "triple"
@@ -324,6 +328,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
 
     function CustomTooltip({ active, payload }: any) {
         if (!active || !payload?.length) return null;
+        if (!payload[0] || !payload[0].payload) return null;
         const p = payload[0]?.payload;
 
         // If it's one of our event hover points
@@ -721,7 +726,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                             {filter !== "outdoor" && (
                                                     <Scatter
                                                         name="Indoor"
-                                                        data={indoorScores}
+                                                        data={indoorScores.filter(s => typeof s.date === "number" && typeof s.handicap === "number")}
                                                         fill="#ff4b4b"
                                                         r={6}
                                                         onMouseEnter={() => setHoveringEvent(false)}
@@ -731,7 +736,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                             {filter !== "indoor" && (
                                                     <Scatter
                                                         name="Outdoor"
-                                                        data={outdoorScores}
+                                                        data={outdoorScores.filter(s => typeof s.date === "number" && typeof s.handicap === "number")}
                                                         fill="#2b9aff"
                                                         r={6}
                                                         onMouseEnter={() => setHoveringEvent(false)}
@@ -856,7 +861,7 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                 {selectedScore.round_name}
                             </h3>
                             <p className="text-sm text-muted-foreground mb-2">
-                                {new Date(selectedScore.date).toLocaleDateString()}
+                                {selectedScore.date ? new Date(selectedScore.date).toLocaleDateString() : "—"}
                             </p>
                             <p className="text-sm">
                                 <strong>Score:</strong> {selectedScore.score}

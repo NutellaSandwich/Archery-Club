@@ -83,10 +83,7 @@ type RawComment = {
 
 export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) {
     const router = useRouter();
-    const supabase = useMemo(
-        () => (typeof window !== "undefined" ? supabaseBrowser() : null),
-        []
-    );
+    const supabase = useMemo(() => supabaseBrowser(), []);
 
     const [posts, setPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
@@ -146,7 +143,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
     }
 
     useEffect(() => {
-        if (!editingPost) return;
+        if (!supabase || !editingPost) return;
 
         const ep = editingPost;
 
@@ -228,7 +225,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            if (supabase && channel) supabase.removeChannel(channel);
         };
     }, [clubId, supabase]);
 
@@ -266,11 +263,15 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                 return;
             }
 
-            const [{ data: likesData, error: likesError }, { data: userLikes, error: userLikesError }] =
-                await Promise.all([
-                    supabase.from("post_likes").select("post_id"),
-                    supabase.from("post_likes").select("post_id").eq("user_id", userId),
-                ]);
+            if (!userId) return;
+
+            const [
+                { data: likesData, error: likesError },
+                { data: userLikes, error: userLikesError }
+            ] = await Promise.all([
+                supabase.from("post_likes").select("post_id"),
+                supabase.from("post_likes").select("post_id").eq("user_id", userId),
+            ]);
 
             if (likesError) console.error("Likes load error:", likesError);
             if (userLikesError) console.error("User likes load error:", userLikesError);
@@ -692,6 +693,8 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
 
             {loading ? (
                 <p className="text-muted-foreground text-center py-10 text-sm">Loading feed...</p>
+            ) : posts.length === 0 ? (
+                <p className="text-center text-muted-foreground text-sm py-8">No posts yet</p>
             ) : (
                 posts.map((p) => (
                     <motion.article
