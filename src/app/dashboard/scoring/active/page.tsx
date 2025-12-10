@@ -22,14 +22,6 @@ type ScoringConfig = {
 
 type ArrowInput = number | "M" | "X";
 
-// 🔴 REMOVED: Duplicate declaration (now imported from TargetFaceInput.tsx)
-// type TargetFaceArrow = {
-//     score: ArrowInput;
-//     xPct: number; // 0–100 SVG position
-//     yPct: number;
-//     faceIndex: number; // 0–2 for triple spot
-// };
-
 // Update stopZoom signature to accept optional event
 type PointerEvent = React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>;
 type EventLike = PointerEvent | Event;
@@ -300,7 +292,7 @@ export default function ActiveScoringPage() {
             window.clearTimeout(holdTimeoutRef.current);
         }
 
-        // 🟢 FIX 1: Reduce timeout to 50ms for near-instant response on hold
+        // 🟢 FIX 1: Reduce timeout to 10ms for near-instant response on hold
         holdTimeoutRef.current = window.setTimeout(() => {
             if (!isPointerDown.current) return;
 
@@ -321,7 +313,7 @@ export default function ActiveScoringPage() {
                     setTargetSnapshot(canvas);
                 }
             });
-        }, 50); // <-- CHANGED from 150 to 50
+        }, 10); // <-- CHANGED from 50 to 10
     };
 
     const moveZoom = (e: PointerEvent) => {
@@ -401,31 +393,6 @@ export default function ActiveScoringPage() {
             y: relY,
         });
     };
-
-    // 🔴 REMOVED: No longer needed, logic is moved to TargetFaceInput.tsx
-    // function registerArrowAtPoint(x: number, y: number) {
-    //     const el = document.elementFromPoint(x, y);
-    //     if (!el) return;
-
-    //     // Find dataset attributes from the target component 
-    //     const targetElement = el.closest('[data-score][data-x][data-y]');
-
-    //     if (!targetElement) return;
-
-    //     const score = targetElement.getAttribute("data-score");
-    //     const xPct = targetElement.getAttribute("data-x");
-    //     const yPct = targetElement.getAttribute("data-y");
-    //     const face = targetElement.getAttribute("data-face");
-
-    //     if (score && xPct && yPct) {
-    //         handleArrowClick({
-    //             score: score as ArrowInput,
-    //             xPct: Number(xPct),
-    //             yPct: Number(yPct),
-    //             faceIndex: face ? Number(face) : 0
-    //         });
-    //     }
-    // }
 
     return (
         <main className="w-full px-4 sm:px-6 md:max-w-3xl mx-auto space-y-8">
