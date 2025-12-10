@@ -216,9 +216,17 @@ export default function Navbar() {
                 href={href}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm rounded-full transition
                     ${isActive
-                        ? "bg-gradient-to-r from-emerald-500/20 via-sky-500/20 to-emerald-500/20 text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                    }`}
+                        ? `
+        text-emerald-300 
+        bg-[radial-gradient(circle_at_50%_120%,rgba(0,200,150,0.18),rgba(0,150,255,0.12))]
+        border border-emerald-400/30
+      `
+                        : `
+        text-muted-foreground 
+        hover:text-white 
+        hover:bg-[rgba(255,255,255,0.06)]
+      `
+}`}
             >
                 {Icon && <Icon size={16} className="shrink-0" />}
                 <span className="truncate">{label}</span>
@@ -515,10 +523,35 @@ export default function Navbar() {
     return (
         <nav
             ref={navbarRef}
-            className="sticky top-0 z-50 mt-2 mb-4 mx-2 sm:mx-4 flex items-center justify-between flex-nowrap 
-                       rounded-2xl border border-border/70 bg-background/80 backdrop-blur-lg 
-                       shadow-[0_18px_45px_rgba(15,23,42,0.35)] px-3 sm:px-6 py-2.5"
+            className="
+        sticky top-0 z-50 mt-2 mb-4 mx-2 sm:mx-4 flex items-center justify-between flex-nowrap 
+        rounded-2xl border border-emerald-500/20 
+        bg-[linear-gradient(135deg,rgba(4,20,25,0.55),rgba(3,45,60,0.45))]
+        backdrop-blur-xl 
+        shadow-[0_8px_30px_rgba(0,0,0,0.35)]
+        px-3 sm:px-6 py-2.5
+        relative overflow-hidden
+    "
         >
+            {/* GLOSS TOP HIGHLIGHT */}
+            <div
+                className="
+            pointer-events-none absolute top-0 left-0 right-0 h-[2px]
+            bg-gradient-to-r from-transparent via-emerald-300/30 to-transparent
+        "
+            />
+
+            {/* SUBTLE BACKGROUND SHIMMER */}
+            <motion.div
+                className="absolute inset-0 opacity-[0.06] pointer-events-none"
+                animate={{ backgroundPosition: ["0% 0%", "100% 100%"] }}
+                transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                style={{
+                    backgroundImage:
+                        "radial-gradient(circle at 20% 20%, rgba(0,255,200,0.25), transparent 60%), radial-gradient(circle at 80% 80%, rgba(0,150,255,0.25), transparent 60%)",
+                    backgroundSize: "250% 250%",
+                }}
+            />
             {/* LEFT */}
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                 <Link
