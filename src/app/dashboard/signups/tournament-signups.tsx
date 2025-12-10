@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
-import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js"; import { toast } from "sonner";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { toast } from "sonner";
+
 import {
     Card,
     CardHeader,
@@ -13,6 +15,10 @@ import {
 import { BowArrow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+/* ------------------------------------------------
+   Tournament Signups Page — FULL UI OVERHAUL
+------------------------------------------------ */
+
 export default function TournamentSignups() {
     const supabase = useMemo(() => supabaseBrowser(), []);
     const [tournaments, setTournaments] = useState<any[]>([]);
@@ -21,16 +27,16 @@ export default function TournamentSignups() {
     const [clubId, setClubId] = useState<string | null>(null);
     const [showOlder, setShowOlder] = useState(false);
 
-    // ✅ Load tournaments
+    /* ---------------------------------------
+       Load tournaments
+    --------------------------------------- */
     async function loadData() {
         setLoading(true);
 
         try {
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
+            const { data: { user } } = await supabase.auth.getUser();
             const currentUserId = user?.id || null;
-            setUserId(currentUserId);   
+            setUserId(currentUserId);
 
             if (!currentUserId) {
                 setLoading(false);
@@ -50,30 +56,26 @@ export default function TournamentSignups() {
                 return;
             }
 
-            const today = new Date().toISOString().split("T")[0];
-
             const { data, error } = await supabase
                 .from("club_tournaments")
                 .select(`
-    id,
-    title,
-    event_date,
-    signup_close_at,
-    max_signups,
-    tournament_signups:tournament_signups_tournament_id_fkey (
-      user_id,
-      profiles (username)
-    )
-  `)
+                    id,
+                    title,
+                    event_date,
+                    signup_close_at,
+                    max_signups,
+                    tournament_signups:tournament_signups_tournament_id_fkey (
+                        user_id,
+                        profiles (username)
+                    )
+                `)
                 .order("event_date", { ascending: true });
-            
-                
+
             if (error) {
                 console.error("Error loading tournaments:", error);
                 toast.error("Failed to load tournaments.");
             } else {
                 setTournaments(data || []);
-
             }
         } catch (err) {
             console.error("Unexpected error loading tournaments:", err);
@@ -93,17 +95,9 @@ export default function TournamentSignups() {
             .on(
                 "postgres_changes",
                 { event: "*", schema: "public", table: "tournament_signups" },
-                (payload: RealtimePostgresChangesPayload<{
-                    id: string;
-                    tournament_id: string;
-                    user_id: string;
-                }>) => {
-                    console.log("Realtime update triggered:", payload);
-
+                () => {
                     clearTimeout(realtimeTimer);
-                    realtimeTimer = setTimeout(() => {
-                        loadData();
-                    }, 400);
+                    realtimeTimer = setTimeout(() => loadData(), 400);
                 }
             )
             .subscribe();
@@ -114,7 +108,9 @@ export default function TournamentSignups() {
         };
     }, [supabase]);
 
-    // 🟢 Sign up
+    /* ---------------------------------------
+       Sign up / Cancel
+    --------------------------------------- */
     async function handleSignup(tournamentId: string) {
         if (!userId) {
             toast.error("You must be logged in to sign up.");
@@ -136,11 +132,11 @@ export default function TournamentSignups() {
             (s: any) => s.user_id === userId
         );
         if (alreadySignedUp) {
-            toast.info("You’re already signed up for this tournament.");
+            toast.info("You're already signed up.");
             return;
         }
 
-        // ✅ Optimistic UI first
+        // Optimistic UI
         setTournaments((prev) =>
             prev.map((t) =>
                 t.id === tournamentId
@@ -160,35 +156,16 @@ export default function TournamentSignups() {
             .insert([{ tournament_id: tournamentId, user_id: userId }]);
 
         if (error) {
-            console.error("Signup error:", error);
             toast.error("Error signing up.");
-
-            // Roll back optimistic UI on failure
-            setTournaments((prev) =>
-                prev.map((t) =>
-                    t.id === tournamentId
-                        ? {
-                            ...t,
-                            tournament_signups: t.tournament_signups.filter(
-                                (s: any) => s.user_id !== userId
-                            ),
-                        }
-                        : t
-                )
-            );
+            loadData(); // rollback
         } else {
-            toast.success("Signed up successfully!");
-
-            // Delay full reload to let Supabase catch up
-            setTimeout(() => loadData(), 1000);
+            toast.success("Signed up!");
         }
     }
 
-    // 🔴 Cancel signup
     async function handleCancel(tournamentId: string) {
         if (!userId) return;
 
-        // ✅ Optimistic UI first
         setTournaments((prev) =>
             prev.map((t) =>
                 t.id === tournamentId
@@ -209,26 +186,22 @@ export default function TournamentSignups() {
             .eq("user_id", userId);
 
         if (error) {
-            console.error("Cancel error:", error);
             toast.error("Could not cancel sign-up.");
-
-            // Roll back optimistic UI on failure
             loadData();
         } else {
-            toast.success("Cancelled sign-up.");
-
-            // Delay reload slightly so Supabase reflects it
-            setTimeout(() => loadData(), 1000);
+            toast.success("Sign-up cancelled.");
         }
     }
 
-    if (loading) {
+    /* ---------------------------------------
+       UI: No club state
+    --------------------------------------- */
+    if (loading)
         return (
-            <p className="text-center text-muted-foreground mt-10">
-                Loading tournaments...
+            <p className="text-center text-muted-foreground mt-10 animate-pulse">
+                Loading tournaments…
             </p>
         );
-    }
 
     if (!clubId) {
         return (
@@ -238,15 +211,33 @@ export default function TournamentSignups() {
                     <h1 className="text-2xl font-semibold">Club Membership Required</h1>
                 </div>
                 <p className="max-w-md text-muted-foreground">
-                    You need to be part of a club to access tournament signups. Please join or request to join a
-                    club first from the main page.
+                    You must belong to a club to access tournament signups.
                 </p>
-                <Button onClick={() => (window.location.href = "/")}>Join a club</Button>
+                <Button className="bg-gradient-to-r from-emerald-600 to-sky-500 text-white hover:opacity-90"
+                    onClick={() => (window.location.href = "/")}>
+                    Join a club
+                </Button>
             </main>
         );
     }
 
+    /* ---------------------------------------
+       Prepare lists
+    --------------------------------------- */
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
+    const olderTournaments = tournaments.filter(
+        (t) => new Date(t.event_date) < today
+    );
+
+    const recentAndUpcoming = tournaments.filter(
+        (t) => new Date(t.event_date) >= today
+    );
+
+    /* ---------------------------------------
+       Card Renderer
+    --------------------------------------- */
     function renderTournamentCard(t: any) {
         const isSignedUp = t.tournament_signups.some(
             (su: any) => su.user_id === userId
@@ -263,13 +254,19 @@ export default function TournamentSignups() {
         return (
             <Card
                 key={t.id}
-                className={`transition hover:shadow-md ${closed ? "opacity-75" : ""}`}
+                className={`rounded-2xl border border-white/5 bg-background/40 backdrop-blur-sm transition hover:shadow-md ${closed ? "opacity-70" : ""
+                    }`}
             >
-                <CardHeader>
+                <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
                         <div>
-                            <CardTitle>{t.title}</CardTitle>
-                            <CardDescription>{eventDate}</CardDescription>
+                            <CardTitle className="text-lg font-semibold">
+                                {t.title}
+                            </CardTitle>
+                            <CardDescription className="text-sm text-muted-foreground">
+                                {eventDate}
+                            </CardDescription>
+
                             <p className="text-xs text-muted-foreground">
                                 Sign-ups close: {signupClose}
                             </p>
@@ -293,11 +290,11 @@ export default function TournamentSignups() {
                     </div>
                 </CardHeader>
 
-                <CardFooter className="justify-end">
+                <CardFooter className="pt-2 justify-end">
                     {closed ? (
                         isSignedUp && (
                             <span className="text-xs text-green-600 font-medium">
-                                You’re signed up ✅
+                                You’re signed up ✓
                             </span>
                         )
                     ) : isSignedUp ? (
@@ -310,7 +307,7 @@ export default function TournamentSignups() {
                     ) : (
                         <button
                             onClick={() => handleSignup(t.id)}
-                            className="rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] px-3 py-1 text-sm hover:opacity-90"
+                            className="rounded-md bg-gradient-to-r from-emerald-600 to-sky-500 text-white px-3 py-1 text-sm hover:opacity-90"
                         >
                             Sign Up
                         </button>
@@ -320,42 +317,31 @@ export default function TournamentSignups() {
         );
     }
 
-    // ---------- Split recent vs older tournaments ----------
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // start of today
-
-    const olderTournaments = tournaments.filter(
-        (t) => new Date(t.event_date) < today
-    );
-
-    const recentAndUpcoming = tournaments.filter(
-        (t) => new Date(t.event_date) >= today
-    );
-    // -------------------------------------------------------
-
+    /* ---------------------------------------
+       Render Page
+    --------------------------------------- */
     if (tournaments.length === 0)
         return (
             <p className="text-center text-muted-foreground mt-10">
-                No upcoming tournaments.
+                No tournaments available.
             </p>
         );
 
-    // 🎨 Render UI
     return (
-        <section>
-            {/* 🟢 Recent & upcoming tournaments */}
+        <section className="space-y-8">
+            {/* Recent + upcoming */}
             {recentAndUpcoming.length > 0 && (
                 <div className="space-y-4">
                     {recentAndUpcoming.map((t) => renderTournamentCard(t))}
                 </div>
             )}
 
-            {/* 🕗 Older tournaments toggle */}
+            {/* Older toggle */}
             {olderTournaments.length > 0 && (
-                <div className="mt-6">
+                <div className="mt-6 space-y-3">
                     <button
                         onClick={() => setShowOlder((v) => !v)}
-                        className="rounded-md border px-3 py-2 text-sm hover:bg-muted"
+                        className="rounded-xl border px-4 py-2 text-sm hover:bg-muted transition"
                     >
                         {showOlder
                             ? "Hide older tournaments"
@@ -364,7 +350,9 @@ export default function TournamentSignups() {
 
                     {showOlder && (
                         <div className="space-y-4 mt-3">
-                            {olderTournaments.map((t) => renderTournamentCard(t))}
+                            {olderTournaments.map((t) =>
+                                renderTournamentCard(t)
+                            )}
                         </div>
                     )}
                 </div>

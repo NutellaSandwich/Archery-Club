@@ -38,21 +38,70 @@ export default function ResetPasswordPage() {
 
     return (
         <main className="min-h-screen flex items-center justify-center p-6">
-            <div className="max-w-md w-full bg-[hsl(var(--card))] p-6 rounded-xl border border-[hsl(var(--border))]/40 shadow-sm space-y-4">
-                <h1 className="text-xl font-semibold text-center">Reset Password</h1>
+            <div
+                className="
+                    max-w-md w-full
+                    rounded-2xl 
+                    border border-border/40 
+                    bg-muted/30 backdrop-blur-xl
+                    shadow-md 
+                    p-8 
+                    space-y-6
+                "
+            >
+                <h1
+                    className="
+                        text-3xl font-semibold text-center
+                        bg-gradient-to-r from-emerald-500 to-sky-500
+                        bg-clip-text text-transparent
+                    "
+                >
+                    Reset Password
+                </h1>
+
                 <Input
                     type="password"
                     placeholder="New Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="
+                        rounded-xl 
+                        border border-border/40 
+                        bg-muted/20 backdrop-blur-sm 
+                        px-4 py-2.5
+                        text-sm
+                    "
                 />
+
                 <Input
                     type="password"
                     placeholder="Confirm New Password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="
+                        rounded-xl 
+                        border border-border/40 
+                        bg-muted/20 backdrop-blur-sm 
+                        px-4 py-2.5
+                        text-sm
+                    "
                 />
-                <Button onClick={handleReset} disabled={loading} className="w-full">
+
+                <Button
+                    onClick={handleReset}
+                    disabled={loading}
+                    className="
+                        w-full 
+                        rounded-xl 
+                        bg-gradient-to-r from-emerald-600 to-sky-500 
+                        text-white 
+                        py-2.5 
+                        font-medium 
+                        hover:opacity-90 
+                        transition 
+                        disabled:opacity-50
+                    "
+                >
                     {loading ? "Updating..." : "Update Password"}
                 </Button>
             </div>

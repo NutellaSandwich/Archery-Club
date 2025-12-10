@@ -299,85 +299,89 @@ export default function ManageTournaments() {
     }
 
     return (
-        <section className="space-y-6">
-            {/* CREATE FORM */}
-            <Card>
+        <section className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+
+            {/* HEADER */}
+            <div className="text-center space-y-1">
+                <h1 className="text-3xl font-semibold tracking-tight bg-gradient-to-r from-emerald-600 to-sky-500 bg-clip-text text-transparent">
+                    Manage Tournaments
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                    Create and manage club competitions
+                </p>
+            </div>
+
+            {/* CREATE TOURNAMENT */}
+            <Card className="rounded-3xl border border-border/60 bg-muted/40 shadow-sm">
                 <CardHeader>
-                    <CardTitle>Create New Tournament</CardTitle>
+                    <CardTitle className="text-lg font-semibold">
+                        Create New Tournament
+                    </CardTitle>
                 </CardHeader>
 
-                <CardContent className="grid gap-4">
+                <CardContent className="grid gap-5 text-sm">
+                    {/* Title */}
                     <div>
-                        <label className="block text-sm font-medium">Title</label>
+                        <label className="block font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                            Title
+                        </label>
                         <input
                             placeholder="Tournament Title"
                             value={newTournament.title}
-                            onChange={(e) =>
-                                setNewTournament({ ...newTournament, title: e.target.value })
-                            }
-                            className="border rounded-md px-2 py-1 w-full"
+                            onChange={(e) => setNewTournament({ ...newTournament, title: e.target.value })}
+                            className="mt-1 w-full rounded-xl border border-border/50 bg-background/60 px-3 py-2 text-sm"
                         />
                     </div>
 
+                    {/* Event date */}
                     <div>
-                        <label className="block text-sm font-medium">Event Date</label>
+                        <label className="block font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                            Event Date
+                        </label>
                         <input
                             type="date"
                             value={newTournament.event_date}
-                            onChange={(e) =>
-                                setNewTournament({
-                                    ...newTournament,
-                                    event_date: e.target.value,
-                                })
-                            }
-                            className="border rounded-md px-2 py-1 w-full"
+                            onChange={(e) => setNewTournament({ ...newTournament, event_date: e.target.value })}
+                            className="mt-1 w-full rounded-xl border border-border/50 bg-background/60 px-3 py-2 text-sm"
                         />
                     </div>
 
+                    {/* Signup close */}
                     <div>
-                        <label className="block text-sm font-medium">
-                            Sign-up Close Date & Time
+                        <label className="block font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                            Signup Close (Date & Time)
                         </label>
                         <input
                             type="datetime-local"
                             value={newTournament.signup_close_at}
-                            onChange={(e) =>
-                                setNewTournament({
-                                    ...newTournament,
-                                    signup_close_at: e.target.value,
-                                })
-                            }
-                            className="border rounded-md px-2 py-1 w-full"
+                            onChange={(e) => setNewTournament({ ...newTournament, signup_close_at: e.target.value })}
+                            className="mt-1 w-full rounded-xl border border-border/50 bg-background/60 px-3 py-2 text-sm"
                         />
                     </div>
 
+                    {/* Max signups */}
                     <div>
-                        <label className="block text-sm font-medium">Max Sign-ups</label>
+                        <label className="block font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                            Max Signups
+                        </label>
                         <input
                             type="number"
                             value={newTournament.max_signups}
-                            onChange={(e) =>
-                                setNewTournament({
-                                    ...newTournament,
-                                    max_signups: e.target.value,
-                                })
-                            }
-                            className="border rounded-md px-2 py-1 w-full"
+                            onChange={(e) => setNewTournament({ ...newTournament, max_signups: e.target.value })}
+                            className="mt-1 w-full rounded-xl border border-border/50 bg-background/60 px-3 py-2 text-sm"
                         />
                     </div>
 
+                    {/* Description */}
                     <div>
-                        <label className="block text-sm font-medium">Description</label>
+                        <label className="block font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                            Description
+                        </label>
                         <textarea
-                            value={newTournament.description}
-                            onChange={(e) =>
-                                setNewTournament({
-                                    ...newTournament,
-                                    description: e.target.value,
-                                })
-                            }
-                            className="border rounded-md px-2 py-1 w-full"
                             rows={2}
+                            value={newTournament.description}
+                            onChange={(e) => setNewTournament({ ...newTournament, description: e.target.value })}
+                            className="mt-1 w-full rounded-xl border border-border/50 bg-background/60 px-3 py-2 text-sm"
                         />
                     </div>
                 </CardContent>
@@ -386,34 +390,43 @@ export default function ManageTournaments() {
                     <button
                         onClick={handleCreate}
                         disabled={loading}
-                        className="rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] px-4 py-1 text-sm hover:opacity-90"
+                        className="rounded-xl bg-gradient-to-r from-emerald-600 to-sky-500 text-white px-5 py-2 text-sm font-medium hover:opacity-90 transition"
                     >
                         {loading ? "Creating..." : "Add Tournament"}
                     </button>
                 </CardFooter>
             </Card>
 
-            {/* TOURNAMENT LIST */}
-            <div className="space-y-3">
+            {/* LIST OF TOURNAMENTS */}
+            <div className="space-y-4">
                 {tournaments.map((t) => (
                     <Card
                         key={t.id}
                         onClick={() => openTournamentDetails(t)}
-                        className="cursor-pointer hover:bg-[hsl(var(--muted))]/20 transition"
+                        className="cursor-pointer transition hover:bg-muted/40 rounded-2xl border border-border/50 shadow-sm"
                     >
                         <CardHeader>
-                            <CardTitle>{t.title}</CardTitle>
+                            <CardTitle className="text-base font-semibold">
+                                {t.title}
+                            </CardTitle>
+
                             <p className="text-xs text-muted-foreground">
-                                Event: {t.event_date} | Sign-ups close:{" "}
+                                Event: {t.event_date}
+                            </p>
+
+                            <p className="text-xs text-muted-foreground">
+                                Signup closes:{" "}
                                 {t.signup_close_at
                                     ? new Date(t.signup_close_at).toLocaleString()
                                     : "N/A"}
                             </p>
+
                             <p className="text-xs text-muted-foreground">
                                 {t.tournament_signups?.length || 0} signed up
                             </p>
                         </CardHeader>
-                        <CardFooter className="justify-end gap-4">
+
+                        <CardFooter className="flex gap-4 justify-end">
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -427,7 +440,7 @@ export default function ManageTournaments() {
                                     });
                                     setIsEditing(true);
                                 }}
-                                className="text-blue-600 text-sm underline"
+                                className="text-sm text-blue-600 hover:underline"
                             >
                                 Edit
                             </button>
@@ -437,7 +450,7 @@ export default function ManageTournaments() {
                                     e.stopPropagation();
                                     handleDelete(t.id);
                                 }}
-                                className="text-red-600 text-sm underline"
+                                className="text-sm text-red-600 hover:underline"
                             >
                                 Delete
                             </button>
@@ -446,36 +459,36 @@ export default function ManageTournaments() {
                 ))}
             </div>
 
-            {/* POPUP MODAL */}
+            {/* TOURNAMENT DETAILS MODAL */}
             {selectedTournament && (
                 <div
-                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
                     onClick={() => setSelectedTournament(null)}
                 >
                     <div
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl w-[90%] max-w-md"
+                        className="bg-background border border-border/60 rounded-2xl shadow-xl p-6 w-[95%] max-w-md space-y-4"
                     >
-                        <h3 className="text-lg font-semibold mb-2">
+                        <h3 className="text-xl font-semibold">
                             {selectedTournament.title}
                         </h3>
-                        <p className="text-sm text-muted-foreground mb-2">
+
+                        <p className="text-sm text-muted-foreground">
                             Event on {selectedTournament.event_date}
                         </p>
-                        <p className="text-sm mb-4">
-                            Sign-ups close at:{" "}
+
+                        <p className="text-sm">
+                            Signup closes:{" "}
                             {selectedTournament.signup_close_at
-                                ? new Date(
-                                    selectedTournament.signup_close_at
-                                ).toLocaleString()
+                                ? new Date(selectedTournament.signup_close_at).toLocaleString()
                                 : "N/A"}
                         </p>
 
+                        {/* You can add signup list here later if you want similar to Sessions UI */}
 
-                        
                         <button
-                            className="mt-4 bg-red-600 text-white w-full py-2 rounded-md"
                             onClick={() => setSelectedTournament(null)}
+                            className="w-full mt-4 bg-gradient-to-r from-emerald-600 to-sky-500 text-white rounded-xl py-2 hover:opacity-90"
                         >
                             Close
                         </button>
@@ -483,96 +496,95 @@ export default function ManageTournaments() {
                 </div>
             )}
 
+            {/* EDIT MODAL */}
             {editingTournament && (
                 <div
-                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
                     onClick={() => setEditingTournament(null)}
                 >
                     <div
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl w-[90%] max-w-md"
+                        className="bg-background border border-border/60 rounded-2xl shadow-xl p-6 w-[95%] max-w-sm space-y-4"
                     >
-                        <h3 className="text-lg font-semibold mb-4">Edit Tournament</h3>
+                        <h3 className="text-lg font-semibold">
+                            Edit Tournament
+                        </h3>
 
-                        <div className="space-y-3 mb-4">
+                        <div className="space-y-3 text-sm">
+                            {/* Title */}
                             <div>
-                                <label className="text-sm font-medium">Title</label>
+                                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                    Title
+                                </label>
                                 <input
-                                    className="w-full border rounded-md px-2 py-1"
+                                    className="mt-1 w-full rounded-xl border border-border/50 bg-background/50 px-3 py-2"
                                     value={editFields.title}
-                                    onChange={(e) =>
-                                        setEditFields({ ...editFields, title: e.target.value })
-                                    }
+                                    onChange={(e) => setEditFields({ ...editFields, title: e.target.value })}
                                 />
                             </div>
 
+                            {/* Event date */}
                             <div>
-                                <label className="text-sm font-medium">Event Date</label>
+                                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                    Event Date
+                                </label>
                                 <input
                                     type="date"
-                                    className="w-full border rounded-md px-2 py-1"
+                                    className="mt-1 w-full rounded-xl border border-border/50 bg-background/50 px-3 py-2"
                                     value={editFields.event_date}
-                                    onChange={(e) =>
-                                        setEditFields({ ...editFields, event_date: e.target.value })
-                                    }
+                                    onChange={(e) => setEditFields({ ...editFields, event_date: e.target.value })}
                                 />
                             </div>
 
+                            {/* Signup close */}
                             <div>
-                                <label className="text-sm font-medium">Signup Close (Date & Time)</label>
+                                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                    Signup Close
+                                </label>
                                 <input
                                     type="datetime-local"
-                                    className="w-full border rounded-md px-2 py-1"
+                                    className="mt-1 w-full rounded-xl border border-border/50 bg-background/50 px-3 py-2"
                                     value={editFields.signup_close_at}
-                                    onChange={(e) =>
-                                        setEditFields({
-                                            ...editFields,
-                                            signup_close_at: e.target.value,
-                                        })
-                                    }
+                                    onChange={(e) => setEditFields({ ...editFields, signup_close_at: e.target.value })}
                                 />
                             </div>
 
+                            {/* Max signups */}
                             <div>
-                                <label className="text-sm font-medium">Max Signups</label>
+                                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                    Max Signups
+                                </label>
                                 <input
                                     type="number"
-                                    className="w-full border rounded-md px-2 py-1"
+                                    className="mt-1 w-full rounded-xl border border-border/50 bg-background/50 px-3 py-2"
                                     value={editFields.max_signups}
-                                    onChange={(e) =>
-                                        setEditFields({
-                                            ...editFields,
-                                            max_signups: e.target.value,
-                                        })
-                                    }
+                                    onChange={(e) => setEditFields({ ...editFields, max_signups: e.target.value })}
                                 />
                             </div>
 
+                            {/* Description */}
                             <div>
-                                <label className="text-sm font-medium">Description</label>
+                                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                    Description
+                                </label>
                                 <textarea
                                     rows={2}
-                                    className="w-full border rounded-md px-2 py-1"
+                                    className="mt-1 w-full rounded-xl border border-border/50 bg-background/50 px-3 py-2"
                                     value={editFields.description}
-                                    onChange={(e) =>
-                                        setEditFields({
-                                            ...editFields,
-                                            description: e.target.value,
-                                        })
-                                    }
+                                    onChange={(e) => setEditFields({ ...editFields, description: e.target.value })}
                                 />
                             </div>
 
                             <button
                                 onClick={handleUpdateTournament}
-                                className="w-full rounded-md bg-primary text-primary-foreground py-2 hover:opacity-90"
+                                className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-sky-500 text-white py-2 hover:opacity-90"
                             >
                                 Save Changes
                             </button>
 
                             <button
                                 onClick={() => setEditingTournament(null)}
-                                className="w-full rounded-md border py-2 text-sm hover:bg-muted"
+                                className="w-full rounded-xl border border-border/50 py-2 text-sm hover:bg-muted/40"
                             >
                                 Cancel
                             </button>
@@ -580,6 +592,7 @@ export default function ManageTournaments() {
                     </div>
                 </div>
             )}
+
         </section>
     );
 }

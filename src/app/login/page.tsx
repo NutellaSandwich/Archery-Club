@@ -94,12 +94,25 @@ export default function LoginPage() {
     }
 
     return (
-        <main className="flex min-h-screen flex-col items-center justify-center px-4">
+        <main className="min-h-screen flex flex-col items-center justify-center px-4 bg-background/50">
             <form
                 onSubmit={handleSubmit}
-                className="flex flex-col gap-4 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-8 shadow-sm w-80"
+                className="
+    flex flex-col gap-5 
+    w-80 
+    rounded-2xl 
+    border border-border/40 
+    bg-muted/30 backdrop-blur-xl 
+    p-8 shadow-sm
+"
             >
-                <h1 className="text-xl font-semibold text-center">
+                <h1
+    className="
+        text-2xl font-semibold text-center 
+        bg-gradient-to-r from-emerald-500 to-sky-500 
+        bg-clip-text text-transparent
+    "
+>
                     {mode === "login" ? "Login" : "Sign Up"}
                 </h1>
 
@@ -109,7 +122,12 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] p-2"
+                    className="
+    rounded-xl 
+    border border-border/40 
+    bg-muted/20 backdrop-blur-sm 
+    px-3 py-2 text-sm
+"
                 />
 
                 <input
@@ -118,14 +136,19 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] p-2"
+                    className="
+    rounded-xl 
+    border border-border/40 
+    bg-muted/20 backdrop-blur-sm 
+    px-3 py-2 text-sm
+"
                 />
 
                 {mode === "login" && (
                     <button
                         type="button"
                         onClick={handleForgotPassword}
-                        className="text-sm text-blue-500 hover:underline mx-auto"                    >
+                        className="text-sm text-emerald-600 hover:underline mx-auto"                    >
                         Forgot your password?
                     </button>
                 )}
@@ -133,7 +156,15 @@ export default function LoginPage() {
                 <button
                     type="submit"
                     disabled={loading}
-                    className="rounded-md bg-[hsl(var(--primary))] px-4 py-2 text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-60"
+                    className="
+    rounded-xl 
+    bg-gradient-to-r from-emerald-600 to-sky-500 
+    text-white 
+    px-4 py-2 
+    font-medium 
+    hover:opacity-90 
+    disabled:opacity-50
+"
                 >
                     {loading
                         ? mode === "login"
@@ -151,7 +182,7 @@ export default function LoginPage() {
                             <button
                                 type="button"
                                 onClick={() => setMode("signup")}
-                                className="text-[hsl(var(--primary))] hover:underline"
+                                className="text-emerald-600 hover:underline font-medium"
                             >
                                 Sign up
                             </button>
@@ -162,7 +193,7 @@ export default function LoginPage() {
                             <button
                                 type="button"
                                 onClick={() => setMode("login")}
-                                className="text-[hsl(var(--primary))] hover:underline"
+                                className="text-emerald-600 hover:underline font-medium"
                             >
                                 Log in
                             </button>

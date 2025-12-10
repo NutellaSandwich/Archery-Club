@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import {
     Card,
@@ -13,17 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { BowArrow } from "lucide-react";
-import {
-    Target,
-    MessageSquare,
-    Edit,
-    Trash2,
-    ArrowUp,
-    ArrowDown,
-    ChevronDown,
-    ChevronUp,   // 👈 add these icons for expand/collapse
-} from "lucide-react";
+import { BowArrow, Target, MessageSquare, Edit, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from "lucide-react";
 import {
     ResponsiveContainer,
     LineChart,
@@ -35,8 +25,8 @@ import {
 
 type Goal = {
     id: string;
-    user_id: string;           // 👈 Add this if missing too
-    coach_id?: string | null;  // 👈 Add this line
+    user_id: string;
+    coach_id?: string | null;
     title: string;
     target_date?: string | null;
     achieved?: boolean;
@@ -57,7 +47,6 @@ export default function CoachingClient() {
     const [supabase, setSupabase] = useState<any>(null);
     const [isReady, setIsReady] = useState(false);
 
-    
     const [profile, setProfile] = useState<any>(null);
     const [selectedUser, setSelectedUser] = useState<any>(null);
     const [userQuery, setUserQuery] = useState("");
@@ -112,7 +101,6 @@ export default function CoachingClient() {
         setSupabase(client);
         setIsReady(true);
     }, []);
-    
 
     // Load logged-in user profile
     useEffect(() => {
@@ -135,7 +123,7 @@ export default function CoachingClient() {
 
     // Load my own data
     useEffect(() => {
-        if (!selectedUser) return;
+        if (!selectedUser || !supabase) return;
         async function loadMyData() {
             const { data: goalData } = await supabase
                 .from("goals")
@@ -149,15 +137,14 @@ export default function CoachingClient() {
                 .order("date", { ascending: true });
             setMyGoals(goalData || []);
             setMyLogs(logData || []);
-            
         }
-        
+
         loadMyData();
     }, [selectedUser, supabase]);
 
     // Load viewed athlete data
     useEffect(() => {
-        if (!viewedAthlete) return;
+        if (!viewedAthlete || !supabase) return;
         async function loadViewedAthleteData() {
             const { data: goalData } = await supabase
                 .from("goals")
@@ -177,20 +164,23 @@ export default function CoachingClient() {
 
     // Search users (for coach view)
     useEffect(() => {
-        if (!userQuery.trim() || !isCoach) {
+        if (!userQuery.trim() || !isCoach || !supabase) {
             setUserResults([]);
             return;
         }
+
         const fetchUsers = async () => {
             if (!profile?.club_id) return;
             const { data } = await supabase
                 .from("profiles")
                 .select("id, username, club_id")
-                .eq("club_id", profile.club_id) // 👈 Restrict to same club
+                .eq("club_id", profile.club_id) // 👈 still uses latest profile
                 .ilike("username", `%${userQuery}%`)
                 .limit(8);
+
             setUserResults(data || []);
         };
+
         const timeout = setTimeout(fetchUsers, 250);
         return () => clearTimeout(timeout);
     }, [userQuery, isCoach, supabase]);
@@ -411,23 +401,60 @@ export default function CoachingClient() {
             </main>
         );
     }
+
     return (
         <main className="max-w-[90rem] mx-auto p-6 space-y-8">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Target className="text-primary" /> Coaching
-            </h1>
+            {/* PAGE TITLE */}
+            <div className="text-center space-y-1">
+                <h1 className="text-3xl font-semibold tracking-tight bg-gradient-to-r from-emerald-600 to-sky-500 bg-clip-text text-transparent flex items-center justify-center gap-2">
+                    <Target className="text-primary" />
+                    Coaching
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                    Track goals, sessions and coaching feedback.
+                </p>
+                <div className="w-40 h-1 mx-auto mt-2 rounded-full bg-gradient-to-r from-emerald-500 via-sky-500 to-emerald-500 opacity-40"></div>
+            </div>
 
             <Tabs defaultValue="my-logs">
-                <TabsList className="flex justify-center mb-4">
-                    <TabsTrigger value="my-logs">My Coaching Logs</TabsTrigger>
-                    {isCoach && <TabsTrigger value="coach-view">Coach View</TabsTrigger>}
+                <TabsList
+                    className="
+                        flex justify-center mb-4 bg-muted/40 rounded-xl p-1
+                        shadow-sm border border-border/50 backdrop-blur
+                    "
+                >
+                    <TabsTrigger
+                        value="my-logs"
+                        className="
+                            data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600/30 
+                            data-[state=active]:to-sky-500/30 data-[state=active]:text-foreground
+                            rounded-lg px-4 py-2 transition
+                        "
+                    >
+                        My Coaching Logs
+                    </TabsTrigger>
+                    {isCoach && (
+                        <TabsTrigger
+                            value="coach-view"
+                            className="
+                                data-[state=active]:bg-gradient-to-r
+                                data-[state=active]:from-emerald-600/30
+                                data-[state=active]:to-sky-500/30
+                                data-[state=active]:text-foreground
+                                rounded-lg px-4 py-2 transition
+                            "
+                        >
+                            Coach View
+                        </TabsTrigger>
+                    )}
                 </TabsList>
 
                 {/* 🏹 My Logs */}
                 <TabsContent value="my-logs" className="space-y-6">
                     {/* GOALS */}
-                    <Card>
-                        <CardHeader>
+                    <Card className="border border-border/60 bg-muted/30 shadow-sm rounded-2xl">
+                        <CardHeader className="relative pb-3">
+                            <div className="absolute inset-x-0 -bottom-[1px] h-[2px] bg-gradient-to-r from-emerald-500/40 via-sky-500/40 to-emerald-500/40 rounded-full"></div>
                             <CardTitle>Goals</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
@@ -450,8 +477,25 @@ export default function CoachingClient() {
                             )}
 
                             {myGoals.map((g) => (
-                                <div key={g.id} className="border rounded-md p-3 space-y-2">
-                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                                <div
+                                    key={g.id}
+                                    className="
+                                        group relative border rounded-lg p-3 space-y-2
+                                        bg-muted/30 hover:bg-muted/50 transition-shadow
+                                        shadow-sm hover:shadow-md
+                                        overflow-hidden
+                                    "
+                                >
+                                    {/* Glow */}
+                                    <div
+                                        className="
+                                            absolute inset-0 rounded-lg opacity-0 group-hover:opacity-40
+                                            bg-gradient-to-br from-emerald-500/10 via-sky-500/10 to-emerald-500/10
+                                            blur-xl transition-opacity duration-300 pointer-events-none
+                                        "
+                                    ></div>
+
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 relative">
                                         <div>
                                             <p className="font-medium">{g.title}</p>
                                             {g.target_date && (
@@ -461,7 +505,11 @@ export default function CoachingClient() {
                                             )}
                                         </div>
                                         <div className="flex flex-wrap gap-2 items-center justify-end">
-                                            <Button variant="ghost" size="sm" onClick={() => toggleThread(g.id, "goal")}>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => toggleThread(g.id, "goal")}
+                                            >
                                                 {expandedThreads[g.id] ? (
                                                     <>
                                                         <ChevronUp size={14} /> Hide Replies
@@ -498,8 +546,12 @@ export default function CoachingClient() {
 
                                     {/* Replies */}
                                     {expandedThreads[g.id] && (
-                                        <div className="ml-4 mt-2 space-y-2 border-l pl-3">
-                                            {goalComments[g.id]?.length ? (
+                                        <div className="ml-4 mt-2 space-y-2 border-l pl-3 relative">
+                                            {loadingThreads[g.id] ? (
+                                                <p className="text-xs text-muted-foreground">
+                                                    Loading replies...
+                                                </p>
+                                            ) : goalComments[g.id]?.length ? (
                                                 goalComments[g.id].map((c) => (
                                                     <p key={c.id} className="text-sm text-muted-foreground">
                                                         <strong>{c.author?.username || "User"}:</strong> {c.content}
@@ -520,6 +572,7 @@ export default function CoachingClient() {
                                                 onClick={() =>
                                                     addComment(g.id, commentInputs[g.id], g.coach_id || g.user_id)
                                                 }
+                                                className="flex items-center gap-1"
                                             >
                                                 <MessageSquare size={14} /> Reply
                                             </Button>
@@ -527,12 +580,45 @@ export default function CoachingClient() {
                                     )}
                                 </div>
                             ))}
+
+                            {/* Edit goal modal-ish inline is already handled via state */}
+                            {editGoal && (
+                                <div className="mt-4 space-y-2 rounded-lg border border-border/50 bg-background/80 p-3">
+                                    <p className="text-sm font-medium">Edit Goal</p>
+                                    <Input
+                                        value={editGoal.title}
+                                        onChange={(e) =>
+                                            setEditGoal((prev) =>
+                                                prev ? { ...prev, title: e.target.value } : prev
+                                            )
+                                        }
+                                    />
+                                    <Input
+                                        type="date"
+                                        value={editGoal.target_date || ""}
+                                        onChange={(e) =>
+                                            setEditGoal((prev) =>
+                                                prev ? { ...prev, target_date: e.target.value } : prev
+                                            )
+                                        }
+                                    />
+                                    <div className="flex gap-2 justify-end">
+                                        <Button variant="outline" size="sm" onClick={() => setEditGoal(null)}>
+                                            Cancel
+                                        </Button>
+                                        <Button size="sm" onClick={saveGoalEdit}>
+                                            Save
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
                     {/* LOGS */}
-                    <Card>
-                        <CardHeader>
+                    <Card className="border border-border/60 bg-muted/30 shadow-sm rounded-2xl">
+                        <CardHeader className="relative pb-3">
+                            <div className="absolute inset-x-0 -bottom-[1px] h-[2px] bg-gradient-to-r from-emerald-500/40 via-sky-500/40 to-emerald-500/40 rounded-full"></div>
                             <CardTitle>Coaching Logs</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
@@ -576,8 +662,24 @@ export default function CoachingClient() {
                             )}
 
                             <div className="space-y-2">
-                                {myLogs.map((l) =>
-                                    <div key={l.id} className="border rounded-md p-3 space-y-3">
+                                {myLogs.map((l) => (
+                                    <div
+                                        key={l.id}
+                                        className="
+                                            group relative border rounded-lg p-3 space-y-3
+                                            bg-muted/30 hover:bg-muted/50 transition-shadow
+                                            shadow-sm hover:shadow-md
+                                            overflow-hidden
+                                        "
+                                    >
+                                        <div
+                                            className="
+                                                absolute inset-0 rounded-lg opacity-0 group-hover:opacity-40
+                                                bg-gradient-to-br from-emerald-500/10 via-sky-500/10 to-emerald-500/10
+                                                blur-xl transition-opacity duration-300 pointer-events-none
+                                            "
+                                        ></div>
+
                                         {editLog?.id === l.id ? (
                                             <>
                                                 <Input
@@ -609,31 +711,56 @@ export default function CoachingClient() {
                                                         )
                                                     }
                                                 />
-                                                <Button size="sm" onClick={saveLogEdit}>
-                                                    Save
-                                                </Button>
+                                                <div className="flex gap-2 justify-end">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setEditLog(null)}
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                    <Button size="sm" onClick={saveLogEdit}>
+                                                        Save
+                                                    </Button>
+                                                </div>
                                             </>
                                         ) : (
                                             <>
-                                                <div>
+                                                <div className="relative">
                                                     <p className="font-medium">
-                                                        {new Date(l.date).toLocaleDateString()} • {l.arrows_shot || 0} arrows
+                                                        {new Date(l.date).toLocaleDateString()} •{" "}
+                                                        {l.arrows_shot || 0} arrows
                                                     </p>
+                                                    {l.session_rating && (
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Rating: {l.session_rating}/10
+                                                        </p>
+                                                    )}
                                                     {l.notes && (
-                                                        <p className="text-sm text-muted-foreground">{l.notes}</p>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {l.notes}
+                                                        </p>
                                                     )}
                                                 </div>
 
                                                 <div className="flex gap-2">
-                                                    <Button variant="ghost" size="sm" onClick={() => setEditLog(l)}>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setEditLog(l)}
+                                                    >
                                                         <Edit size={14} />
                                                     </Button>
-                                                    <Button variant="ghost" size="sm" onClick={() => deleteLog(l.id)}>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => deleteLog(l.id)}
+                                                    >
                                                         <Trash2 size={14} />
                                                     </Button>
                                                 </div>
 
-                                                <div>
+                                                <div className="relative">
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
@@ -658,8 +785,13 @@ export default function CoachingClient() {
                                                                 </p>
                                                             ) : logComments[l.id]?.length ? (
                                                                 logComments[l.id].map((c) => (
-                                                                    <p key={c.id} className="text-sm text-muted-foreground">
-                                                                        <strong>{c.author?.username || "User"}:</strong>{" "}
+                                                                    <p
+                                                                        key={c.id}
+                                                                        className="text-sm text-muted-foreground"
+                                                                    >
+                                                                        <strong>
+                                                                            {c.author?.username || "User"}:
+                                                                        </strong>{" "}
                                                                         {c.content}
                                                                     </p>
                                                                 ))
@@ -688,6 +820,7 @@ export default function CoachingClient() {
                                                                         l.coach_id || l.user_id
                                                                     )
                                                                 }
+                                                                className="flex items-center gap-1"
                                                             >
                                                                 <MessageSquare size={14} /> Reply
                                                             </Button>
@@ -697,18 +830,30 @@ export default function CoachingClient() {
                                             </>
                                         )}
                                     </div>
-                                )}
+                                ))}
                             </div>
 
                             {/* GRAPH */}
                             {myLogs.length > 0 && (
-                                <div className="mt-6 min-w-full md:min-w-[700px]">
+                                <div
+                                    className="
+                                        group relative mt-6 min-w-full md:min-w-[700px] p-4 rounded-xl
+                                        bg-muted/30 border border-border/50 shadow-sm
+                                        hover:bg-muted/50 transition
+                                        overflow-hidden
+                                    "
+                                >
+                                    {/* Glow */}
+                                    <div
+                                        className="
+                                            absolute inset-0 rounded-xl opacity-0 group-hover:opacity-40
+                                            bg-gradient-to-br from-emerald-500/10 via-sky-500/10 to-emerald-500/10
+                                            blur-xl transition-opacity duration-300 pointer-events-none
+                                        "
+                                    ></div>
                                     <h3 className="font-semibold mb-2">Arrows Shot Over Time</h3>
                                     <ResponsiveContainer width="100%" height={300}>
-                                        <LineChart data={myLogs.map((l) => ({
-                                            date: new Date(l.date).toLocaleDateString(),
-                                            arrows: l.arrows_shot,
-                                        }))}>
+                                        <LineChart data={myDataForChart}>
                                             <XAxis dataKey="date" />
                                             <YAxis />
                                             <Tooltip />
@@ -727,7 +872,8 @@ export default function CoachingClient() {
                                             )}
                                         </p>
                                         <p>
-                                            This month: <strong>{myStats.arrowsThisMonth}</strong> arrows
+                                            This month:{" "}
+                                            <strong>{myStats.arrowsThisMonth}</strong> arrows
                                         </p>
                                     </div>
                                 </div>
@@ -739,8 +885,9 @@ export default function CoachingClient() {
                 {/* 👩‍🏫 Coach View */}
                 {isCoach && (
                     <TabsContent value="coach-view" className="space-y-6">
-                        <Card>
-                            <CardHeader>
+                        <Card className="border border-border/60 bg-muted/30 shadow-sm rounded-2xl">
+                            <CardHeader className="relative pb-3">
+                                <div className="absolute inset-x-0 -bottom-[1px] h-[2px] bg-gradient-to-r from-emerald-500/40 via-sky-500/40 to-emerald-500/40 rounded-full"></div>
                                 <CardTitle>Coach View</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
@@ -760,18 +907,22 @@ export default function CoachingClient() {
                                                         setIsLoadingUser(true);
                                                         setUserResults([]);
                                                         setUserQuery("");
-                                                        const { data: fullUser, error } = await supabase
+                                                        const { data: fullUser } = await supabase
                                                             .from("profiles")
                                                             .select("*")
                                                             .eq("id", u.id)
-                                                            .eq("club_id", profile.club_id) // 👈 Must belong to same club
+                                                            .eq("club_id", profile.club_id)
                                                             .single();
 
                                                         if (!fullUser) {
-                                                            toast.error("You can only view athletes from your club.");
+                                                            toast.error(
+                                                                "You can only view athletes from your club."
+                                                            );
+                                                            setIsLoadingUser(false);
                                                             return;
                                                         }
                                                         setViewedAthlete(fullUser);
+                                                        setIsLoadingUser(false);
                                                     }}
                                                     className="w-full text-left px-3 py-2 hover:bg-muted transition"
                                                 >
@@ -802,8 +953,9 @@ export default function CoachingClient() {
                                         </h2>
 
                                         {/* 🥅 Goals */}
-                                        <Card>
-                                            <CardHeader>
+                                        <Card className="border border-border/60 bg-muted/30 shadow-sm rounded-2xl">
+                                            <CardHeader className="relative pb-3">
+                                                <div className="absolute inset-x-0 -bottom-[1px] h-[2px] bg-gradient-to-r from-emerald-500/40 via-sky-500/40 to-emerald-500/40 rounded-full"></div>
                                                 <CardTitle>Goals</CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
@@ -813,18 +965,40 @@ export default function CoachingClient() {
                                                     </p>
                                                 )}
                                                 {athleteGoals.map((goal) => (
-                                                    <div key={goal.id} className="border rounded-md p-3 space-y-2">
-                                                        <div className="flex justify-between">
+                                                    <div
+                                                        key={goal.id}
+                                                        className="
+                                                            group relative border rounded-lg p-3 space-y-2
+                                                            bg-muted/30 hover:bg-muted/50 transition-shadow
+                                                            shadow-sm hover:shadow-md
+                                                            overflow-hidden
+                                                        "
+                                                    >
+                                                        {/* Glow */}
+                                                        <div
+                                                            className="
+                                                                absolute inset-0 rounded-lg opacity-0 group-hover:opacity-40
+                                                                bg-gradient-to-br from-emerald-500/10 via-sky-500/10 to-emerald-500/10
+                                                                blur-xl transition-opacity duration-300 pointer-events-none
+                                                            "
+                                                        ></div>
+
+                                                        <div className="flex justify-between relative">
                                                             <div>
                                                                 <p className="font-medium">{goal.title}</p>
                                                                 {goal.target_date && (
                                                                     <p className="text-xs text-muted-foreground">
-                                                                        Target: {new Date(goal.target_date).toLocaleDateString()}
+                                                                        Target:{" "}
+                                                                        {new Date(
+                                                                            goal.target_date
+                                                                        ).toLocaleDateString()}
                                                                     </p>
                                                                 )}
                                                             </div>
                                                             {goal.achieved && (
-                                                                <span className="text-green-600 text-xs font-semibold">Achieved</span>
+                                                                <span className="text-green-600 text-xs font-semibold">
+                                                                    Achieved
+                                                                </span>
                                                             )}
                                                         </div>
 
@@ -847,15 +1021,27 @@ export default function CoachingClient() {
 
                                                         {/* Replies thread */}
                                                         {expandedThreads[goal.id] && (
-                                                            <div className="ml-4 mt-2 space-y-2 border-l pl-3">
-                                                                {goalComments[goal.id]?.length ? (
+                                                            <div className="ml-4 mt-2 space-y-2 border-l pl-3 relative">
+                                                                {loadingThreads[goal.id] ? (
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        Loading replies...
+                                                                    </p>
+                                                                ) : goalComments[goal.id]?.length ? (
                                                                     goalComments[goal.id].map((c) => (
-                                                                        <p key={c.id} className="text-sm text-muted-foreground">
-                                                                            <strong>{c.author?.username || "User"}:</strong> {c.content}
+                                                                        <p
+                                                                            key={c.id}
+                                                                            className="text-sm text-muted-foreground"
+                                                                        >
+                                                                            <strong>
+                                                                                {c.author?.username || "User"}:
+                                                                            </strong>{" "}
+                                                                            {c.content}
                                                                         </p>
                                                                     ))
                                                                 ) : (
-                                                                    <p className="text-xs text-muted-foreground">No replies yet.</p>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        No replies yet.
+                                                                    </p>
                                                                 )}
                                                             </div>
                                                         )}
@@ -874,7 +1060,11 @@ export default function CoachingClient() {
                                                         <Button
                                                             size="sm"
                                                             onClick={() => {
-                                                                addComment(goal.id, commentInputs[goal.id], viewedAthlete.id);
+                                                                addComment(
+                                                                    goal.id,
+                                                                    commentInputs[goal.id],
+                                                                    viewedAthlete.id
+                                                                );
                                                                 setCommentInputs((prev) => ({
                                                                     ...prev,
                                                                     [goal.id]: "",
@@ -890,8 +1080,9 @@ export default function CoachingClient() {
                                         </Card>
 
                                         {/* 🏹 Logs */}
-                                        <Card>
-                                            <CardHeader>
+                                        <Card className="border border-border/60 bg-muted/30 shadow-sm rounded-2xl">
+                                            <CardHeader className="relative pb-3">
+                                                <div className="absolute inset-x-0 -bottom-[1px] h-[2px] bg-gradient-to-r from-emerald-500/40 via-sky-500/40 to-emerald-500/40 rounded-full"></div>
                                                 <CardTitle>Coaching Logs</CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
@@ -901,10 +1092,28 @@ export default function CoachingClient() {
                                                     </p>
                                                 )}
                                                 {athleteLogs.map((log) => (
-                                                    <div key={log.id} className="border rounded-md p-3 space-y-2">
-                                                        <div className="flex justify-between">
+                                                    <div
+                                                        key={log.id}
+                                                        className="
+                                                            group relative border rounded-lg p-3 space-y-2
+                                                            bg-muted/30 hover:bg-muted/50 transition-shadow
+                                                            shadow-sm hover:shadow-md
+                                                            overflow-hidden
+                                                        "
+                                                    >
+                                                        {/* Glow */}
+                                                        <div
+                                                            className="
+                                                                absolute inset-0 rounded-lg opacity-0 group-hover:opacity-40
+                                                                bg-gradient-to-br from-emerald-500/10 via-sky-500/10 to-emerald-500/10
+                                                                blur-xl transition-opacity duration-300 pointer-events-none
+                                                            "
+                                                        ></div>
+
+                                                        <div className="flex justify-between relative">
                                                             <p className="font-medium">
-                                                                {new Date(log.date).toLocaleDateString()} • {log.arrows_shot} arrows
+                                                                {new Date(log.date).toLocaleDateString()} •{" "}
+                                                                {log.arrows_shot} arrows
                                                             </p>
                                                             {log.session_rating && (
                                                                 <span className="text-xs text-muted-foreground">
@@ -938,15 +1147,27 @@ export default function CoachingClient() {
 
                                                         {/* Replies thread */}
                                                         {expandedThreads[log.id] && (
-                                                            <div className="ml-4 mt-2 space-y-2 border-l pl-3">
-                                                                {logComments[log.id]?.length ? (
+                                                            <div className="ml-4 mt-2 space-y-2 border-l pl-3 relative">
+                                                                {loadingThreads[log.id] ? (
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        Loading replies...
+                                                                    </p>
+                                                                ) : logComments[log.id]?.length ? (
                                                                     logComments[log.id].map((c) => (
-                                                                        <p key={c.id} className="text-sm text-muted-foreground">
-                                                                            <strong>{c.author?.username || "User"}:</strong> {c.content}
+                                                                        <p
+                                                                            key={c.id}
+                                                                            className="text-sm text-muted-foreground"
+                                                                        >
+                                                                            <strong>
+                                                                                {c.author?.username || "User"}:
+                                                                            </strong>{" "}
+                                                                            {c.content}
                                                                         </p>
                                                                     ))
                                                                 ) : (
-                                                                    <p className="text-xs text-muted-foreground">No replies yet.</p>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        No replies yet.
+                                                                    </p>
                                                                 )}
                                                             </div>
                                                         )}
@@ -966,7 +1187,11 @@ export default function CoachingClient() {
                                                             size="sm"
                                                             variant="outline"
                                                             onClick={() => {
-                                                                addLogReply(log.id, commentInputs[log.id], viewedAthlete.id);
+                                                                addLogReply(
+                                                                    log.id,
+                                                                    commentInputs[log.id],
+                                                                    viewedAthlete.id
+                                                                );
                                                                 setCommentInputs((prev) => ({
                                                                     ...prev,
                                                                     [log.id]: "",
@@ -982,8 +1207,9 @@ export default function CoachingClient() {
                                         </Card>
 
                                         {/* 📈 Overview */}
-                                        <Card>
-                                            <CardHeader>
+                                        <Card className="border border-border/60 bg-muted/30 shadow-sm rounded-2xl">
+                                            <CardHeader className="relative pb-3">
+                                                <div className="absolute inset-x-0 -bottom-[1px] h-[2px] bg-gradient-to-r from-emerald-500/40 via-sky-500/40 to-emerald-500/40 rounded-full"></div>
                                                 <CardTitle>Performance Overview</CardTitle>
                                             </CardHeader>
                                             <CardContent>
@@ -992,7 +1218,11 @@ export default function CoachingClient() {
                                                         <XAxis dataKey="date" />
                                                         <YAxis />
                                                         <Tooltip />
-                                                        <Line type="monotone" dataKey="arrows" stroke="#2563eb" />
+                                                        <Line
+                                                            type="monotone"
+                                                            dataKey="arrows"
+                                                            stroke="#2563eb"
+                                                        />
                                                     </LineChart>
                                                 </ResponsiveContainer>
                                                 <div className="flex justify-between text-sm mt-3">
@@ -1000,9 +1230,15 @@ export default function CoachingClient() {
                                                         This week:{" "}
                                                         <strong>{athleteStats.arrowsThisWeek}</strong> arrows{" "}
                                                         {athleteStats.moreThisWeek ? (
-                                                            <ArrowUp className="inline text-green-600" size={14} />
+                                                            <ArrowUp
+                                                                className="inline text-green-600"
+                                                                size={14}
+                                                            />
                                                         ) : (
-                                                            <ArrowDown className="inline text-red-600" size={14} />
+                                                            <ArrowDown
+                                                                className="inline text-red-600"
+                                                                size={14}
+                                                            />
                                                         )}
                                                     </p>
                                                     <p>

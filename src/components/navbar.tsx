@@ -19,14 +19,16 @@ import {
     UserCircle2,
     BowArrow,
     Menu,
+    Shield
 } from "lucide-react";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import NotificationsDropdown from "@/components/notifications-dropdown";
 import { supabaseBrowser } from "@/lib/supabase-browser";
-import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
+import { useAuth } from "@/components/AuthProvider";
+import type { Session } from "@supabase/supabase-js";
 
 type UserProfile = {
     id: string;
@@ -48,6 +50,7 @@ export default function Navbar() {
     const pathname = usePathname();
     const { theme, systemTheme, setTheme } = useTheme();
     const supabase = useMemo(() => supabaseBrowser(), []);
+    const { session } = useAuth(); // ✅ get session from context
 
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [mounted, setMounted] = useState(false);
@@ -75,18 +78,20 @@ export default function Navbar() {
     useEffect(() => setMounted(true), []);
 
     /* -----------------------------------------
-       LOAD PROFILE ONCE
-    ------------------------------------------ */
+     LOAD PROFILE WHEN SESSION CHANGES
+  ------------------------------------------ */
     useEffect(() => {
-        async function load() {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const user = sessionData.session?.user;
+        // no session → no profile
+        if (!session) {
+            setProfile(null);
+            setLoading(false);
+            return;
+        }
 
-            if (!user) {
-                setProfile(null);
-                setLoading(false);
-                return;
-            }
+        async function loadProfile(currentSession: Session) {
+            setLoading(true);
+
+            const user = currentSession.user;
 
             const { data: profileData } = await supabase
                 .from("profiles")
@@ -113,32 +118,29 @@ export default function Navbar() {
             setLoading(false);
         }
 
-        load();
-
-        const { data: listener } = supabase.auth.onAuthStateChange(
-            (_event: AuthChangeEvent, _session: Session | null) => load()
-        );
-
-        return () => listener?.subscription?.unsubscribe();
-    }, [supabase]);
+        loadProfile(session); // ✅ session is guaranteed non-null here
+    }, [session, supabase]);
 
     /* -----------------------------------------
        NAV ITEMS
     ------------------------------------------ */
     const navItems = useMemo(() => {
         if (!profile) return [];
+
         return [
             { href: "/dashboard", label: "Feed", icon: LayoutDashboard },
             { href: "/dashboard/signups", label: "Signups", icon: ClipboardList },
             { href: "/dashboard/club-records", label: "Club Records", icon: Award },
             { href: "/dashboard/coaching", label: "Coaching", icon: Target },
             { href: "/dashboard/scoring", label: "Scoring", icon: BowArrow },
+
+            // ⭐ NEW: single admin tab
             ...(profile.role === "admin"
                 ? [
-                    { href: "/dashboard/trophies", label: "Trophies", icon: Trophy },
-                    { href: "/dashboard/join-requests", label: "Join Requests", icon: User },
+                    { href: "/dashboard/admin", label: "Admin", icon: Shield }
                 ]
                 : []),
+
             { href: "/profile", label: "Profile", icon: UserCircle2 },
         ];
     }, [profile]);
@@ -170,9 +172,15 @@ export default function Navbar() {
     }
 
     useEffect(() => {
-        const obs = new ResizeObserver(updateLayout);
+        const obs = new ResizeObserver(() => {
+            updateLayout();
+            setLayoutReady(true);
+        });
+
         if (navbarRef.current) obs.observe(navbarRef.current);
         updateLayout();
+        setLayoutReady(true);
+
         return () => obs.disconnect();
     }, [profile]);
 
@@ -199,20 +207,7 @@ export default function Navbar() {
         }, 250);
 
         return () => clearTimeout(timeout);
-    }, [query, profile?.club_id]);
-
-    useEffect(() => {
-        const obs = new ResizeObserver(() => {
-            updateLayout();
-            setLayoutReady(true); // allow animation once measured
-        });
-
-        if (navbarRef.current) obs.observe(navbarRef.current);
-        updateLayout();
-        setLayoutReady(true); // first measurement
-
-        return () => obs.disconnect();
-    }, [profile]);
+    }, [query, profile?.club_id, supabase]);
 
     /* -----------------------------------------
        NAV LINK
@@ -224,13 +219,14 @@ export default function Navbar() {
         return (
             <Link
                 href={href}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm transition ${isActive
-                        ? "text-primary underline underline-offset-4"
-                        : "text-foreground hover:text-primary"
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm rounded-full transition
+                    ${isActive
+                        ? "bg-gradient-to-r from-emerald-500/20 via-sky-500/20 to-emerald-500/20 text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                     }`}
             >
-                {Icon && <Icon size={16} />}
-                {label}
+                {Icon && <Icon size={16} className="shrink-0" />}
+                <span className="truncate">{label}</span>
             </Link>
         );
     }
@@ -241,22 +237,26 @@ export default function Navbar() {
     const OverflowDropdown = ({ items }: { items: NavItem[] }) => (
         <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
-                <button className="flex items-center px-2 py-2 hover:bg-muted/30 rounded-md">
+                <button
+                    className="flex items-center px-2 py-1.5 rounded-full border border-border/60 bg-muted/40 
+                               hover:bg-muted/70 shadow-sm text-muted-foreground hover:text-foreground"
+                >
                     <Menu size={18} />
                 </button>
             </DropdownMenu.Trigger>
 
             <DropdownMenu.Content
-                className="min-w-[180px] p-2 rounded-xl border shadow-md bg-background"
+                className="min-w-[190px] p-2 rounded-2xl border border-border/70 shadow-xl bg-background/95 backdrop-blur-md"
+                sideOffset={8}
             >
                 {items.map((item) => (
                     <DropdownMenu.Item key={item.href} asChild>
                         <Link
                             href={item.href}
-                            className="px-3 py-2 flex items-center gap-2 rounded-md hover:bg-muted/30"
+                            className="px-3 py-2 flex items-center gap-2 rounded-lg hover:bg-muted/40 text-sm"
                         >
                             <item.icon size={16} />
-                            {item.label}
+                            <span className="truncate">{item.label}</span>
                         </Link>
                     </DropdownMenu.Item>
                 ))}
@@ -275,9 +275,14 @@ export default function Navbar() {
         return (
             <button
                 onClick={() => setTheme(isDark ? "light" : "dark")}
-                className="p-2 rounded-lg hover:bg-muted/40"
+                className="inline-flex items-center justify-center rounded-xl border border-border/60 
+                           bg-muted/40 px-2 py-1.5 hover:bg-muted/70 shadow-sm transition"
             >
-                {isDark ? <Sun size={18} /> : <Moon size={18} />}
+                {isDark ? (
+                    <Sun size={18} className="text-amber-400" />
+                ) : (
+                    <Moon size={18} className="text-sky-500" />
+                )}
             </button>
         );
     }
@@ -327,7 +332,7 @@ export default function Navbar() {
                 {/* Trigger */}
                 <button
                     onClick={() => setOpen(true)}
-                    className="md:hidden flex items-center px-2 py-2 hover:bg-muted/30 rounded-md"
+                    className="md:hidden flex items-center px-2 py-2 rounded-full border border-border/50 bg-muted/40 hover:bg-muted/70 transition"
                 >
                     <Menu size={20} />
                 </button>
@@ -344,11 +349,11 @@ export default function Navbar() {
                                         exit={{ opacity: 0 }}
                                         transition={{ duration: 0.2 }}
                                         className="
-                                        fixed inset-0 z-[998]
-                                        bg-white/0
-                                        backdrop-blur-[6px]
-                                        md:hidden
-                                    "
+                                            fixed inset-0 z-[998]
+                                            bg-gradient-to-br from-[#020817] via-[#020617] to-emerald-800
+                                            bg-opacity-90
+                                            md:hidden
+                                        "
                                         onClick={() => setOpen(false)}
                                     />
 
@@ -359,26 +364,26 @@ export default function Navbar() {
                                         exit={{ opacity: 0, scale: 0.97 }}
                                         transition={{ duration: 0.18 }}
                                         className="
-                                        fixed inset-0 z-[999]
-                                        flex flex-col items-center justify-center
-                                        px-15
-                                    "
+                                            fixed inset-0 z-[999]
+                                            flex flex-col items-center justify-center
+                                            px-10
+                                        "
                                         onClick={() => setOpen(false)}
                                     >
-                                        {/* CLOSE BUTTON (NO BOX, JUST ✕) */}
+                                        {/* CLOSE BUTTON */}
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setOpen(false);
                                             }}
                                             className="
-                                            absolute top-6 right-6 
-                                            text-white text-2xl 
-                                            transition-transform
-                                            hover:scale-[1.22]
-                                            active:scale-[0.90]
-                                            drop-shadow-[0_0_6px_rgba(255,255,255,0.6)]
-                                        "
+                                                absolute top-6 right-6 
+                                                text-white text-2xl 
+                                                transition-transform
+                                                hover:scale-[1.22]
+                                                active:scale-[0.90]
+                                                drop-shadow-[0_0_6px_rgba(255,255,255,0.6)]
+                                            "
                                         >
                                             ✕
                                         </button>
@@ -395,9 +400,13 @@ export default function Navbar() {
                                                 <motion.div
                                                     key={item.href}
                                                     variants={itemVariants}
-                                                    whileHover={{ scale: 1.15 }}
-                                                    whileTap={{ scale: 0.90 }}
-                                                    transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                                                    whileHover={{ scale: 1.08 }}
+                                                    whileTap={{ scale: 0.94 }}
+                                                    transition={{
+                                                        type: "spring",
+                                                        stiffness: 260,
+                                                        damping: 18,
+                                                    }}
                                                 >
                                                     <Link
                                                         href={item.href}
@@ -406,10 +415,10 @@ export default function Navbar() {
                                                             flex items-center gap-3
                                                             text-white
                                                             drop-shadow-[0_0_4px_rgba(255,255,255,0.28)]
-                                                            hover:opacity-80
+                                                            hover:opacity-85
                                                         "
                                                     >
-                                                        <item.icon size={30} />
+                                                        <item.icon size={26} />
                                                         {item.label}
                                                     </Link>
                                                 </motion.div>
@@ -417,18 +426,22 @@ export default function Navbar() {
 
                                             <motion.button
                                                 variants={itemVariants}
-                                                whileHover={{ scale: 1.15 }}
-                                                whileTap={{ scale: 0.90 }}
-                                                transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                                                whileHover={{ scale: 1.08 }}
+                                                whileTap={{ scale: 0.94 }}
+                                                transition={{
+                                                    type: "spring",
+                                                    stiffness: 260,
+                                                    damping: 18,
+                                                }}
                                                 onClick={handleLogout}
                                                 className="
-        flex items-center gap-3
-        text-red-300
-        drop-shadow-[0_0_6px_rgba(255,60,60,0.5)]
-        hover:opacity-80
-    "
+                                                    flex items-center gap-3
+                                                    text-red-300
+                                                    drop-shadow-[0_0_6px_rgba(255,60,60,0.5)]
+                                                    hover:opacity-85
+                                                "
                                             >
-                                                <LogOut size={30} />
+                                                <LogOut size={26} />
                                                 Logout
                                             </motion.button>
                                         </motion.div>
@@ -448,32 +461,37 @@ export default function Navbar() {
     return (
         <nav
             ref={navbarRef}
-            className="sticky top-0 z-50 mt-2 mb-4 flex items-center justify-between 
-            rounded-2xl border bg-background/70 backdrop-blur-md shadow-md px-3 sm:px-6 py-2.5"
+            className="sticky top-0 z-50 mt-2 mb-4 mx-2 sm:mx-4 flex items-center justify-between 
+                       rounded-2xl border border-border/70 bg-background/80 backdrop-blur-lg 
+                       shadow-[0_18px_45px_rgba(15,23,42,0.35)] px-3 sm:px-6 py-2.5"
         >
             {/* LEFT */}
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                <Link href="/" className="text-lg font-semibold hover:text-primary">
+                <Link
+                    href="/"
+                    className="text-lg sm:text-xl font-semibold tracking-tight bg-gradient-to-r from-emerald-500 to-sky-500 bg-clip-text text-transparent hover:opacity-90 transition"
+                >
                     Arcus
                 </Link>
 
                 {!loading && profile && layoutReady && (
                     <div className="hidden md:flex items-center gap-3 relative">
+                        {/* Static inline items */}
+                        <div className="flex items-center gap-2">
+                            {navItems
+                                .slice(0, Math.max(0, visibleCount - 1))
+                                .map((item) => (
+                                    <NavLink key={item.href} {...item} />
+                                ))}
 
-                        {/* Static inline items (all except the last visible) */}
-                        <div className="flex items-center gap-3">
-                            {navItems.slice(0, Math.max(0, visibleCount - 1)).map((item) => (
-                                <NavLink key={item.href} {...item} />
-                            ))}
-
-                            {/* Animated transition item (only one that disappears) */}
+                            {/* Animated transition item */}
                             <AnimatePresence mode="popLayout" initial={false}>
                                 {visibleCount > 0 && visibleCount <= navItems.length && (
                                     <motion.div
                                         key={navItems[visibleCount - 1].href}
-                                        initial={{ opacity: 1, x: 0 }}
+                                        initial={{ opacity: 0, x: 8 }}
                                         animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: 12 }}   // ← move toward dropdown
+                                        exit={{ opacity: 0, x: 8 }}
                                         transition={{ duration: 0.18, ease: "easeOut" }}
                                     >
                                         <NavLink {...navItems[visibleCount - 1]} />
@@ -507,7 +525,7 @@ export default function Navbar() {
                 className="absolute opacity-0 pointer-events-none h-0 overflow-hidden"
             >
                 {navItems.map((item) => (
-                    <div key={item.href} className="flex items-center px-3 py-2 text-sm">
+                    <div key={item.href} className="flex items-center px-3 py-1.5 text-sm">
                         {item.label}
                     </div>
                 ))}
@@ -518,10 +536,9 @@ export default function Navbar() {
                 ref={rightRef}
                 className="flex items-center gap-2 sm:gap-3 min-w-0 shrink"
             >
-
                 {/* SEARCH */}
                 {!loading && profile && (
-                    <div className="relative w-40 sm:w-48 md:w-56">
+                    <div className="relative w-40 sm:w-52 md:w-64">
                         <input
                             type="text"
                             placeholder="Search users..."
@@ -529,30 +546,33 @@ export default function Navbar() {
                             onChange={(e) => setQuery(e.target.value)}
                             onFocus={() => results.length && setShowResults(true)}
                             onBlur={() => setTimeout(() => setShowResults(false), 200)}
-                            className="w-full rounded-full border bg-muted/30 
-px-2 py-1 text-xs
-sm:px-3 sm:py-1.5 sm:text-sm
-focus:ring-2 focus:ring-primary"                        />
+                            className="w-full rounded-full border border-border/60 bg-muted/40 
+                                px-3 py-1.5 text-xs sm:text-sm
+                                focus:outline-none focus:ring-[1.5px] focus:ring-emerald-500/80
+                                placeholder:text-muted-foreground/70"
+                        />
 
                         {showResults && results.length > 0 && (
-                            <div className="absolute mt-2 w-64 bg-popover border rounded-xl shadow-lg p-2 z-50">
+                            <div className="absolute mt-2 w-[min(18rem,100%+4rem)] right-0 bg-popover/95 border border-border/70 rounded-2xl shadow-xl p-2 z-50 backdrop-blur-md">
                                 {results.map((u) => (
                                     <Link
                                         key={u.id}
                                         href={`/profile/${u.id}`}
-                                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30"
+                                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/40 transition"
                                     >
                                         <Image
                                             src={u.avatar_url ?? "/default-avatar.png"}
                                             alt="Avatar"
                                             width={32}
                                             height={32}
-                                            className="rounded-full h-8 w-8 object-cover border"
+                                            className="rounded-full h-8 w-8 object-cover border border-border/60"
                                         />
-                                        <div>
-                                            <span className="text-sm font-medium">{u.username}</span>
+                                        <div className="min-w-0">
+                                            <span className="text-sm font-medium truncate">
+                                                {u.username}
+                                            </span>
                                             {u.bow_type && (
-                                                <span className="block text-xs text-muted-foreground uppercase">
+                                                <span className="block text-xs text-muted-foreground uppercase truncate">
                                                     {u.bow_type}
                                                 </span>
                                             )}
@@ -576,7 +596,7 @@ focus:ring-2 focus:ring-primary"                        />
                 {!loading && profile && (
                     <DropdownMenu.Root>
                         <DropdownMenu.Trigger asChild>
-                            <div className="cursor-pointer flex items-center hover:opacity-80 transition">
+                            <button className="cursor-pointer flex items-center hover:opacity-85 transition">
                                 <Image
                                     src={
                                         profile.avatar_url?.startsWith("http")
@@ -586,19 +606,23 @@ focus:ring-2 focus:ring-primary"                        />
                                     alt="Avatar"
                                     width={34}
                                     height={34}
-                                    className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover border"
+                                    className="h-7 w-7 sm:h-8 sm:w-8 rounded-full object-cover border border-border/70"
                                 />
-                            </div>
+                            </button>
                         </DropdownMenu.Trigger>
 
-                        <DropdownMenu.Content className="min-w-[180px] p-2 border rounded-xl shadow-md bg-background">                            <DropdownMenu.Label className="px-3 py-2 text-xs text-muted-foreground">
+                        <DropdownMenu.Content
+                            className="min-w-[190px] p-2 border border-border/70 rounded-2xl shadow-xl bg-background/95 backdrop-blur-md"
+                            sideOffset={8}
+                        >
+                            <DropdownMenu.Label className="px-3 py-2 text-xs text-muted-foreground border-b border-border/60 mb-1">
                                 {profile.username}
                             </DropdownMenu.Label>
 
                             <DropdownMenu.Item asChild>
                                 <Link
                                     href="/profile/edit"
-                                    className="px-3 py-2 text-sm flex items-center gap-2 hover:bg-muted/30 rounded-md"
+                                    className="px-3 py-2 text-sm flex items-center gap-2 rounded-md hover:bg-muted/40"
                                 >
                                     <User size={14} /> Edit Profile
                                 </Link>

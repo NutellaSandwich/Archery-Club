@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Delete } from "lucide-react";
-import TargetFaceInput from "@/components/TargetFaceInput"; // adjust path as needed
-import { Crosshair, Target } from "lucide-react"; 
+import TargetFaceInput from "@/components/TargetFaceInput";
+import { Target } from "lucide-react";
 import html2canvas from "html2canvas";
 
 type ScoringConfig = {
@@ -24,9 +24,9 @@ type ArrowInput = number | "M" | "X";
 
 type TargetFaceArrow = {
     score: ArrowInput;
-    xPct: number;   // 0–100 SVG position
+    xPct: number; // 0–100 SVG position
     yPct: number;
-    faceIndex: number;  // 0–2 for triple spot
+    faceIndex: number; // 0–2 for triple spot
 };
 
 export default function ActiveScoringPage() {
@@ -42,8 +42,28 @@ export default function ActiveScoringPage() {
     const shownRoundCompleteToast = useRef(false);
     const [showArrowMap, setShowArrowMap] = useState(false);
 
-    const totalEnds = config ? config.round.total_arrows / config.arrowsPerEnd : 0;
-    
+    // ---- Magnifier State ----
+    const [zoomActive, setZoomActive] = useState(false);
+    const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
+    const magnifierSize = 110; // px size of circle
+    const zoomRef = useRef<HTMLDivElement | null>(null);
+    const [targetSnapshot, setTargetSnapshot] = useState<HTMLCanvasElement | null>(
+        null
+    );
+
+    // Long-press detection
+    const isPointerDown = useRef(false);
+    const holdTimeoutRef = useRef<number | null>(null);
+
+    // 🔹 Load config from session
+    useEffect(() => {
+        const stored = sessionStorage.getItem("scoringConfig");
+        if (!stored) {
+            router.push("/dashboard/scoring");
+            return;
+        }
+        setConfig(JSON.parse(stored));
+    }, [router]);
 
     async function renderTargetImage(): Promise<string | null> {
         const targetEl = document.getElementById("active-target-preview");
@@ -57,29 +77,18 @@ export default function ActiveScoringPage() {
 
         return canvas.toDataURL("image/png");
     }
-    // 🔹 Load config
-    useEffect(() => {
-        const stored = sessionStorage.getItem("scoringConfig");
-        if (!stored) {
-            router.push("/dashboard/scoring");
-            return;
-        }
-        setConfig(JSON.parse(stored));
-    }, [router]);
 
     const isWorcester = config?.round?.name?.toLowerCase().includes("worcester");
 
-    // 🎯 Define available scoring values
     const arrowValues: ArrowInput[] = isWorcester
         ? config?.isTripleSpot
-            ? [5, 4, 3, "M"] // triple Worcester (only 3–5)
-            : [5, 4, 3, 2, 1, "M"] // single Worcester
+            ? [5, 4, 3, "M"]
+            : [5, 4, 3, 2, 1, "M"]
         : config?.isTripleSpot
             ? ["X", 10, 9, 8, 7, 6, "M"]
             : ["X", 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, "M"];
 
     const getScoreColor = (val: ArrowInput) => {
-        // --- WORCESTER LOGIC (unchanged) ---
         if (isWorcester) {
             switch (val) {
                 case 5:
@@ -90,37 +99,24 @@ export default function ActiveScoringPage() {
                 case 1:
                     return "bg-black text-white";
                 case "M":
-                    return "bg-[#74c96a] text-black"; // softer bright green
+                    return "bg-[#74c96a] text-black";
                 default:
                     return "bg-muted/30";
             }
         }
 
-        // --- WA TARGET COLOURS (new vivid versions matching target face) ---
-
-        // Yellow (X, 10, 9)
         if (val === "X" || val === 10 || val === 9)
             return "bg-[#f5cc2d] text-black";
 
-        // Red (8, 7)
-        if (val === 8 || val === 7)
-            return "bg-[#df4b4b] text-white";
+        if (val === 8 || val === 7) return "bg-[#df4b4b] text-white";
 
-        // Blue (6, 5)
-        if (val === 6 || val === 5)
-            return "bg-[#5e84e0] text-white";
+        if (val === 6 || val === 5) return "bg-[#5e84e0] text-white";
 
-        // Black (4, 3)
-        if (val === 4 || val === 3)
-            return "bg-[#1f1f1f] text-white";
+        if (val === 4 || val === 3) return "bg-[#1f1f1f] text-white";
 
-        // White (2, 1)
-        if (val === 2 || val === 1)
-            return "bg-white text-black border";
+        if (val === 2 || val === 1) return "bg-white text-black border";
 
-        // Miss
-        if (val === "M")
-            return "bg-[#74c96a] text-black";
+        if (val === "M") return "bg-[#74c96a] text-black";
 
         return "bg-muted/30";
     };
@@ -153,6 +149,9 @@ export default function ActiveScoringPage() {
         setEnds(updated);
         setCurrentArrows([]);
 
+        const totalEnds =
+            config ? config.round.total_arrows / config.arrowsPerEnd : 0;
+
         if (updated.length >= totalEnds && !shownRoundCompleteToast.current) {
             shownRoundCompleteToast.current = true;
             setRoundComplete(true);
@@ -160,38 +159,35 @@ export default function ActiveScoringPage() {
         }
     };
 
-    // ↩️ Undo last arrow
     const handleUndo = () => {
         setCurrentArrows((prev) => prev.slice(0, -1));
     };
 
-    // ✏️ Edit an end
     const handleEditEnd = (index: number) => {
         setEditingEndIndex(index);
         setCurrentArrows([...ends[index]]);
         setCurrentEnd(index + 1);
     };
 
-    const totalScore = ends
-        .flat()
-        .reduce<number>((acc, v) => {
-            const s = typeof v === "object" ? v.score : v;
-
-            if (s === "X") return acc + 10;
-            if (typeof s === "number") return acc + s;
-            return acc; // "M" or invalid
-        }, 0);
+    const totalScore = ends.flat().reduce<number>((acc, v) => {
+        const s = typeof v === "object" ? v.score : v;
+        if (s === "X") return acc + 10;
+        if (typeof s === "number") return acc + s;
+        return acc;
+    }, 0);
 
     const golds = isWorcester
         ? 0
-        : ends.flat().filter((v) => {
-            const s = typeof v === "object" ? v.score : v;
-            return s === 10 || s === "X";
-        }).length;
-
+        : ends
+            .flat()
+            .filter((v) => {
+                const s = typeof v === "object" ? v.score : v;
+                return s === 10 || s === "X";
+            }).length;
 
     const totalArrowsShot = ends.flat().length;
-    const avgArrow = totalArrowsShot > 0 ? (totalScore / totalArrowsShot).toFixed(2) : "0.00";
+    const avgArrow =
+        totalArrowsShot > 0 ? (totalScore / totalArrowsShot).toFixed(2) : "0.00";
 
     // ✅ Auto-save full end
     useEffect(() => {
@@ -206,7 +202,6 @@ export default function ActiveScoringPage() {
         }
     }, [currentArrows, editingEndIndex, config, roundComplete]);
 
-    // 🚀 Final submission handler
     const handleSubmitRound = () => {
         if (!config) return;
 
@@ -221,6 +216,9 @@ export default function ActiveScoringPage() {
             ends,
             arrowsPerEnd: config.arrowsPerEnd,
             isTripleSpot: config.isTripleSpot ?? false,
+            archerName: localStorage.getItem("profile_username"),
+            clubName: localStorage.getItem("profile_clubname"),
+            bowstyle: localStorage.getItem("profile_bowstyle"),
         };
 
         (async () => {
@@ -228,13 +226,36 @@ export default function ActiveScoringPage() {
 
             const finalPayload = {
                 ...summaryData,
-                targetImage,   // ← ADD THIS FIELD
+                targetImage,
+                archerName: summaryData.archerName,
+                clubName: summaryData.clubName,
+                bowstyle: summaryData.bowstyle,
             };
 
             localStorage.setItem("lastScoreData", JSON.stringify(finalPayload));
             router.push("/dashboard/scoring/summary");
         })();
     };
+
+    // 🔚 Global safety: if pointer somehow ends outside the container
+    useEffect(() => {
+        const handleUp = () => {
+            isPointerDown.current = false;
+            if (holdTimeoutRef.current !== null) {
+                window.clearTimeout(holdTimeoutRef.current);
+                holdTimeoutRef.current = null;
+            }
+            setZoomActive(false);
+        };
+
+        window.addEventListener("mouseup", handleUp);
+        window.addEventListener("touchend", handleUp);
+
+        return () => {
+            window.removeEventListener("mouseup", handleUp);
+            window.removeEventListener("touchend", handleUp);
+        };
+    }, []);
 
     if (!config) {
         return (
@@ -244,14 +265,104 @@ export default function ActiveScoringPage() {
         );
     }
 
+    const totalEnds =
+        config ? config.round.total_arrows / config.arrowsPerEnd : 0;
+
     const canInputNewEnd =
         !roundComplete && ends.length < totalEnds && editingEndIndex === null;
 
-    
+    // 🔍 Long-press to start zoom
+    const startZoom = async (
+        e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
+    ) => {
+        const target = e.target as HTMLElement;
+        if (target.closest("button")) return;
+
+        isPointerDown.current = true;
+
+        // Grab snapshot once per press
+        const container = document.getElementById("live-target-container");
+        if (container) {
+            const canvas = await html2canvas(container, {
+                backgroundColor: null,
+                scale: 2,
+                logging: false,
+            });
+            setTargetSnapshot(canvas);
+        }
+
+        // Capture pointer position immediately (before React reuses event)
+        const clientX =
+            "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+        const clientY =
+            "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+
+        if (holdTimeoutRef.current !== null) {
+            window.clearTimeout(holdTimeoutRef.current);
+        }
+
+        holdTimeoutRef.current = window.setTimeout(() => {
+            if (!isPointerDown.current) return; // pointer released → cancel
+            setZoomActive(true);
+            updateCrosshair(clientX, clientY);
+        }, 150); // hold threshold (ms)
+    };
+
+    const moveZoom = (
+        e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
+    ) => {
+        if (!zoomActive) return;
+
+        const clientX =
+            "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+        const clientY =
+            "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+
+        updateCrosshair(clientX, clientY);
+    };
+
+    const stopZoom = () => {
+        isPointerDown.current = false;
+        if (holdTimeoutRef.current !== null) {
+            window.clearTimeout(holdTimeoutRef.current);
+            holdTimeoutRef.current = null;
+        }
+        setZoomActive(false);
+    };
+
+    // update crosshair relative to zoom container
+    const updateCrosshair = (x: number, y: number) => {
+        if (!zoomRef.current) return;
+
+        const rect = zoomRef.current.getBoundingClientRect();
+        const relX = x - rect.left;
+        const relY = y - rect.top;
+
+        setZoomPos({
+            x: relX,
+            y: relY,
+        });
+    };
+
     return (
         <main className="w-full px-4 sm:px-6 md:max-w-3xl mx-auto space-y-8">
-            <div className="flex justify-between items-center">
-                <h1 className="text-xl font-semibold">{config.round.name}</h1>
+            <div
+                className="
+                    flex justify-between items-center p-4 rounded-xl border border-border/40 
+                    relative bg-card/60
+                    before:absolute before:inset-0 before:-z-10
+                    before:bg-gradient-to-r before:from-emerald-600/10 via-sky-500/10 to-emerald-600/10
+                    before:rounded-xl shadow-sm
+                "
+            >
+                <h1 className="text-xl font-semibold relative">
+                    {config.round.name}
+                    <div
+                        className="mt-1 h-[2px] w-32 mx-auto 
+                            bg-gradient-to-r from-emerald-600/50 via-sky-500/50 to-emerald-600/50 
+                            rounded-full"
+                    />
+                </h1>
 
                 <div className="flex items-center gap-3">
                     <button
@@ -260,7 +371,9 @@ export default function ActiveScoringPage() {
                         title="Show Arrow Placement Map"
                     >
                         <Target size={22} />
-                        <span className="hidden sm:inline text-sm font-medium">Arrow Map</span>
+                        <span className="hidden sm:inline text-sm font-medium">
+                            Arrow Map
+                        </span>
                     </button>
 
                     <p className="text-sm text-muted-foreground">
@@ -269,36 +382,134 @@ export default function ActiveScoringPage() {
                 </div>
             </div>
 
-            {(canInputNewEnd || editingEndIndex !== null) && (
-                config.useTargetFace ? (
-                    <TargetFaceInput
-                        arrowsPerEnd={config.arrowsPerEnd}
-                        isTripleSpot={!!config.isTripleSpot}
-                        currentArrows={currentArrows as TargetFaceArrow[]}
-                        onSelectArrow={(arrow) => handleArrowClick(arrow)}
-                    />
+            <p className="text-xs text-gray-500 mb-1 text-center">Hold to zoom</p>
+
+            <div
+                className="w-full h-px my-4 
+                    bg-gradient-to-r from-emerald-600/40 via-sky-500/40 to-emerald-600/40"
+            />
+
+            {(canInputNewEnd || editingEndIndex !== null) &&
+                (config.useTargetFace ? (
+                    <div
+                        ref={zoomRef}
+                        className="
+                            relative w-full flex justify-center items-center touch-none select-none p-4 rounded-xl
+                            border border-border/40 bg-card/40
+                            before:absolute before:inset-0 before:-z-10
+                            before:bg-gradient-to-r before:from-emerald-600/10 via-sky-500/10 to-emerald-600/10
+                            before:rounded-xl
+                        "
+                        onMouseDown={startZoom}
+                        onMouseMove={moveZoom}
+                        onMouseUp={stopZoom}
+                        onMouseLeave={stopZoom}
+                        onTouchStart={startZoom}
+                        onTouchMove={moveZoom}
+                        onTouchEnd={stopZoom}
+                    >
+                        <div id="live-target-container">
+                            <TargetFaceInput
+                                arrowsPerEnd={config.arrowsPerEnd}
+                                isTripleSpot={!!config.isTripleSpot}
+                                currentArrows={currentArrows as TargetFaceArrow[]}
+                                onSelectArrow={(arrow) => handleArrowClick(arrow)}
+                            />
+                        </div>
+
+                        {zoomActive && targetSnapshot && zoomRef.current && (
+                            <div
+                                className="pointer-events-none absolute rounded-full border border-gray-300 shadow-xl overflow-hidden bg-white"
+                                style={{
+                                    width: magnifierSize,
+                                    height: magnifierSize,
+                                    left: zoomPos.x,
+                                    top: zoomPos.y - 70,
+                                    transform: "translate(-50%, -50%)",
+                                }}
+                            >
+                                {(() => {
+                                    const container =
+                                        document.getElementById("live-target-container");
+                                    const containerRect =
+                                        container!.getBoundingClientRect();
+
+                                    const scaleX =
+                                        targetSnapshot.width / containerRect.width;
+                                    const scaleY =
+                                        targetSnapshot.height / containerRect.height;
+
+                                    const targetLeft =
+                                        (zoomRef.current!.clientWidth -
+                                            containerRect.width) /
+                                        2;
+                                    const targetTop =
+                                        (zoomRef.current!.clientHeight -
+                                            containerRect.height) /
+                                        2;
+
+                                    const offsetX = zoomPos.x - targetLeft;
+                                    const offsetY = zoomPos.y - targetTop;
+
+                                    return (
+                                        <div
+                                            style={{
+                                                position: "absolute",
+                                                left:
+                                                    -(offsetX * scaleX) +
+                                                    magnifierSize / 2,
+                                                top:
+                                                    -(offsetY * scaleY) +
+                                                    magnifierSize / 2,
+                                                width: targetSnapshot.width,
+                                                height: targetSnapshot.height,
+                                                backgroundImage: `url(${targetSnapshot.toDataURL()})`,
+                                                backgroundSize: `${targetSnapshot.width}px ${targetSnapshot.height}px`,
+                                            }}
+                                        />
+                                    );
+                                })()}
+
+                                {/* Center crosshair */}
+                                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                    <div className="relative w-3 h-3 flex items-center justify-center">
+                                        <div className="w-1.5 h-1.5 bg-white border border-black rounded-full"></div>
+                                        <div className="absolute w-[1px] h-6 bg-black/70"></div>
+                                        <div className="absolute h-[1px] w-6 bg-black/70"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 ) : (
                     <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                         {arrowValues.map((val) => (
                             <Button
                                 key={val}
                                 onClick={() => handleArrowClick(val)}
-                                className={`py-4 text-lg font-semibold ${getScoreColor(val)} hover:opacity-80`}                         >
+                                className={`py-4 text-lg font-semibold ${getScoreColor(
+                                    val
+                                )} hover:opacity-80`}
+                            >
                                 {val}
                             </Button>
                         ))}
                     </div>
-                )
-            )}
+                ))}
+
             {config.useTargetFace && (
                 <p className="text-sm mb-2 text-muted-foreground">
                     Click the target face to register each arrow.
                 </p>
             )}
-            {/* 🏹 Current End — only shown if editing or adding */}
+
             {(canInputNewEnd || editingEndIndex !== null) && (
                 <div className="border rounded-lg p-4 mt-4">
-                    <h3 className="font-medium mb-2">
+                    <h3
+                        className="font-medium mb-2 relative pb-1
+                        after:block after:h-[2px] after:w-20 after:rounded-full
+                        after:bg-gradient-to-r from-emerald-600 via-sky-500 to-emerald-600"
+                    >
                         {editingEndIndex !== null
                             ? `Editing End ${editingEndIndex + 1}`
                             : `Current End`}
@@ -308,7 +519,8 @@ export default function ActiveScoringPage() {
                         <div className="flex gap-2 flex-wrap">
                             {Array.from({ length: config.arrowsPerEnd }).map((_, i) => {
                                 const val = currentArrows[i];
-                                const display = typeof val === "object" ? val.score : val;
+                                const display =
+                                    typeof val === "object" ? val.score : val;
                                 return (
                                     <div
                                         key={i}
@@ -322,11 +534,15 @@ export default function ActiveScoringPage() {
                                             }
                                         }}
                                         className={`w-10 h-10 flex items-center justify-center rounded-md border text-lg font-semibold cursor-pointer transition ${val
-                                                ? `${getScoreColor(typeof val === "object" ? val.score : val)} hover:opacity-75`
+                                                ? `${getScoreColor(
+                                                    typeof val === "object"
+                                                        ? val.score
+                                                        : val
+                                                )} hover:opacity-75`
                                                 : "bg-muted/30 cursor-default"
                                             }`}
                                     >
-                                        {typeof val === "object" ? val.score : val}
+                                        {display}
                                     </div>
                                 );
                             })}
@@ -352,9 +568,15 @@ export default function ActiveScoringPage() {
 
             {ends.length > 0 && (
                 <div className="w-full flex justify-center">
-                    <div className="border rounded-lg p-4 space-y-2 w-[85vw] sm:w-full max-w-[600px]">
-
-                        {/* Header with AVG */}
+                    <div
+                        className="
+                            border rounded-xl p-4 space-y-3 w-[85vw] sm:w-full max-w-[600px] 
+                            bg-card/50 relative
+                            before:absolute before:inset-0 before:-z-10
+                            before:bg-gradient-to-r before:from-emerald-600/10 via-sky-500/10 to-emerald-600/10
+                            before:rounded-xl shadow-sm
+                        "
+                    >
                         <div className="flex items-center justify-between">
                             <h3 className="font-medium">Saved Ends</h3>
                             <span className="text-xs text-muted-foreground">
@@ -368,7 +590,12 @@ export default function ActiveScoringPage() {
                             .map(([end, i]) => (
                                 <div
                                     key={i}
-                                    className="flex items-center justify-between border-b py-2 text-sm cursor-pointer hover:bg-muted/40 rounded-md px-2 w-full"
+                                    className="
+                                        flex items-center justify-between py-2 text-sm cursor-pointer 
+                                        rounded-md px-2 w-full transition
+                                        border-b border-border/30
+                                        hover:bg-gradient-to-r hover:from-emerald-600/10 hover:via-sky-500/10 hover:to-emerald-600/10
+                                    "
                                     onClick={() => handleEditEnd(i)}
                                 >
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -378,11 +605,16 @@ export default function ActiveScoringPage() {
 
                                         <div className="flex gap-2 flex-nowrap overflow-x-auto no-scrollbar">
                                             {end.map((val, j) => {
-                                                const score = typeof val === "object" ? val.score : val;
+                                                const score =
+                                                    typeof val === "object"
+                                                        ? val.score
+                                                        : val;
                                                 return (
                                                     <div
                                                         key={j}
-                                                        className={`flex-shrink-0 flex w-10 h-10 items-center justify-center rounded-md border text-lg font-semibold ${getScoreColor(score)}`}
+                                                        className={`flex-shrink-0 flex w-10 h-10 items-center justify-center rounded-md border text-lg font-semibold ${getScoreColor(
+                                                            score
+                                                        )}`}
                                                     >
                                                         {score}
                                                     </div>
@@ -394,7 +626,8 @@ export default function ActiveScoringPage() {
                                     <span className="font-semibold pl-4 whitespace-nowrap">
                                         Total:{" "}
                                         {end.reduce((a: number, v) => {
-                                            const s = typeof v === "object" ? v.score : v;
+                                            const s =
+                                                typeof v === "object" ? v.score : v;
                                             if (s === "X") return a + 10;
                                             if (typeof s === "number") return a + s;
                                             return a;
@@ -406,7 +639,11 @@ export default function ActiveScoringPage() {
                 </div>
             )}
 
-            {/* ✅ Review + Submit */}
+            <div
+                className="w-full h-px my-8 
+                    bg-gradient-to-r from-emerald-600/40 via-sky-500/40 to-emerald-600/40"
+            />
+
             {roundComplete && (
                 <div className="text-center space-y-4">
                     <p className="text-lg font-semibold">
@@ -415,7 +652,14 @@ export default function ActiveScoringPage() {
                     <p className="text-sm text-muted-foreground">
                         You can still edit your ends before submitting.
                     </p>
-                    <Button className="mt-2 px-8" onClick={handleSubmitRound}>
+                    <Button
+                        onClick={handleSubmitRound}
+                        className="
+                            mt-2 px-8 rounded-xl shadow-md
+                            bg-gradient-to-r from-emerald-600 to-sky-500 text-white
+                            hover:opacity-90 transition
+                        "
+                    >
                         Complete
                     </Button>
                 </div>
@@ -427,14 +671,18 @@ export default function ActiveScoringPage() {
                 style={{
                     position: "absolute",
                     top: "-9999px",
-                    left: "-9999px"
+                    left: "-9999px",
                 }}
             >
                 {config.isTripleSpot ? (
                     <div>
-                        {[0, 1, 2].map(faceIndex => (
-                            <svg key={faceIndex} viewBox="0 0 200 200" width="200" height="200">
-                                {/* Rings */}
+                        {[0, 1, 2].map((faceIndex) => (
+                            <svg
+                                key={faceIndex}
+                                viewBox="0 0 200 200"
+                                width="200"
+                                height="200"
+                            >
                                 {[6, 7, 8, 9, 10, "X"].map((s, i) => {
                                     const score = s === "X" ? 10 : Number(s);
                                     return (
@@ -444,9 +692,11 @@ export default function ActiveScoringPage() {
                                             cy={100}
                                             r={100 - i * (100 / 6)}
                                             fill={
-                                                score >= 9 ? "#f5cc2d" :         // 10/9/X gold
-                                                    score >= 7 ? "#df4b4b" :         // 8/7 red
-                                                        "#5e84e0"                         // 6 blue
+                                                score >= 9
+                                                    ? "#f5cc2d"
+                                                    : score >= 7
+                                                        ? "#df4b4b"
+                                                        : "#5e84e0"
                                             }
                                             stroke="#000"
                                             strokeWidth="0.6"
@@ -454,10 +704,15 @@ export default function ActiveScoringPage() {
                                     );
                                 })}
 
-                                {/* Arrow Dots */}
                                 {ends
                                     .flat()
-                                    .filter((a): a is TargetFaceArrow => typeof a === "object" && a.faceIndex === faceIndex)
+                                    .filter(
+                                        (
+                                            a
+                                        ): a is TargetFaceArrow =>
+                                            typeof a === "object" &&
+                                            a.faceIndex === faceIndex
+                                    )
                                     .map((a, j) => (
                                         <circle
                                             key={`${a.xPct}-${a.yPct}-${a.faceIndex}-${j}`}
@@ -483,10 +738,14 @@ export default function ActiveScoringPage() {
                                     cy={100}
                                     r={100 - i * (100 / 11)}
                                     fill={
-                                        score >= 9 ? "#f5cc2d"
-                                            : score >= 7 ? "#df4b4b"
-                                                : score >= 5 ? "#5e84e0"
-                                                    : score >= 3 ? "#1f1f1f"
+                                        score >= 9
+                                            ? "#f5cc2d"
+                                            : score >= 7
+                                                ? "#df4b4b"
+                                                : score >= 5
+                                                    ? "#5e84e0"
+                                                    : score >= 3
+                                                        ? "#1f1f1f"
                                                         : "#ffffff"
                                     }
                                     stroke="#000"
@@ -495,10 +754,9 @@ export default function ActiveScoringPage() {
                             );
                         })}
 
-                        {/* Arrow Dots */}
                         {ends
                             .flat()
-                            .filter(a => typeof a === "object")
+                            .filter((a) => typeof a === "object")
                             .map((a, j) => (
                                 <circle
                                     key={`${a.xPct}-${a.yPct}-${j}`}
@@ -514,28 +772,32 @@ export default function ActiveScoringPage() {
                 )}
             </div>
 
-            {/* 🎯 Arrow Map Modal — actual target face preview */}
+            {/* 🎯 Arrow Map Modal */}
             {showArrowMap && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
-                    <div className="bg-white dark:bg-neutral-900 border dark:border-neutral-700 rounded-lg shadow-xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto">
-
+                    <div
+                        className="
+                            bg-white dark:bg-neutral-900 rounded-xl shadow-xl p-6 
+                            w-full max-w-xl max-h[90vh] overflow-y-auto border border-border/40
+                            relative
+                            before:absolute before:inset-0 before:-z-10
+                            before:bg-gradient-to-r before:from-emerald-600/10 via-sky-500/10 to-emerald-600/10
+                            before:rounded-xl
+                        "
+                    >
                         <h2 className="text-lg font-semibold mb-4 text-center">
                             Arrow Placement
                         </h2>
 
                         <div className="flex justify-center mb-4">
                             <div className="flex bg-muted rounded-lg p-1 space-x-1">
-                                <button
-                                    className="px-4 py-1 rounded-md text-sm font-medium bg-primary text-white"
-                                >
+                                <button className="px-4 py-1 rounded-md text-sm font-medium bg-primary text-white">
                                     Map
                                 </button>
                             </div>
                         </div>
 
-                        {/* MAP CONTENT ONLY (NO HEATMAP) */}
                         <div className="flex justify-center">
-
                             {config.isTripleSpot ? (
                                 <div className="space-y-4">
                                     {[0, 1, 2].map((faceIndex) => (
@@ -547,7 +809,9 @@ export default function ActiveScoringPage() {
                                         >
                                             {Array.from({ length: 6 }).map((_, i) => {
                                                 const raw = [6, 7, 8, 9, 10, "X"][i];
-                                                const score = Number(raw === "X" ? 10 : raw);
+                                                const score = Number(
+                                                    raw === "X" ? 10 : raw
+                                                );
 
                                                 return (
                                                     <circle
@@ -568,11 +832,12 @@ export default function ActiveScoringPage() {
                                                 );
                                             })}
 
-                                            {/* Arrow dots */}
                                             {ends
                                                 .flat()
                                                 .filter(
-                                                    (a): a is TargetFaceArrow =>
+                                                    (
+                                                        a
+                                                    ): a is TargetFaceArrow =>
                                                         typeof a === "object" &&
                                                         a.faceIndex === faceIndex
                                                 )
@@ -592,10 +857,13 @@ export default function ActiveScoringPage() {
                                 </div>
                             ) : (
                                 <svg viewBox="0 0 200 200" width="260" height="260">
-                                    {/* WA SINGLE FACE */}
                                     {Array.from({ length: 11 }).map((_, i) => {
-                                        const raw = [1,2,3,4,5,6,7,8,9,10,"X"][i];
-                                        const score = Number(raw === "X" ? 10 : raw);
+                                        const raw = [
+                                            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, "X",
+                                        ][i];
+                                        const score = Number(
+                                            raw === "X" ? 10 : raw
+                                        );
 
                                         return (
                                             <circle
@@ -604,11 +872,15 @@ export default function ActiveScoringPage() {
                                                 cy={100}
                                                 r={100 - i * (100 / 11)}
                                                 fill={
-                                                    score >= 9 ? "#f5cc2d" :
-                                                        score >= 7 ? "#df4b4b" :
-                                                            score >= 5 ? "#5e84e0" :
-                                                                score >= 3 ? "#1f1f1f" :
-                                                                    "#ffffff"
+                                                    score >= 9
+                                                        ? "#f5cc2d"
+                                                        : score >= 7
+                                                            ? "#df4b4b"
+                                                            : score >= 5
+                                                                ? "#5e84e0"
+                                                                : score >= 3
+                                                                    ? "#1f1f1f"
+                                                                    : "#ffffff"
                                                 }
                                                 stroke="#000"
                                                 strokeWidth="0.6"
@@ -616,7 +888,6 @@ export default function ActiveScoringPage() {
                                         );
                                     })}
 
-                                    {/* Arrow dots */}
                                     {ends
                                         .flat()
                                         .filter((a) => typeof a === "object")
@@ -636,7 +907,9 @@ export default function ActiveScoringPage() {
                         </div>
 
                         <div className="flex justify-center mt-6">
-                            <Button onClick={() => setShowArrowMap(false)}>Close</Button>
+                            <Button onClick={() => setShowArrowMap(false)}>
+                                Close
+                            </Button>
                         </div>
                     </div>
                 </div>

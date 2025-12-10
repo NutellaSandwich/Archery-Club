@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import html2canvas from "html2canvas";
@@ -45,6 +45,8 @@ function OptimizedSignaturePad({
     innerRef: React.RefObject<SignaturePad | null>;
     isDark: boolean;
 }) {
+
+
     useEffect(() => {
         if (!innerRef.current) return;
         const pad = innerRef.current;
@@ -100,8 +102,13 @@ function InfoCell({
 }
 
 export default function ScoringSummaryPage() {
+
     const router = useRouter();
-    const supabase = supabaseBrowser();
+    const [supabase, setSupabase] = useState<any>(null);
+
+    useEffect(() => {
+        setSupabase(supabaseBrowser());
+    }, []);
 
     const [scoreData, setScoreData] = useState<ScoreData | null>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -119,23 +126,29 @@ export default function ScoringSummaryPage() {
     const sheetContainerRef = useRef<HTMLDivElement | null>(null);
     const [sheetHeight, setSheetHeight] = useState(0);
     const [buttonScale, setButtonScale] = useState(1);
+    const [forceRerenderKey, setForceRerenderKey] = useState(0);
+    const [isDataReady, setIsDataReady] = useState(false);
+    const [isProfileLoaded, setIsProfileLoaded] = useState(false);
+
+    const [ready, setReady] = useState(false);
+    const [scoreLoaded, setScoreLoaded] = useState(false);
+    const [sheetScale, setSheetScale] = useState(1);
+    
+
+    useEffect(() => {
+        setReady(true);
+    }, []);
 
     useEffect(() => {
         function updateButtonScale() {
             const vw = window.innerWidth - 32; // safe viewport
-            const baseWidth = 400;             // button block full width
+            const baseWidth = 400; // button block full width
 
-            // Default: normal size
             let scale = 1;
-
-            // If viewport too small, shrink proportionally
             if (vw < baseWidth) {
                 scale = vw / baseWidth;
             }
-
-            // Never go below 0.85 (readability floor)
             scale = Math.max(scale, 0.85);
-
             setButtonScale(scale);
         }
 
@@ -153,14 +166,21 @@ export default function ScoringSummaryPage() {
         return () => mql.removeEventListener("change", update);
     }, []);
 
-    // 👤 Load profile for Name / Club / Bowstyle
     useEffect(() => {
+        if (!supabase) return;  // ⬅ stop until supabase is set!
+
         const loadProfile = async () => {
             try {
                 const {
-                    data: { user },
-                } = await supabase.auth.getUser();
-                if (!user) return;
+                    data: { session },
+                } = await supabase.auth.getSession();
+
+                const user = session?.user;
+
+                if (!user) {
+                    setIsProfileLoaded(true);
+                    return;
+                }
 
                 const { data: profile, error } = await supabase
                     .from("profiles")
@@ -169,20 +189,19 @@ export default function ScoringSummaryPage() {
                     .single();
 
                 if (error || !profile) {
-                    console.error("Profile load error:", error);
+                    setIsProfileLoaded(true);
                     return;
                 }
 
                 let clubName: string | null = null;
                 if (profile.club_id) {
-                    const { data: club, error: clubError } = await supabase
+                    const { data: club } = await supabase
                         .from("clubs")
                         .select("name")
                         .eq("id", profile.club_id)
                         .single();
-                    if (!clubError && club) {
-                        clubName = club.name;
-                    }
+
+                    clubName = club?.name ?? null;
                 }
 
                 setProfileInfo({
@@ -191,33 +210,38 @@ export default function ScoringSummaryPage() {
                     club_name: clubName,
                 });
 
-                setTimeout(() => {
-                    setProfileInfo((p) => p);
-                }, 50);
+                setIsProfileLoaded(true);
+
             } catch (e) {
                 console.error("Profile load failed:", e);
+                setIsProfileLoaded(true);
             }
         };
 
         loadProfile();
-    }, [supabase]);
+    }, [supabase]);  // ⬅ now depends on supabase
 
-    // 🔁 Load score data from localStorage
+
     useEffect(() => {
         const stored = localStorage.getItem("lastScoreData");
-        if (!stored) return;
 
-        const parsed = JSON.parse(stored);
-        const hits = parsed.ends
-            ?.flat()
-            ?.filter((v: string | number) => v !== "M").length;
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            const hits = parsed.ends
+                ?.flat()
+                ?.filter((v: string | number) => v !== "M").length;
 
-        setScoreData({
-            ...parsed,
-            hits,
-            targetImage: parsed.targetImage ?? null,
-        });
+            setScoreData({
+                ...parsed,
+                hits,
+                targetImage: parsed.targetImage ?? null,
+            });
+        }
+
+        // <- VERY IMPORTANT
+        setScoreLoaded(true);
     }, []);
+
 
     // Normalise ends so everything is ArrowObj
     useEffect(() => {
@@ -250,48 +274,58 @@ export default function ScoringSummaryPage() {
         );
     }, [scoreData]);
 
-    const displayName = profileInfo?.username ?? scoreData?.archerName ?? "";
-    const displayClub = profileInfo?.club_name ?? scoreData?.clubName ?? "";
-    const displayBow = profileInfo?.bow_type ?? scoreData?.bowstyle ?? "";
+    const displayName =
+        scoreData?.archerName ??
+        profileInfo?.username ??
+        (typeof window !== "undefined"
+            ? localStorage.getItem("profile_username")
+            : null) ??
+        "";
 
-    // Inside the second useEffect:
+    const displayClub =
+        scoreData?.clubName ??
+        profileInfo?.club_name ??
+        (typeof window !== "undefined"
+            ? localStorage.getItem("profile_clubname")
+            : null) ??
+        "";
+
+    const displayBow =
+        scoreData?.bowstyle ??
+        profileInfo?.bow_type ??
+        (typeof window !== "undefined"
+            ? localStorage.getItem("profile_bowstyle")
+            : null) ??
+        "";
+
+
     useEffect(() => {
-        // Add the computed display names as dependencies
-        if (!scoreData || !profileInfo) return;
+        if (!scoreData) return;
+
         let cancelled = false;
 
         const capture = async () => {
+            // Wait for initial scale AND DOM layout to stabilise
+            await new Promise((resolve) => setTimeout(resolve, 500));
+
             const sheetWrapper = document.getElementById("sheetWrapper");
-            const scaledContainer = sheetWrapper?.parentElement;
+            const scaledContainer = sheetWrapper?.parentElement as HTMLElement | null;
             if (!sheetWrapper || !scaledContainer) return;
 
-            // 1. Wait for DOM to fully update with profile fields (Corrected TS usage)
-            // This is a safety wait, but the new dependencies are the key fix.
-            // Initial wait: resolve is correctly wrapped inside an arrow function.
-            await new Promise<void>((resolve) => {
-                requestAnimationFrame(() => { // Outer rAF callback
-                    requestAnimationFrame(() => setTimeout(() => resolve(), 50)); // Inner rAF callback wraps setTimeout which calls resolve
-                });
-            });
-
-            // --- SCALING FIX START --- (Already corrected in previous steps)
-
-            // Save current scaling state
             const originalContainerTransform = scaledContainer.style.transform;
-            const originalRootScale = document.documentElement.style.getPropertyValue("--sheet-scale");
+            const originalRootScale = sheetScale;
+            const originalHeight = scaledContainer.style.height;
 
-            // Temporarily remove all scaling properties and set the container's height to its full, unscaled height
             scaledContainer.style.transform = "scale(1)";
             document.documentElement.style.setProperty("--sheet-scale", "1");
 
-            // Ensure the container's height is correct for the unscaled content.
+            // use the real content height
             const unscaledHeight = sheetWrapper.scrollHeight;
             scaledContainer.style.height = `${unscaledHeight}px`;
 
-
-            await new Promise<void>((resolve) => {
-                requestAnimationFrame(() => resolve());
-            });
+            await new Promise<void>((resolve) =>
+                requestAnimationFrame(() => resolve())
+            );
 
             const sheetCanvas = await html2canvas(sheetWrapper, {
                 backgroundColor: "#ffffff",
@@ -299,40 +333,31 @@ export default function ScoringSummaryPage() {
                 useCORS: true,
             });
 
-            // Restore original scaling state immediately
+            // restore styles
             scaledContainer.style.transform = originalContainerTransform;
-            // Restore original calculated height logic
-            scaledContainer.style.height = `calc( (1200px * 1.45) * var(--sheet-scale) )`;
-            document.documentElement.style.setProperty("--sheet-scale", originalRootScale);
-
-            // --- SCALING FIX END ---
+            scaledContainer.style.height = originalHeight || "auto";
+            document.documentElement.style.setProperty(
+                "--sheet-scale",
+                String(originalRootScale)
+            );
 
             if (!cancelled) {
                 setImageUrl(sheetCanvas.toDataURL("image/png"));
+                setForceRerenderKey((k) => k + 1);
             }
         };
 
         capture();
-        return () => {
-            cancelled = true;
-        };
-    }, [
-        scoreData,
-        profileInfo,
-        // ADDED: These are the computed values rendered on the scoresheet
-        displayName,
-        displayClub,
-        displayBow
-    ]);
-
-    useEffect(() => {
+        return () => { cancelled = true; };
+    }, [scoreData, sheetScale]);    useEffect(() => {
         function updateScale() {
-            const sheetWidth = 1200; // your fixed sheet width
-            const padding = 32; // small margin so it doesn't touch edges
+            const sheetWidth = 1200;
+            const padding = 32;
             const available = window.innerWidth - padding;
             const scale = Math.min(1, available / sheetWidth);
 
             document.documentElement.style.setProperty("--sheet-scale", String(scale));
+            setSheetScale(scale); // track it
         }
 
         updateScale();
@@ -340,9 +365,17 @@ export default function ScoringSummaryPage() {
         return () => window.removeEventListener("resize", updateScale);
     }, []);
 
+    useEffect(() => {
+        const sheetWrapper = document.getElementById("sheetWrapper");
+        const scaled = sheetWrapper?.parentElement;
 
+        if (!sheetWrapper || !scaled) return;
 
+        const realHeight = sheetWrapper.scrollHeight;
+        const scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sheet-scale"));
 
+        scaled.style.height = realHeight * scale + "px";
+    }, [sheetScale, scoreData]);
 
     const handleFormalOrCompetition = (formality: "formal" | "competition") => {
         setPendingFormality(formality);
@@ -365,7 +398,6 @@ export default function ScoringSummaryPage() {
                 return;
             }
 
-            // Always use BLACK signature ink for saving
             const archerSig = sigArcherRef.current.getTrimmedCanvas();
             const counterSig = sigCounterRef.current.getTrimmedCanvas();
 
@@ -373,7 +405,6 @@ export default function ScoringSummaryPage() {
             img.src = imageUrl;
             await new Promise((r) => (img.onload = r));
 
-            // Do NOT extend the canvas — signatures go ON TOP of the sheet
             const canvas = document.createElement("canvas");
             canvas.width = img.width;
             canvas.height = img.height;
@@ -382,10 +413,8 @@ export default function ScoringSummaryPage() {
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw original sheet
             ctx.drawImage(img, 0, 0);
 
-            // Force signature color to BLACK regardless of dark mode
             const convertToBlackSignature = (sig: HTMLCanvasElement) => {
                 const sigCanvas = document.createElement("canvas");
                 sigCanvas.width = sig.width;
@@ -397,9 +426,9 @@ export default function ScoringSummaryPage() {
                 for (let i = 0; i < imgData.data.length; i += 4) {
                     const alpha = imgData.data[i + 3];
                     if (alpha > 20) {
-                        imgData.data[i] = 0; // R
-                        imgData.data[i + 1] = 0; // G
-                        imgData.data[i + 2] = 0; // B
+                        imgData.data[i] = 0;
+                        imgData.data[i + 1] = 0;
+                        imgData.data[i + 2] = 0;
                     }
                 }
                 sctx.putImageData(imgData, 0, 0);
@@ -410,7 +439,6 @@ export default function ScoringSummaryPage() {
             const blackArcher = convertToBlackSignature(archerSig);
             const blackCounter = convertToBlackSignature(counterSig);
 
-            // Use ratios so it works regardless of html2canvas scaling
             const SIG_WIDTH_RATIO = 0.16;
             const SIG_HEIGHT_RATIO = 0.065;
             const ARCHER_X_RATIO = 0.25;
@@ -422,7 +450,6 @@ export default function ScoringSummaryPage() {
             const archerX = img.width * ARCHER_X_RATIO;
             const counterX = img.width * COUNTER_X_RATIO;
             const sigY = img.height - BOTTOM_MARGIN - sigHeight;
-            
 
             ctx.drawImage(blackArcher, archerX, sigY, sigWidth, sigHeight);
             ctx.drawImage(blackCounter, counterX, sigY, sigWidth, sigHeight);
@@ -535,12 +562,20 @@ export default function ScoringSummaryPage() {
         }
     }
 
-    if (!scoreData)
+    if (!ready || !scoreLoaded) {
+        return (
+            <p className="text-center mt-10 text-muted-foreground">
+                Loading profile data...
+            </p>
+        );
+    }
+    if (!scoreData) {
         return (
             <p className="text-center mt-10 text-muted-foreground">
                 No score data found.
             </p>
         );
+    }
 
     const usedTargetScoring = scoreData.ends?.some((end) =>
         end.some(
@@ -566,7 +601,6 @@ export default function ScoringSummaryPage() {
         runningTotal: number;
     };
 
-    // Flatten all arrow scores
     const flatArrows: (string | number)[] = [];
     scoreData.ends.forEach((end) => {
         end.forEach((arrow: any) => {
@@ -634,99 +668,116 @@ export default function ScoringSummaryPage() {
         golds: totalGolds,
     };
 
-
-
     return (
-        <main className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
-            {/* 📋 Portsmouth-style scoresheet + optional target (captured together) */}
-            <Card className="bg-transparent shadow-none border-none">
+        <main className="max-w-5xl mx-auto p-4 sm:p-6 space-y-10">
+    <div className="h-px w-full bg-gradient-to-r from-emerald-600/40 via-sky-500/40 to-emerald-600/40" />
+            <Card
+                key={forceRerenderKey}
+                className="
+        bg-card/40 shadow-md border border-border/40 rounded-xl p-4
+        relative
+        before:absolute before:inset-0 before:-z-10
+        before:bg-gradient-to-r before:from-emerald-600/10 via-sky-500/10 to-emerald-600/10
+        before:rounded-xl
+    "
+            >
                 <div className="w-full flex flex-col items-center">
-                    {/* 🌟 NEW SCALE WRAPPER — collapses to scaled height */}
-                    
-                    <div
-                        className="relative"
-                        style={{
-                            width: "1200px",
-                            height: `calc( (1200px * 1.45) * var(--sheet-scale) )`,
-                            transform: "scale(var(--sheet-scale))",
-                            transformOrigin: "top center",
-                        }}
-                    >
+
+                    {/* A — Outer container: collapses to the scaled height */}
+                    <div className="relative h-fit w-[1200px] flex justify-center">
+
+                        {/* B — Scale wrapper: scaling happens here ONLY */}
                         <div
-                            id="sheetWrapper"
-                            className="absolute top-0 left-0"
-                            style={{ width: "1200px" }}
+                            className="h-fit"
+                            style={{
+                                transform: `scale(var(--sheet-scale))`,
+                                transformOrigin: "top center",
+                            }}
                         >
-                            {/* 🎯 Target face ABOVE the scoresheet */}
-                            {usedTargetScoring && scoreData.targetImage && (
-                                <div className="mb-4 border border-black p-1 flex justify-center bg-white">
-                                    <img
-                                        src={scoreData.targetImage}
-                                        alt="Target placement map"
-                                        className="max-h-[500px] w-auto"
-                                    />
-                                </div>
-                            )}
-                            <div
-                                id="scoresheet"
-                                className="bg-white text-black border border-black px-10 py-8 w-[1200px] max-w-none"
-                                style={{
-                                    fontFamily:
-                                        "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                                }}
-                            >
-                                {/* Title (round name) */}
-                                <h1 className="text-2xl font-bold mb-4">
-                                    {scoreData.roundName}
-                                </h1>
 
-                                {/* Name / Club / Date / Bowstyle block */}
-                                <div className="border border-black text-xs mb-6">
-                                    {/* Row 1: Name | Club */}
-                                    <div className="grid grid-cols-[1fr,1fr] border-b border-black">
-                                        <div className="flex border-r border-black">
-                                            <div className="bg-gray-300 font-semibold px-2 py-1 w-[120px] border-r border-black">
-                                                Name:
+                            {/* C — Actual sheet content (unscaled) */}
+                            <div id="sheetWrapper" className="w-[1200px] h-fit">
+
+                                {/* TARGET FACE */}
+                                {usedTargetScoring && scoreData.targetImage && (
+                                    <div className="mb-4 border border-black p-1 flex justify-center bg-white max-h-[300px] overflow-hidden">
+                                        <img
+                                            src={scoreData.targetImage}
+                                            alt="Target placement map"
+                                            className="max-h-[300px] w-auto object-contain"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* SCORE SHEET */}
+                                <div
+                                    id="scoresheet"
+                                    className="
+        bg-white text-black border border-black px-10 py-8 w-[1200px] rounded-md
+        relative
+        before:absolute before:inset-0 before:-z-10
+        before:bg-gradient-to-r before:from-emerald-600/5 via-sky-500/5 to-emerald-600/5
+        before:rounded-md
+    "
+                                    style={{
+                                        fontFamily:
+                                            "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                                    }}
+                                >
+                                    {/* —— TITLE —— */}
+                                    <h1 className="text-2xl font-bold mb-4 relative pb-1">
+    {scoreData.roundName}
+    <span
+        className="absolute left-0 bottom-0 h-[2px] w-40 
+                   bg-gradient-to-r from-emerald-600 via-sky-500 to-emerald-600"
+    />
+</h1>
+
+                                    {/* —— ARCHER INFO —— */}
+                                    <div className="border border-black text-xs mb-6">
+                                        <div className="grid grid-cols-2 border-b border-black">
+                                            <div className="flex border-r border-black">
+                                                <div className="bg-gray-300 font-semibold px-2 py-1 w-[120px] border-r border-black">
+                                                    Name:
+                                                </div>
+                                                <div className="px-2 py-1 flex-1">
+                                                    {displayName}
+                                                </div>
                                             </div>
-                                            <div className="px-2 py-1 flex-1">
-                                                {displayName}
+
+                                            <div className="flex">
+                                                <div className="bg-gray-300 font-semibold px-2 py-1 w-[120px] border-r border-black">
+                                                    Club:
+                                                </div>
+                                                <div className="px-2 py-1 flex-1">
+                                                    {displayClub}
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex">
-                                            <div className="bg-gray-300 font-semibold px-2 py-1 w-[120px] border-r border-black">
-                                                Club:
+                                        <div className="grid grid-cols-2">
+                                            <div className="flex border-r border-black">
+                                                <div className="bg-gray-300 font-semibold px-2 py-1 w-[120px] border-r border-black">
+                                                    Date:
+                                                </div>
+                                                <div className="px-2 py-1 flex-1">
+                                                    {todayStr}
+                                                </div>
                                             </div>
-                                            <div className="px-2 py-1 flex-1">
-                                                {displayClub}
+
+                                            <div className="flex">
+                                                <div className="bg-gray-300 font-semibold px-2 py-1 w-[120px] border-r border-black">
+                                                    Bowstyle:
+                                                </div>
+                                                <div className="px-2 py-1 flex-1">
+                                                    {displayBow}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Row 2: Date | Bowstyle */}
-                                    <div className="grid grid-cols-[1fr,1fr]">
-                                        <div className="flex border-r border-black">
-                                            <div className="bg-gray-300 font-semibold px-2 py-1 w-[120px] border-r border-black">
-                                                Date:
-                                            </div>
-                                            <div className="px-2 py-1 flex-1">
-                                                {todayStr}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex">
-                                            <div className="bg-gray-300 font-semibold px-2 py-1 w-[120px] border-r border-black">
-                                                Bowstyle:
-                                            </div>
-                                            <div className="px-2 py-1 flex-1">
-                                                {displayBow}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Portsmouth-style main scoring table */}
-                                <div className="mt-2">
+                                <div className="mt-6 mb-2 h-px bg-gradient-to-r from-emerald-600/40 via-sky-500/40 to-emerald-600/40" />
+<div className="mt-2">
                                     <table
                                         className="w-full border-collapse text-xs"
                                         style={{
@@ -812,7 +863,6 @@ export default function ScoringSummaryPage() {
                                     </table>
                                 </div>
 
-                                {/* Grand totals strip */}
                                 <div className="mt-6 border border-black text-xs grid grid-cols-[3fr,1fr,1fr,1fr,1fr]">
                                     <div className="border-r border-black px-2 py-1 text-right font-semibold bg-gray-300">
                                         Grand Totals:
@@ -829,88 +879,108 @@ export default function ScoringSummaryPage() {
                                     <div className="px-1 py-1 text-center">-</div>
                                 </div>
 
-                                {/* Signature lines (printed version) */}
-                                <div id="signature-lines" className="grid grid-cols-2 mt-10 text-xs gap-x-10">
-                                    <div className="pt-2 text-left flex items-center">
-                                        <span className="font-bold whitespace-nowrap">
-                                            Archer’s Signature:
-                                        </span>
-                                    </div>
+                                    <div className="h-px my-6 bg-gradient-to-r from-emerald-600/40 via-sky-500/40 to-emerald-600/40" />
+                                    <div
+                                        id="signature-lines"
+                                        className="grid grid-cols-2 mt-6 text-xs gap-x-10"
+                                    >
+                                        <div className="pt-2 text-left flex items-center">
+                                            <span className="font-bold whitespace-nowrap">
+                                                Archer’s Signature:
+                                            </span>
+                                        </div>
 
-                                    <div className="pt-2 text-left flex items-center">
-                                        <span className="font-bold whitespace-nowrap">
-                                            Scorer’s Signature:
-                                        </span>
+                                        <div className="pt-2 text-left flex items-center">
+                                            <span className="font-bold whitespace-nowrap">
+                                                Scorer’s Signature:
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
-                            
-                        </div>
+                            {/* /C */}
 
                         </div>
-                        {/* 🖼️ Buttons + input: follow underneath, but NOT scaled */}
-                        {imageUrl && (
-                        <div
-                            className="w-full flex flex-col items-center gap-3 mt-0"
+                        {/* /B */}
+
+                    </div>
+                    {/* /A */}
+
+                </div>
+
+                {imageUrl && (
+                    <div
+                        className="
+            w-full flex flex-col items-center gap-3 mt-0 p-4 rounded-xl border border-border/40 bg-card/40 relative
+            before:absolute before:inset-0 before:-z-10
+            before:bg-gradient-to-r before:from-emerald-600/10 via-sky-500/10 to-emerald-600/10
+            before:rounded-xl shadow-sm
+        "
                             style={{
                                 transform: `scale(${buttonScale})`,
                                 transformOrigin: "top center",
                             }}
                         >
-                                <img src={imageUrl} alt="" className="hidden" />
+                            <img src={imageUrl} alt="" className="hidden" />
 
-                                <div className="w-full max-w-sm">
-                                    <label className="block text-sm mb-1">
-                                        Competition Name (optional)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={competitionName}
-                                        onChange={(e) => setCompetitionName(e.target.value)}
-                                        placeholder="Enter competition name"
-                                        className="w-full border rounded-md px-3 py-2 text-sm"
-                                    />
-                                </div>
-
-                                <div className="flex flex-wrap justify-center gap-2 mt-2">
-                                    <Button
-                                        onClick={() => handleUploadToFeed("informal", imageUrl!)}
-                                        disabled={uploading || !imageUrl}
-                                    >
-                                        Upload Informal
-                                    </Button>
-                                    <Button
-                                        onClick={() => handleFormalOrCompetition("formal")}
-                                        disabled={uploading || !imageUrl}
-                                    >
-                                        Upload Formal
-                                    </Button>
-                                    <Button
-                                        onClick={() => handleFormalOrCompetition("competition")}
-                                        disabled={uploading || !imageUrl}
-                                    >
-                                        Upload Competition
-                                    </Button>
-                                </div>
+                            <div className="w-full max-w-sm">
+                                <label className="block text-sm mb-1">
+                                    Competition Name (optional)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={competitionName}
+                                    onChange={(e) =>
+                                        setCompetitionName(e.target.value)
+                                    }
+                                    placeholder="Enter competition name"
+                                    className="w-full border rounded-md px-3 py-2 text-sm"
+                                />
                             </div>
-                        )}
-                    
 
-                    
-                </div>
+                            <div className="flex flex-wrap justify-center gap-2 mt-2">
+                                <Button
+    className="bg-gradient-to-r from-emerald-600 to-sky-500 text-white hover:opacity-90"
+                                    onClick={() =>
+                                        handleUploadToFeed("informal", imageUrl!)
+                                    }
+                                    disabled={uploading || !imageUrl}
+                                >
+                                    Upload Informal
+                                </Button>
+                                <Button
+    className="bg-gradient-to-r from-emerald-600 to-sky-500 text-white hover:opacity-90"
+                                    onClick={() =>
+                                        handleFormalOrCompetition("formal")
+                                    }
+                                    disabled={uploading || !imageUrl}
+                                >
+                                    Upload Formal
+                                </Button>
+                                <Button
+    className="bg-gradient-to-r from-emerald-600 to-sky-500 text-white hover:opacity-90"
+                                    onClick={() =>
+                                        handleFormalOrCompetition("competition")
+                                    }
+                                    disabled={uploading || !imageUrl}
+                                >
+                                    Upload Competition
+                                </Button>
+                            </div>
+                        </div>
+                    )}
             </Card>
 
-            
-
-            {/* ✍️ Signature Modal (for formal / comp uploads) */}
             {showSignatureModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
                     <div
-                        className={`p-6 rounded-lg shadow-2xl max-w-lg w-full space-y-4 border transition-all ${isDark
-                                ? "bg-neutral-900 border-neutral-700 text-gray-100"
-                                : "bg-white border-gray-300 text-gray-900"
-                            }`}
+                        className={`
+        p-6 rounded-xl shadow-xl max-w-lg w-full space-y-4 border transition-all relative
+        before:absolute before:inset-0 before:-z-10
+        before:bg-gradient-to-r before:from-emerald-600/10 via-sky-500/10 to-emerald-600/10
+        before:rounded-xl
+        ${isDark ? "bg-neutral-900 border-neutral-700 text-gray-100" : "bg-white border-gray-300 text-gray-900"}
+    `}
                     >
                         <h2 className="text-lg font-semibold text-center">
                             Signatures Required
@@ -933,12 +1003,18 @@ export default function ScoringSummaryPage() {
                         <div className="flex justify-between mt-3">
                             <Button
                                 variant="outline"
-                                className={isDark ? "border-gray-600 text-gray-200" : ""}
                                 onClick={() => setShowSignatureModal(false)}
+                                className={`
+        bg-gradient-to-r from-emerald-600 to-sky-500 text-white hover:opacity-90
+        ${isDark ? "border-gray-600 text-gray-200" : ""}
+    `}
                             >
                                 Cancel
                             </Button>
-                            <Button onClick={handleSaveSignatures}>
+                            <Button
+                                onClick={handleSaveSignatures}
+                                className="bg-gradient-to-r from-emerald-600 to-sky-500 text-white hover:opacity-90"
+                            >
                                 Save Signatures &amp; Upload
                             </Button>
                         </div>

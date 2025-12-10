@@ -391,14 +391,35 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
     }
     
     return (
-        <main className="max-w-5xl mx-auto p-6 space-y-6">
+        <main
+    className="
+        max-w-5xl mx-auto p-6 space-y-10 
+        bg-muted/30 backdrop-blur-xl 
+        border border-border/40 
+        rounded-2xl shadow-sm
+    "
+>
             {/* Profile Header */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
             >
-                <Card className="relative flex flex-col md:flex-row items-center gap-6 p-6 shadow-md">                    <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-[hsl(var(--primary))]/30">
+                <Card
+    className="
+        relative flex flex-col md:flex-row items-center gap-6 p-6
+        rounded-2xl 
+        bg-muted/30 backdrop-blur-xl 
+        border border-border/40 
+        shadow-lg
+    "
+>                    <div
+    className="
+        relative w-24 h-24 rounded-full overflow-hidden 
+        border-4 border-emerald-400/40 
+        shadow-md
+    "
+>
                         <Image
                             src={profile?.avatar_url || "/default-avatar.png"}
                             alt="Profile Picture"
@@ -410,7 +431,15 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                         />
                     </div>
                     <div className="flex-1 text-center md:text-left">
-                        <h1 className="text-2xl font-bold">{profile?.username}</h1>
+                        <h1
+    className="
+        text-3xl font-bold 
+        bg-gradient-to-r from-emerald-500 to-sky-500 
+        bg-clip-text text-transparent
+    "
+>
+    {profile?.username}
+</h1>
                         <p className="text-sm text-muted-foreground">
                             {profile?.category || "Uncategorised"} · {club?.name || "No club"}
                         </p>
@@ -510,7 +539,11 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                         >
                             <Button
                                 size="sm"
-                                className="shadow-md"
+                                className="
+        shadow-md rounded-xl
+        bg-gradient-to-r from-emerald-500 to-sky-500
+        text-white hover:opacity-90
+    "
                             >
                                 {canManage ? "Edit Member Profile" : "Edit Profile"}
                             </Button>
@@ -521,28 +554,60 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                         <div className="absolute bottom-4 right-4 flex flex-wrap gap-2 justify-end">
                             {/* Only show if not already a coach */}
                             {profile?.role !== "coach" && (
-                                <Button variant="outline" size="sm" onClick={() => changeRole("coach")}>
+                                <Button
+    size="sm"
+    className="
+        rounded-xl px-3 py-1.5
+        border border-border/40 
+        bg-muted/20 backdrop-blur-xl
+        hover:bg-muted/40
+    "
+    onClick={() => changeRole("coach")}
+>
                                     Make Coach
                                 </Button>
                             )}
 
                             {/* Only show if not already an admin */}
                             {profile?.role !== "admin" && (
-                                <Button variant="outline" size="sm" onClick={() => changeRole("admin")}>
+                                <Button
+                                    size="sm"
+                                    className="
+        rounded-xl px-3 py-1.5
+        border border-border/40 
+        bg-muted/20 backdrop-blur-xl
+        hover:bg-muted/40
+    "
+                                    onClick={() => changeRole("admin")}
+                                >
                                     Make Admin
                                 </Button>
                             )}
 
                             {/* Only show Remove Role if they currently have a role other than member */}
                             {profile?.role !== "member" && (
-                                <Button variant="destructive" size="sm" onClick={() => changeRole("member")}>
+                                <Button
+    size="sm"
+    className="
+        rounded-xl px-3 py-1.5
+        bg-gradient-to-r from-red-600 to-rose-600
+        text-white shadow-md
+        hover:opacity-90
+    "
+    onClick={() => changeRole("member")}
+>
                                     Remove Role
                                 </Button>
                             )}
 
                             <Button
-                                variant="destructive"
                                 size="sm"
+                                className="
+        rounded-xl px-3 py-1.5
+        bg-gradient-to-r from-red-600 to-rose-600
+        text-white shadow-md
+        hover:opacity-90
+    "
                                 onClick={() => setShowRemoveModal(true)}
                             >
                                 Remove from Club
@@ -560,13 +625,25 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
             >
-                <Card className="text-center py-4">
+                <Card
+    className="
+        text-center py-4 
+        rounded-xl bg-muted/20 backdrop-blur-xl 
+        border border-border/40 shadow-sm
+    "
+>
                     <CardTitle className="text-sm text-muted-foreground">
                         Total Scores
                     </CardTitle>
                     <CardContent className="text-2xl font-bold">{totalScores}</CardContent>
                 </Card>
-                <Card className="text-center py-4">
+                <Card
+    className="
+        text-center py-4 
+        rounded-xl bg-muted/20 backdrop-blur-xl 
+        border border-border/40 shadow-sm
+    "
+>
                     <CardTitle className="text-sm text-muted-foreground">
                         Total Points
                     </CardTitle>
@@ -578,20 +655,56 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
             <Tabs defaultValue="graph" className="w-full">
                 <TabsList
                     className="
-        flex gap-2 mb-4 px-2 py-1
-        overflow-x-auto overflow-y-hidden
-        whitespace-nowrap
-        scrollbar-none
-        w-full
+        flex items-center gap-2 mb-6 
+        px-3 py-3
+        overflow-x-auto whitespace-nowrap no-scrollbar
+        rounded-2xl bg-muted/30 backdrop-blur-xl 
+        border border-border/40
+        h-14
     "
                 >
-                    <TabsTrigger value="graph" className="text-sm sm:text-base">
+                    <TabsTrigger
+                        value="graph"
+                        className="
+            px-4 py-1.5 text-sm sm:text-base rounded-xl transition
+            text-muted-foreground hover:text-foreground
+            data-[state=active]:text-white
+            data-[state=active]:bg-gradient-to-r 
+            data-[state=active]:from-emerald-500 
+            data-[state=active]:to-sky-500
+            data-[state=active]:shadow-md
+        "
+                    >
                         Graphs
                     </TabsTrigger>
-                    <TabsTrigger value="recent" className="text-sm sm:text-base">
+
+                    <TabsTrigger
+                        value="recent"
+                        className="
+            px-4 py-1.5 text-sm sm:text-base rounded-xl transition
+            text-muted-foreground hover:text-foreground
+            data-[state=active]:text-white
+            data-[state=active]:bg-gradient-to-r 
+            data-[state=active]:from-emerald-500 
+            data-[state=active]:to-sky-500
+            data-[state=active]:shadow-md
+        "
+                    >
                         Recent Scores
                     </TabsTrigger>
-                    <TabsTrigger value="bests" className="text-sm sm:text-base">
+
+                    <TabsTrigger
+                        value="bests"
+                        className="
+            px-4 py-1.5 text-sm sm:text-base rounded-xl transition
+            text-muted-foreground hover:text-foreground
+            data-[state=active]:text-white
+            data-[state=active]:bg-gradient-to-r 
+            data-[state=active]:from-emerald-500 
+            data-[state=active]:to-sky-500
+            data-[state=active]:shadow-md
+        "
+                    >
                         PBs
                     </TabsTrigger>
                 </TabsList>
@@ -601,35 +714,66 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                     {scores.length === 0 ? (
                         <p className="text-center text-muted-foreground">No scores yet.</p>
                     ) : (
-                            <Card className="p-3 sm:p-6 space-y-4">
+                            <Card
+    className="
+        p-4 sm:p-6 space-y-4 
+        rounded-2xl 
+        bg-muted/20 backdrop-blur-xl 
+        border border-border/40 shadow-lg
+    "
+>
+
                                 <div className="flex flex-col md:flex-row items-center justify-between gap-3">
                                     <h2 className="text-lg font-semibold">Performance Over Time</h2>
 
                                     <div className="flex items-center gap-2 flex-wrap justify-center">
                                         
 
-                                        <div className="flex bg-muted rounded-full p-1">
-                                            <Button
-                                                size="sm"
-                                                variant={filter === "all" ? "default" : "ghost"}
+                                        <div
+                                            className="
+        inline-flex items-center gap-1 
+        rounded-full border border-border/40 
+        bg-background/40 px-1 py-1
+    "
+                                        >
+                                            <button
+                                                type="button"
                                                 onClick={() => setFilter("all")}
+                                                className={`
+            px-4 py-1.5 rounded-full text-sm transition
+            ${filter === "all"
+                                                        ? "text-white bg-gradient-to-r from-emerald-500 to-sky-500 shadow-md"
+                                                        : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"}
+        `}
                                             >
                                                 All
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant={filter === "indoor" ? "default" : "ghost"}
+                                            </button>
+
+                                            <button
+                                                type="button"
                                                 onClick={() => setFilter("indoor")}
+                                                className={`
+            px-4 py-1.5 rounded-full text-sm transition
+            ${filter === "indoor"
+                                                        ? "text-white bg-gradient-to-r from-emerald-500 to-sky-500 shadow-md"
+                                                        : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"}
+        `}
                                             >
                                                 Indoor
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant={filter === "outdoor" ? "default" : "ghost"}
+                                            </button>
+
+                                            <button
+                                                type="button"
                                                 onClick={() => setFilter("outdoor")}
+                                                className={`
+            px-4 py-1.5 rounded-full text-sm transition
+            ${filter === "outdoor"
+                                                        ? "text-white bg-gradient-to-r from-emerald-500 to-sky-500 shadow-md"
+                                                        : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"}
+        `}
                                             >
                                                 Outdoor
-                                            </Button>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -756,7 +900,14 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                     {scores.length === 0 ? (
                         <p className="text-center text-muted-foreground">No scores yet.</p>
                     ) : (
-                        <Card className="p-4 space-y-2">
+                        <Card
+    className="
+        p-4 space-y-2
+        rounded-2xl bg-muted/20 backdrop-blur-xl 
+        border border-border/40 shadow-sm
+    "
+>
+
                             <h2 className="text-lg font-semibold mb-2">Recent Scores</h2>
                             <div className="divide-y divide-[hsl(var(--border))]/40">
                                 {scores
@@ -783,7 +934,12 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                         <button
                                             key={s.id}
                                             onClick={() => setSelectedScore(s)}
-                                            className="w-full text-left py-2 flex justify-between items-center hover:bg-[hsl(var(--muted))]/30 transition rounded-md px-2"
+                                            className="
+    w-full text-left py-2 px-3 
+    flex justify-between items-center 
+    hover:bg-muted/40 transition rounded-xl
+"
+
                                         >
                                             <div>
                                                 <p className="font-medium">{s.round_name}</p>
@@ -814,7 +970,14 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                             No personal bests yet.
                         </p>
                     ) : (
-                        <Card className="p-4 space-y-2">
+                        <Card
+    className="
+        p-4 space-y-2
+        rounded-2xl bg-muted/20 backdrop-blur-xl 
+        border border-border/40 shadow-sm
+    "
+>
+
                             <h2 className="text-lg font-semibold mb-2">Personal Bests</h2>
                             <div className="divide-y divide-[hsl(var(--border))]/40">
                                 {Object.values(personalBests)
@@ -823,7 +986,12 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                         <button
                                             key={s.id}
                                             onClick={() => setSelectedScore(s)}
-                                            className="w-full text-left py-2 flex justify-between items-center hover:bg-[hsl(var(--muted))]/30 transition rounded-md px-2"
+                                            className="
+    w-full text-left py-2 px-3 
+    flex justify-between items-center 
+    hover:bg-muted/40 transition rounded-xl
+"
+
                                         >
                                             <div>
                                                 <p className="font-medium">{s.round_name}</p>
@@ -855,7 +1023,12 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                     >
                         <div
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl w-[90%] max-w-sm"
+                            className="
+    p-6 rounded-2xl 
+    bg-muted/30 backdrop-blur-2xl 
+    border border-border/40 
+    shadow-xl w-[90%] max-w-sm
+"
                         >
                             <h3 className="text-lg font-semibold mb-2">
                                 {selectedScore.round_name}
@@ -886,7 +1059,11 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                 </p>
                             )}
                             <button
-                                className="mt-4 bg-red-600 text-white w-full py-2 rounded-md"
+                                className="
+    mt-4 w-full py-2 rounded-xl 
+    bg-gradient-to-r from-red-600 to-rose-500 
+    text-white font-medium shadow-md
+"
                                 onClick={() => setSelectedScore(null)}
                             >
                                 Close
@@ -898,7 +1075,12 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
 
             {/* 🟡 Add / Manage Event Lines Modal */}
             {showAddLineModal && ((!userId || user?.id === userId) || canManage) && (                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl w-[90%] max-w-sm space-y-4">
+                    <div className="
+    p-6 rounded-2xl 
+    bg-muted/30 backdrop-blur-xl 
+    border border-border/40 
+    shadow-xl w-[90%] max-w-sm space-y-4
+">
                         <h3 className="text-lg font-semibold text-center">Manage Event Lines</h3>
 
                         {/* Add new line section */}
@@ -971,6 +1153,11 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                                 <div className="flex items-center gap-2 md:justify-end">
                                                     <Button
                                                         size="sm"
+                                                        className="
+        rounded-xl px-3 py-1.5
+        bg-gradient-to-r from-emerald-500 to-sky-500
+        text-white shadow-md hover:opacity-90
+    "
                                                         onClick={() => {
                                                             if (!editLineDate || !editLineLabel) {
                                                                 toast.error("Please enter both a date and a label.");
@@ -1001,7 +1188,11 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                                     </Button>
                                                     <Button
                                                         size="sm"
-                                                        variant="outline"
+                                                        className="
+        rounded-xl px-3 py-1.5
+        border border-border/40 bg-muted/20 backdrop-blur-xl
+        hover:bg-muted/40
+    "
                                                         onClick={() => {
                                                             setEditingIndex(null);
                                                             setEditLineDate("");
@@ -1022,32 +1213,39 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() => {
-                                                            setEditingIndex(i);
-                                                            setEditLineDate(line.date);
-                                                            setEditLineLabel(line.label);
-                                                        }}
-                                                    >
-                                                        Edit
-                                                    </Button>
-                                                    <Button
-                                                        variant="destructive"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            setEventLines((prev) => prev.filter((_, index) => index !== i));
-                                                            // if you were editing this one, reset editor state
-                                                            if (editingIndex === i) {
-                                                                setEditingIndex(null);
-                                                                setEditLineDate("");
-                                                                setEditLineLabel("");
-                                                            }
-                                                        }}
-                                                    >
-                                                        Delete
-                                                    </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            className="
+        rounded-xl px-3 py-1.5
+        border border-border/40 bg-muted/20 backdrop-blur-xl
+        hover:bg-muted-40
+    "
+                                                            onClick={() => {
+                                                                setEditingIndex(i);
+                                                                setEditLineDate(line.date);
+                                                                setEditLineLabel(line.label);
+                                                            }}
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            className="
+        rounded-xl px-3 py-1.5
+        bg-gradient-to-r from-red-600 to-rose-600
+        text-white shadow-md hover:opacity-90
+    "
+                                                            onClick={() => {
+                                                                setEventLines((prev) => prev.filter((_, index) => index !== i));
+                                                                if (editingIndex === i) {
+                                                                    setEditingIndex(null);
+                                                                    setEditLineDate("");
+                                                                    setEditLineLabel("");
+                                                                }
+                                                            }}
+                                                        >
+                                                            Delete
+                                                        </Button>
                                                 </div>
                                             </div>
                                         )}
@@ -1057,9 +1255,16 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
                         </div>
 
                         <div className="flex justify-end mt-4">
-                            <Button variant="outline" onClick={() => setShowAddLineModal(false)}>
-                                Close
-                            </Button>
+                        <Button
+                            className="
+        rounded-xl px-4 py-2
+        border border-border/40 bg-muted/20 backdrop-blur-xl
+        hover:bg-muted/40
+    "
+                            onClick={() => setShowAddLineModal(false)}
+                        >
+                            Close
+                        </Button>
                         </div>
                     </div>
                 </div>
@@ -1068,18 +1273,34 @@ export default function ProfileViewClient({ userId }: { userId?: string }) {
             {/* 🔴 Remove Member Confirmation Modal */}
             {showRemoveModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl w-[90%] max-w-sm space-y-4">
+                    <div className="
+    p-6 rounded-2xl 
+    bg-muted/30 backdrop-blur-xl 
+    border border-border/40 
+    shadow-xl w-[90%] max-w-sm space-y-4
+">
                         <h3 className="text-lg font-semibold text-center text-red-600">Remove Member</h3>
                         <p className="text-sm text-muted-foreground text-center">
                             Are you sure you want to remove <strong>{profile?.username}</strong> from the club?
                             This will unlink their account from your club.
                         </p>
                         <div className="flex justify-end gap-2">
-                            <Button variant="outline" onClick={() => setShowRemoveModal(false)}>
+                            <Button
+                                className="
+        rounded-xl px-4 py-2
+        border border-border/40 bg-muted/20 backdrop-blur-xl
+        hover:bg-muted/40
+    "
+                                onClick={() => setShowRemoveModal(false)}
+                            >
                                 Cancel
                             </Button>
                             <Button
-                                variant="destructive"
+                                className="
+        rounded-xl px-4 py-2
+        bg-gradient-to-r from-red-600 to-rose-600
+        text-white shadow-md hover:opacity-90
+    "
                                 onClick={async () => {
                                     const { error } = await supabase
                                         .from("profiles")

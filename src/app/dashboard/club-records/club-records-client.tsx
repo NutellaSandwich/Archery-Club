@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import BowTypeTag from "@/components/BowTypeTag";
 
-
 type ClubRecord = {
     id: string;
     round_name: string;
@@ -49,7 +48,9 @@ export default function ClubRecordsPage() {
     const [clubId, setClubId] = useState<string | null>(null);
     const [checkingClub, setCheckingClub] = useState(true);
 
-    // ✅ Load user's club ID
+    /* ----------------------------------------------
+        LOAD USER CLUB
+    ---------------------------------------------- */
     useEffect(() => {
         async function getClubId() {
             const { data: { session } } = await supabase.auth.getSession();
@@ -65,20 +66,23 @@ export default function ClubRecordsPage() {
                 .eq("id", user.id)
                 .maybeSingle();
 
-            if (error) console.error("Failed to load club:", error);
-            else setClubId(data?.club_id ?? null);
-
-            setCheckingClub(false); // ✅ done checking
+            if (!error) setClubId(data?.club_id ?? null);
+            setCheckingClub(false);
         }
         getClubId();
     }, [supabase]);
 
-    // ✅ Handle deep-link param (?round=)
+    /* ----------------------------------------------
+        HANDLE ?round= PARAM
+    ---------------------------------------------- */
     useEffect(() => {
-        const round = searchParams.get("round");
-        if (round) setSelectedRound(round);
+        const r = searchParams.get("round");
+        if (r) setSelectedRound(r);
     }, [searchParams]);
 
+    /* ----------------------------------------------
+        FETCH ALL ROUNDS FOR CLUB
+    ---------------------------------------------- */
     useEffect(() => {
         if (!clubId) return;
 
@@ -87,23 +91,23 @@ export default function ClubRecordsPage() {
                 .from("club_posts")
                 .select("round_name")
                 .eq("club_id", clubId)
-                .neq("score_type", "Informal Practice")
-                .order("round_name");
+                .neq("score_type", "Informal Practice");
 
             if (!error && data) {
-                const typedData = data as { round_name: string }[];
+                const typed = data as { round_name: string | null }[];
+                const rounds = Array.from(
+                    new Set(
+                        typed.map(r => r.round_name ?? "").filter(r => r.length > 0)
+                    )
+                );
 
-                const rounds = Array.from(new Set(typedData.map((r) => r.round_name)));
                 setAllRounds(rounds);
 
-                // ✅ Default to "Portsmouth" if available
                 if (!selectedRound) {
-                    const defaultRound = rounds.find((r) =>
+                    const def = rounds.find(r =>
                         r.toLowerCase().includes("portsmouth")
                     );
-                    if (defaultRound) {
-                        setSelectedRound(defaultRound);
-                    }
+                    if (def) setSelectedRound(def);
                 }
             }
         }
@@ -111,27 +115,22 @@ export default function ClubRecordsPage() {
         fetchRounds();
     }, [supabase, clubId, selectedRound]);
 
-    // ✅ Fetch records for selected round (for this club)
+    /* ----------------------------------------------
+        FETCH RECORDS
+    ---------------------------------------------- */
     useEffect(() => {
         if (!selectedRound || !clubId) return;
 
         async function fetchRecords() {
             setLoading(true);
+
             const { data, error } = await supabase
                 .from("club_posts")
                 .select(`
-          id,
-          round_name,
-          bow_type,
-          experience,
-          category,
-          score,
-          score_type,
-          score_date,
-          created_at,
-          user_id,
-          profiles (username, avatar_url)
-        `)
+                    id, round_name, bow_type, experience, category,
+                    score, score_type, score_date, created_at, user_id,
+                    profiles (username, avatar_url)
+                `)
                 .eq("club_id", clubId)
                 .eq("round_name", selectedRound)
                 .neq("score_type", "Informal Practice")
@@ -144,6 +143,7 @@ export default function ClubRecordsPage() {
                 return;
             }
 
+            // collapse into best per category/bow/experience
             const best = Object.values(
                 (data || []).reduce((acc: Record<string, ClubRecord>, post: any) => {
                     const key = `${post.bow_type}-${post.category}-${post.experience}`;
@@ -157,9 +157,11 @@ export default function ClubRecordsPage() {
         }
 
         fetchRecords();
-    }, [supabase, selectedRound, clubId]); // 🟢 FIXED: added clubId
+    }, [supabase, selectedRound, clubId]);
 
-    // ✅ Keep URL synced
+    /* ----------------------------------------------
+        CHANGE ROUND
+    ---------------------------------------------- */
     function chooseRound(r: string) {
         setSelectedRound(r);
         const params = new URLSearchParams();
@@ -168,22 +170,20 @@ export default function ClubRecordsPage() {
         setSearchTerm("");
     }
 
-    // ✅ Load history for a specific record
+    /* ----------------------------------------------
+        LOAD HISTORY FOR RECORD
+    ---------------------------------------------- */
     async function loadHistory(record: ClubRecord) {
         setActiveRecord(record);
 
         const { data, error } = await supabase
             .from("club_record_history")
             .select(`
-        id,
-        previous_score,
-        new_score,
-        changed_at,
-        previous_user_id,
-        new_user_id,
-        profiles_new:profiles!new_user_id(username, avatar_url),
-        profiles_old:profiles!previous_user_id(username, avatar_url)
-      `)
+                id, previous_score, new_score, changed_at,
+                previous_user_id, new_user_id,
+                profiles_new:profiles!new_user_id(username, avatar_url),
+                profiles_old:profiles!previous_user_id(username, avatar_url)
+            `)
             .eq("club_id", clubId)
             .eq("round_name", record.round_name)
             .eq("bow_type", record.bow_type)
@@ -206,14 +206,17 @@ export default function ClubRecordsPage() {
         }
     }
 
-    const filteredRounds = allRounds.filter((r) =>
+    const filteredRounds = allRounds.filter(r =>
         r.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    /* ----------------------------------------------
+        LOADING / NO CLUB
+    ---------------------------------------------- */
     if (checkingClub) {
         return (
-            <main className="flex flex-col items-center justify-center h-[70vh] text-center space-y-4">
-                <p className="text-muted-foreground">Loading club details...</p>
+            <main className="flex flex-col items-center justify-center h-[70vh]">
+                <p className="text-muted-foreground">Loading club details…</p>
             </main>
         );
     }
@@ -226,143 +229,215 @@ export default function ClubRecordsPage() {
                     <h1 className="text-2xl font-semibold">Club Membership Required</h1>
                 </div>
                 <p className="max-w-md text-muted-foreground">
-                    You need to be part of a club to access club records. Please join or request to join a
-                    club first from the main page.
+                    You must belong to a club to view club records.
                 </p>
-                <Button onClick={() => (window.location.href = "/")}>Join a club</Button>
+
+                <Button onClick={() => (window.location.href = "/")}>
+                    Join a club
+                </Button>
             </main>
         );
     }
 
-    // 🖼️ UI
+    /* ----------------------------------------------
+        MAIN UI
+    ---------------------------------------------- */
     return (
-        <main className="max-w-4xl mx-auto p-6 space-y-6">
-            <h1 className="text-2xl font-semibold mb-2 flex items-center justify-center gap-2 text-center">
-                <Trophy className="text-yellow-500" size={24} />
-                Club Records
-            </h1>
-            <p className="text-center text-muted-foreground text-sm">
-                View all-time best scores for your club by round.
-            </p>
+        <main className="max-w-4xl mx-auto p-6 space-y-10">
 
-            {/* Round Selector */}
-            <div className="relative max-w-md mx-auto">
-                <Input
-                    placeholder="Search for a round..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                />
-                <Search
-                    className="absolute left-3 top-3 text-muted-foreground/60"
-                    size={16}
-                />
+            {/* HEADER */}
+            <div className="text-center space-y-1">
+                <h1 className="text-3xl font-semibold tracking-tight bg-gradient-to-r from-emerald-600 to-sky-500 bg-clip-text text-transparent flex items-center justify-center gap-2">
+                    <Trophy className="w-7 h-7 text-yellow-500" />
+                    Club Records
+                </h1>
 
-                {searchTerm && (
-                    <div className="absolute bg-[hsl(var(--card))] border border-[hsl(var(--border))]/40 rounded-lg mt-1 shadow-lg w-full z-10 max-h-60 overflow-auto">
-                        {filteredRounds.map((r) => (
-                            <button
-                                key={r}
-                                onClick={() => chooseRound(r)}
-                                className={`block w-full text-left px-4 py-2 hover:bg-[hsl(var(--muted))]/30 ${r === selectedRound
-                                        ? "font-semibold text-[hsl(var(--primary))]"
-                                        : ""
-                                    }`}
-                            >
-                                {r}
-                            </button>
-                        ))}
-                        {filteredRounds.length === 0 && (
-                            <div className="px-4 py-2 text-sm text-muted-foreground">
-                                No rounds found.
+                <p className="text-sm text-muted-foreground">
+                    View your club’s all-time leading scores.
+                </p>
+
+                <div className="
+    w-48 h-[2px] mx-auto mt-3 rounded-full
+    bg-gradient-to-r from-emerald-500 to-sky-500 opacity-60
+">
+                </div>
+            </div>
+
+            {/* ROUND SELECT */}
+            <motion.section
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="
+    rounded-3xl border border-border/60 bg-muted/40 px-5 py-6 shadow-sm
+    relative overflow-hidden
+    before:absolute before:inset-0 before:pointer-events-none
+    before:bg-gradient-to-br before:from-emerald-500/10 before:via-sky-500/10 before:to-emerald-500/10
+    before:blur-lg
+"
+            >
+                <div className="absolute inset-0 opacity-20 bg-gradient-to-br from-emerald-500/15 via-sky-500/15 to-emerald-500/15 blur-xl pointer-events-none"></div>
+
+                <div className="relative flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+
+                    <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-[0.12em] font-medium text-muted-foreground">
+                            Select Round
+                        </p>
+                        <p className="text-xs text-muted-foreground/80">
+                            Search and choose a round to view club standings.
+                        </p>
+                    </div>
+
+                    <div className="relative w-full sm:w-80">
+                        <Input
+                            placeholder="Search rounds…"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="pl-9 h-10 rounded-xl border-border/60 bg-background/80 text-sm"
+                        />
+                        <Search
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60"
+                            size={16}
+                        />
+
+                        {searchTerm && (
+                            <div className="
+                                absolute w-full bg-background border border-border/60
+                            rounded-xl mt-2 shadow-lg z-30 max-h-60 overflow-auto text-sm                            ">
+                                {filteredRounds.map(r => (
+                                    <button
+                                        key={r}
+                                        onClick={() => chooseRound(r)}
+                                        className={`block w-full text-left px-3 py-2 transition ${r === selectedRound
+                                                ? "bg-muted/70 text-primary font-medium"
+                                                : "hover:bg-muted/50"
+                                            }`}
+                                    >
+                                        {r}
+                                    </button>
+                                ))}
+
+                                {filteredRounds.length === 0 && (
+                                    <div className="px-3 py-2 text-muted-foreground">No rounds found.</div>
+                                )}
                             </div>
                         )}
                     </div>
-                )}
-            </div>
+                </div>
+            </motion.section>
 
+            {/* SELECTED ROUND BADGE */}
             {selectedRound && (
-                <div className="flex items-center justify-center">
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-full border border-[hsl(var(--border))]/60 text-[hsl(var(--primary))] bg-transparent text-sm">
+                <div className="flex justify-center">
+                    <span className="
+    relative inline-flex items-center px-5 py-1.5 rounded-full text-sm font-semibold
+    text-emerald-700 dark:text-emerald-300 bg-muted/30
+    border border-transparent
+    before:absolute before:inset-0 before:rounded-full
+    before:bg-gradient-to-r before:from-emerald-500/40 before:to-sky-500/40
+    before:-z-10
+">
                         {selectedRound}
                     </span>
                 </div>
             )}
 
-            {/* Records */}
+            {/* RECORD LIST */}
             {selectedRound && (
-                <section>
-                    <h2 className="text-xl font-medium mb-3 text-center">{selectedRound}</h2>
+                <section className="space-y-6">
+
+                    <div className="w-full h-px bg-gradient-to-r from-emerald-600/40 via-sky-500/40 to-emerald-600/40"></div>
+
                     {loading ? (
-                        <p className="text-center text-muted-foreground">Loading records...</p>
+                        <p className="text-center text-muted-foreground">Loading records…</p>
                     ) : records.length === 0 ? (
-                        <p className="text-center text-muted-foreground">
-                            No records found for this round.
-                        </p>
+                        <p className="text-center text-muted-foreground">No records found for this round.</p>
                     ) : (
-                        <div className="grid sm:grid-cols-2 gap-4">
-                            {records.map((r) => (
-                                <motion.div
-                                    key={r.id}
-                                    whileHover={{ scale: 1.02 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="p-4 bg-[hsl(var(--card))] border border-[hsl(var(--border))]/40 rounded-xl shadow-sm hover:shadow-md"
-                                >
-                                    <div className="flex justify-between items-center mb-2">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <span>
-                                                {r.experience.charAt(0).toUpperCase() + r.experience.slice(1)} •{" "}
-                                                {r.category.charAt(0).toUpperCase() + r.category.slice(1)}
-                                            </span>
-                                            <BowTypeTag bow={r.bow_type} />
-                                        </div>
-                                        <Trophy className="text-yellow-500" size={18} />
-                                    </div>
+                        <div className="grid sm:grid-cols-2 gap-6">
 
-                                    <div className="flex items-center gap-3 mt-1">
-                                        {r.profiles?.avatar_url && (
-                                            <img
-                                                src={r.profiles.avatar_url}
-                                                alt="avatar"
-                                                className="w-10 h-10 rounded-full object-cover border border-[hsl(var(--border))]/40"
-                                            />
-                                        )}
-                                        <div>
-                                            <p className="text-3xl font-bold text-foreground">
-                                                {r.score}
-                                            </p>
-                                            <p className="text-sm mt-1 text-muted-foreground">
-                                                {r.profiles?.username || "Unknown Archer"}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground/70 mt-1">
-                                                {new Date(r.score_date ?? r.created_at).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="mt-3 text-xs"
-                                        onClick={() => loadHistory(r)}
+                            {records.map(r => (
+                                <div key={r.id} className="group relative">
+                                    <motion.div
+                                        whileHover={{ scale: 1.02 }}
+                                        transition={{ duration: 0.25 }}
+                                        className="
+    relative p-5 rounded-2xl border border-border/60 bg-muted/40 
+    transition shadow-sm hover:shadow-md hover:bg-muted/60 overflow-hidden
+    before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px]
+    before:bg-gradient-to-r before:from-emerald-500 before:to-sky-500
+    before:rounded-t-2xl
+"
                                     >
-                                        <Clock size={14} className="mr-1" /> View History
-                                    </Button>
-                                </motion.div>
+                                        {/* Glow layer */}
+                                        <div className="
+                                            absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-40
+                                            bg-gradient-to-br from-emerald-500/20 via-sky-500/20 to-emerald-500/20
+                                            blur-xl pointer-events-none transition-opacity
+                                        "></div>
+
+                                        <div className="flex justify-between items-center mb-3">
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                {r.experience} • {r.category}
+                                                <BowTypeTag bow={r.bow_type} />
+                                            </div>
+                                            <Trophy className="text-yellow-500" size={18} />
+                                        </div>
+
+                                        <div className="flex gap-3 items-center relative">
+                                            <div className="
+        absolute inset-0 -z-10 
+        bg-gradient-to-b from-emerald-500/5 to-sky-500/5 
+        blur-xl rounded-xl
+    "></div>
+                                            {r.profiles?.avatar_url ? (
+                                                <img
+                                                    src={r.profiles.avatar_url}
+                                                    className="w-12 h-12 rounded-full border border-border/50 object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">?</div>
+                                            )}
+
+                                            <div>
+                                                <p className="text-4xl font-bold">{r.score}</p>
+
+                                                <p className="text-sm text-muted-foreground">
+                                                    {r.profiles?.username || "Unknown"}
+                                                </p>
+
+                                                <p className="text-xs text-muted-foreground/70">
+                                                    {new Date(r.score_date ?? r.created_at).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="mt-4 rounded-lg"
+                                            onClick={() => loadHistory(r)}
+                                        >
+                                            <Clock size={14} className="mr-1" /> History
+                                        </Button>
+                                    </motion.div>
+                                </div>
                             ))}
+
                         </div>
                     )}
+
                 </section>
             )}
 
-            {/* History Modal */}
+            {/* HISTORY MODAL */}
             <AnimatePresence>
                 {history && (
                     <motion.div
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
                         onClick={() => setHistory(null)}
                     >
                         <motion.div
@@ -370,111 +445,107 @@ export default function ClubRecordsPage() {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             transition={{ duration: 0.25 }}
-                            className="bg-[hsl(var(--card))] p-6 rounded-xl shadow-xl max-w-lg w-full text-center border border-[hsl(var(--border))]/40"
                             onClick={(e) => e.stopPropagation()}
+                            className="bg-background p-6 rounded-2xl shadow-xl max-w-lg w-full border border-border/50 relative"
                         >
-                            <h3 className="text-lg font-semibold mb-3 flex items-center justify-center gap-2">
-                                <Clock className="text-blue-500" size={18} />
+                            <div className="
+    absolute inset-x-0 -top-[2px] h-[3px]
+    bg-gradient-to-r from-emerald-500 to-sky-500
+    rounded-full
+"></div>
+
+                            <h3 className="text-xl font-semibold text-center mb-4 tracking-wide bg-gradient-to-r from-emerald-500 to-sky-500 bg-clip-text text-transparent">
                                 Record History
                             </h3>
 
-                            {history.length === 0 && !activeRecord ? (
-                                <p className="text-sm text-muted-foreground">
-                                    No previous record history.
-                                </p>
-                            ) : (
-                                <div className="relative mt-6 max-h-96 overflow-auto px-2 py-2">
-                                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-muted-foreground/20 transform -translate-x-1/2"></div>
-                                    <div className="flex flex-col gap-10 items-center">
+                            <div className="max-h-96 overflow-auto px-2 py-2 relative">
+                                <div
+                                    className="
+        absolute top-0 bottom-0 w-[3px]
+        bg-gradient-to-b from-emerald-500 to-sky-500
+        rounded-full 
+        -z-10
+    "
+                                    style={{
+                                        left: "50%",
+                                        transform: "translateX(-50%)",
+                                        pointerEvents: "none",
+                                    }}
+                                ></div>
 
-                                        {/* ✅ Current Top Record (added at the top) */}
-                                        {activeRecord && (
+                                <div className="flex flex-col gap-10 items-center">
+
+                                    {/* CURRENT RECORD */}
+                                    {activeRecord && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="flex flex-col items-center text-center"
+                                        >
+                                            <div className="w-16 h-16 rounded-full border border-border/50 bg-background flex items-center justify-center z-10">
+                                                <img
+                                                    src={activeRecord.profiles?.avatar_url || "/default-avatar.png"}
+                                                    className="w-16 h-16 rounded-full object-cover"
+                                                />
+                                            </div>
+
+                                            <div className="mt-3 px-4 py-3 rounded-lg border border-border/40 bg-muted/30 shadow-sm w-64">
+                                                <p className="font-medium">
+                                                    {activeRecord.profiles?.username}
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Current record: <span className="font-semibold text-emerald-600">{activeRecord.score}</span>
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {new Date(activeRecord.score_date ?? activeRecord.created_at).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {/* PREVIOUS ENTRIES */}
+                                    {history
+                                        .filter(h => h.new_score !== activeRecord?.score)
+                                        .map((h, idx) => (
                                             <motion.div
+                                                key={h.id}
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                transition={{ duration: 0.3 }}
-                                                className="relative flex flex-col items-center text-center"
+                                                transition={{ delay: idx * 0.05 }}
+                                                className="flex flex-col items-center text-center"
                                             >
-                                                <div className="w-16 h-16 rounded-full border-2 border-yellow-400 shadow-[0_0_10px_rgba(255,215,0,0.4)] bg-background flex items-center justify-center z-10">
+                                                <div className={`
+                                                    w-16 h-16 rounded-full border-2
+                                                    ${idx === 0 ? "border-blue-400" : "border-border/40"}
+                                                    bg-background flex items-center justify-center z-10
+                                                `}>
                                                     <img
-                                                        src={activeRecord.profiles?.avatar_url || "/default-avatar.png"}
-                                                        alt={activeRecord.profiles?.username || "Archer"}
+                                                        src={h.profiles_new?.avatar_url || "/default-avatar.png"}
                                                         className="w-14 h-14 rounded-full object-cover"
                                                     />
                                                 </div>
-                                                <div className="mt-3 p-3 bg-[hsl(var(--muted))]/30 rounded-lg border border-[hsl(var(--border))]/40 shadow-sm w-60">
-                                                    <p className="text-sm font-medium text-foreground">
-                                                        {activeRecord.profiles?.username || "Unknown"}
-                                                    </p>
+
+                                                <div className="mt-3 px-4 py-2 rounded-lg border border-border/40 bg-muted/30 shadow-sm w-56">
+                                                    <p className="font-medium">{h.profiles_new?.username}</p>
                                                     <p className="text-sm text-muted-foreground">
-                                                        Current record:{" "}
-                                                        <span className="font-semibold text-[hsl(var(--primary))]">
-                                                            {activeRecord.score}
+                                                        set a new record of{" "}
+                                                        <span className="font-semibold text-emerald-600">
+                                                            {h.new_score}
                                                         </span>
                                                     </p>
-                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                        {new Date(activeRecord.score_date ?? activeRecord.created_at).toLocaleDateString()}
+                                                    <p className="text-xs text-muted-foreground/70">
+                                                        {new Date(h.changed_at).toLocaleDateString()}
                                                     </p>
                                                 </div>
                                             </motion.div>
-                                        )}
-
-                                        {/* 🕒 Previous records */}
-                                            {history
-                                                .filter((h) => h.new_score !== activeRecord?.score) // 🟢 remove current record from history
-                                                .map((h, idx) => {
-                                                const isCurrentRecord = h.new_score === activeRecord?.score;
-                                                return (
-                                                    <motion.div
-                                                        key={h.id}
-                                                        initial={{ opacity: 0, y: 20 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        transition={{ delay: (idx + 1) * 0.05 }}
-                                                        className="relative flex flex-col items-center text-center"
-                                                    >
-                                                        <div
-                                                            className={`w-14 h-14 rounded-full border-2 ${idx === 0 ? "border-blue-400" : "border-muted-foreground/40"
-                                                                } bg-background flex items-center justify-center z-10`}
-                                                        >
-                                                            <img
-                                                                src={h.profiles_new?.avatar_url || "/default-avatar.png"}
-                                                                alt={h.profiles_new?.username || "Archer"}
-                                                                className="w-12 h-12 rounded-full object-cover"
-                                                            />
-                                                        </div>
-                                                        <div className="mt-3 p-2 bg-[hsl(var(--muted))]/30 rounded-lg border border-[hsl(var(--border))]/40 shadow-sm w-56">
-                                                            <p className="text-sm font-medium text-foreground">
-                                                                {h.profiles_new?.username || "Unknown"}
-                                                            </p>
-
-                                                            {!isCurrentRecord ? (
-                                                                <p className="text-sm text-muted-foreground">
-                                                                    set a new record of{" "}
-                                                                    <span className="font-semibold text-[hsl(var(--primary))]">
-                                                                        {h.new_score}
-                                                                    </span>
-                                                                </p>
-                                                            ) : (
-                                                                <p className="text-sm text-muted-foreground">
-                                                                    Current record:{" "}
-                                                                    <span className="font-semibold text-[hsl(var(--primary))]">
-                                                                        {h.new_score}
-                                                                    </span>
-                                                                </p>
-                                                            )}
-
-                                                            <p className="text-xs text-muted-foreground mt-1">
-                                                                {new Date(h.changed_at).toLocaleDateString()}
-                                                            </p>
-                                                        </div>
-                                                    </motion.div>
-                                                );
-                                            })}
-                                    </div>
+                                        ))}
                                 </div>
-                            )}
+                            </div>
 
-                            <Button className="mt-4" variant="secondary" onClick={() => setHistory(null)}>
+                            <Button
+                                className="mt-4 w-full rounded-lg bg-gradient-to-r from-emerald-600 to-sky-500 text-white shadow hover:opacity-90"
+                                onClick={() => setHistory(null)}
+                            >
                                 Close
                             </Button>
                         </motion.div>

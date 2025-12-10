@@ -23,7 +23,16 @@ function StyledSelect({
             <button
                 type="button"
                 onClick={() => setOpen(!open)}
-                className="w-full flex justify-between items-center rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/20 px-3 py-2 text-left hover:bg-[hsl(var(--muted))]/30 transition"
+                className="
+    w-full flex justify-between items-center 
+    rounded-xl 
+    border border-border/40 
+    bg-muted/20 backdrop-blur-sm 
+    px-4 py-2.5 
+    text-left text-sm 
+    hover:bg-muted/30 
+    transition
+"
             >
                 <span>{value || "Select..."}</span>
                 <svg
@@ -38,7 +47,14 @@ function StyledSelect({
             </button>
 
             {open && (
-                <ul className="absolute z-10 mt-1 w-full rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--card))] shadow-lg max-h-48 overflow-y-auto">
+                <ul className="
+    absolute z-10 mt-1 w-full 
+    rounded-xl 
+    border border-border/40 
+    bg-background/80 backdrop-blur-xl 
+    shadow-lg 
+    max-h-48 overflow-y-auto
+">
                     {options.map((opt) => (
                         <li
                             key={opt}
@@ -255,12 +271,36 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
     }
 
     return (
-        <main className="relative max-w-xl mx-auto mt-16 px-6 py-10 rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--card))] shadow-sm space-y-6">
-            <h1 className="text-2xl font-semibold text-center">Edit Profile</h1>
+        <main
+    className="
+        relative max-w-xl mx-auto mt-16 px-6 py-10 
+        rounded-2xl 
+        border border-border/40 
+        bg-muted/30 backdrop-blur-xl 
+        shadow-sm 
+        space-y-8
+    "
+>
+            <h1
+    className="
+        text-3xl font-semibold text-center 
+        bg-gradient-to-r from-emerald-500 to-sky-500 
+        bg-clip-text text-transparent
+    "
+>
+    Edit Profile
+</h1>
 
             {/* 🖼️ Avatar Upload */}
             <div className="flex flex-col items-center gap-3">
-                <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-[hsl(var(--primary))]/30">
+                <div
+    className="
+        relative w-32 h-32 
+        rounded-full overflow-hidden 
+        border-4 border-emerald-400/40 
+        shadow-md
+    "
+>
                     <Image
                         src={previewUrl || form.avatar_url || "/default-avatar.png"}
                         alt="Profile Avatar"
@@ -272,7 +312,7 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
 
                 <div className="flex flex-col items-center gap-1">
                     <label
-                        className="text-sm font-medium text-[hsl(var(--primary))] cursor-pointer hover:underline"
+                        className="text-sm font-medium text-emerald-600 cursor-pointer hover:underline"
                     >
                         <input
                             key={fileInputKey} // 🔹 Forces re-render after reset
@@ -288,7 +328,7 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                         <button
                             type="button"
                             onClick={() => setShowRemoveConfirm(true)}
-                            className="text-xs text-red-500 hover:underline"
+                            className="text-xs text-red-500 hover:underline font-medium"
                         >
                             Remove Picture
                         </button>
@@ -303,7 +343,14 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                         type="text"
                         value={form.username}
                         onChange={(e) => setForm({ ...form, username: e.target.value })}
-                        className="w-full rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/20 px-3 py-2"
+                        className="
+    w-full 
+    rounded-xl 
+    border border-border/40 
+    bg-muted/20 backdrop-blur-sm 
+    px-4 py-2.5 
+    text-sm
+"
                         required
                     />
                 </div>
@@ -341,7 +388,14 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                         type="text"
                         value={form.agb_number}
                         onChange={(e) => setForm({ ...form, agb_number: e.target.value })}
-                        className="w-full rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/20 px-3 py-2"
+                        className="
+    w-full 
+    rounded-xl 
+    border border-border/40 
+    bg-muted/20 backdrop-blur-sm 
+    px-4 py-2.5 
+    text-sm
+"
                         placeholder="Enter AGB number"
                     />
                 </div>
@@ -350,14 +404,31 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                     <button
                         type="button"
                         onClick={() => router.push(`/profile/${targetId}`)}
-                        className="flex-1 rounded-md border border-[hsl(var(--border))]/40 py-2 hover:bg-[hsl(var(--muted))]/40"
+                        className="
+    flex-1 
+    rounded-xl 
+    border border-border/40 
+    py-2.5 
+    hover:bg-muted/40 
+    transition
+"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         disabled={saving}
-                        className="flex-1 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] py-2 font-medium hover:opacity-90 transition-all disabled:opacity-50"
+                        className="
+    flex-1 
+    rounded-xl 
+    bg-gradient-to-r from-emerald-600 to-sky-500 
+    text-white 
+    py-2.5 
+    font-medium 
+    hover:opacity-90 
+    transition 
+    disabled:opacity-50
+"
                     >
                         {saving ? "Saving..." : "Save Changes"}
                     </button>
@@ -379,7 +450,13 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="bg-[hsl(var(--card))] border border-[hsl(var(--border))]/40 rounded-xl p-6 shadow-lg max-w-sm w-full text-center"
+                            className="
+    bg-muted/30 backdrop-blur-xl 
+    border border-border/40 
+    rounded-2xl 
+    p-6 shadow-xl 
+    max-w-sm w-full text-center
+"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <h2 className="text-lg font-semibold mb-2">Remove Profile Picture?</h2>
@@ -390,13 +467,13 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                             <div className="flex justify-center gap-3">
                                 <button
                                     onClick={() => setShowRemoveConfirm(false)}
-                                    className="px-4 py-2 rounded-md bg-[hsl(var(--muted))]/30 hover:bg-[hsl(var(--muted))]/50 transition"
+                                    className="px-4 py-2 rounded-xl border border-border/40 hover:bg-muted/40 transition"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={confirmRemoveAvatar}
-                                    className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition"
+                                    className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition"
                                 >
                                     Remove
                                 </button>
@@ -421,7 +498,13 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="bg-[hsl(var(--card))] border border-[hsl(var(--border))]/40 rounded-xl p-6 shadow-lg max-w-sm w-full text-center"
+                            className="
+    bg-muted/30 backdrop-blur-xl 
+    border border-border/40 
+    rounded-2xl 
+    p-6 shadow-xl 
+    max-w-sm w-full text-center
+"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <h2 className="text-lg font-semibold mb-2">
@@ -439,7 +522,7 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                                         setShowExperienceConfirm(false);
                                         setPendingExperience(null);
                                     }}
-                                    className="px-4 py-2 rounded-md bg-[hsl(var(--muted))]/30 hover:bg-[hsl(var(--muted))]/50 transition"
+                                    className="px-4 py-2 rounded-xl border border-border/40 hover:bg-muted/40 transition"
                                 >
                                     Cancel
                                 </button>
@@ -449,7 +532,13 @@ export default function ProfileEditClient({ userId }: { userId: string }) {
                                         setShowExperienceConfirm(false);
                                         setPendingExperience(null);
                                     }}
-                                    className="px-4 py-2 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition"
+                                    className="
+    px-4 py-2 
+    rounded-xl 
+    bg-gradient-to-r from-emerald-600 to-sky-500 
+    text-white 
+    hover:opacity-90 transition
+"
                                 >
                                     Confirm
                                 </button>

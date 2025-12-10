@@ -20,6 +20,9 @@ export default function NotificationsDropdown({ userId }: { userId: string }) {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
 
+    /* ----------------------------------------------
+        LOAD + REALTIME SUBSCRIBE
+    ---------------------------------------------- */
     useEffect(() => {
         if (!userId || !supabase) return;
         loadNotifications();
@@ -49,37 +52,33 @@ export default function NotificationsDropdown({ userId }: { userId: string }) {
             .order("created_at", { ascending: false })
             .limit(10);
 
-        if (error) {
-            console.error("Error loading notifications:", error);
-            return;
-        }
+        if (error) return console.error("Error loading notifications:", error);
 
-        const typedData = (data ?? []) as unknown as Notification[];
+        const typed = (data ?? []) as unknown as Notification[];
 
         setNotifications(
-            typedData.map((n) => ({
+            typed.map((n) => ({
                 ...n,
                 actor: Array.isArray(n.actor) ? n.actor[0] : n.actor,
             }))
         );
-        setUnreadCount(typedData.filter((n) => !n.read).length);
+
+        setUnreadCount(typed.filter((n) => !n.read).length);
     }
 
     async function markAllRead() {
-        const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
-        if (unreadIds.length === 0) return;
+        const ids = notifications.filter((n) => !n.read).map((n) => n.id);
+        if (!ids.length) return;
 
-        setNotifications((prev) =>
-            prev.map((n) => ({ ...n, read: true }))
-        );
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
         setUnreadCount(0);
 
-        await supabase
-            .from("notifications")
-            .update({ read: true })
-            .in("id", unreadIds);
+        await supabase.from("notifications").update({ read: true }).in("id", ids);
     }
 
+    /* ----------------------------------------------
+        MESSAGE BUILDER
+    ---------------------------------------------- */
     const getMessage = (n: Notification) => {
         const actor = n.actor?.username || "Someone";
         switch (n.type) {
@@ -90,20 +89,35 @@ export default function NotificationsDropdown({ userId }: { userId: string }) {
             case "reply":
                 return `${actor} replied to your comment`;
             default:
-                return `${actor} did something`;
+                return `${actor} interacted with you`;
         }
     };
 
+    /* ----------------------------------------------
+        UI
+    ---------------------------------------------- */
     return (
         <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
                 <button
-                    className="relative p-2 rounded-lg hover:bg-[hsl(var(--muted))]/40 transition"
                     aria-label="Notifications"
+                    className="
+                        relative p-2 rounded-xl border border-border/60 
+                        bg-muted/40 hover:bg-muted/60
+                        shadow-sm transition
+                    "
                 >
-                    <Bell size={18} />
+                    <Bell size={18} className="text-foreground/90" />
+
                     {unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full px-1.5 py-0.5">
+                        <span
+                            className="
+                                absolute -top-1 -right-1 
+                                bg-gradient-to-r from-red-500 to-rose-500 
+                                text-white text-[10px] font-semibold 
+                                rounded-full px-1.5 py-[1px] shadow
+                            "
+                        >
                             {unreadCount}
                         </span>
                     )}
@@ -112,56 +126,76 @@ export default function NotificationsDropdown({ userId }: { userId: string }) {
 
             <DropdownMenu.Portal>
                 <DropdownMenu.Content
-                    className="w-72 rounded-xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--popover))] shadow-md p-2"
                     sideOffset={8}
+                    className="
+                        w-72 rounded-2xl border border-border/70 
+                        bg-background/90 backdrop-blur-xl shadow-xl 
+                        p-2 animate-in fade-in-0 zoom-in-95
+                    "
                 >
-                    <div className="flex items-center justify-between px-3 py-1.5">
-                        <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))]">
+                    {/* HEADER */}
+                    <div className="px-3 py-2 flex items-center justify-between border-b border-border/50">
+                        <p className="
+                            text-xs font-semibold 
+                            bg-gradient-to-r from-emerald-500 to-sky-500 bg-clip-text text-transparent
+                        ">
                             Notifications
                         </p>
-                        <button
-                            onClick={markAllRead}
-                            className="text-[10px] text-blue-500 hover:underline"
-                        >
-                            Mark all as read
-                        </button>
+
+                        {notifications.length > 0 && (
+                            <button
+                                onClick={markAllRead}
+                                className="text-[10px] text-sky-500 hover:underline"
+                            >
+                                Mark all as read
+                            </button>
+                        )}
                     </div>
 
+                    {/* LIST */}
                     {notifications.length === 0 ? (
-                        <p className="text-center text-sm text-[hsl(var(--muted-foreground))] py-4">
+                        <p className="text-center text-sm text-muted-foreground py-5">
                             No notifications yet
                         </p>
                     ) : (
-                        <div className="max-h-80 overflow-y-auto">
-                            {notifications.map((n) => (
-                                <DropdownMenu.Item
-                                    key={n.id}
-                                    asChild
-                                    className={`block px-3 py-2 rounded-md text-sm cursor-pointer hover:bg-[hsl(var(--muted))]/30 transition ${!n.read
-                                            ? "bg-[hsl(var(--muted))]/20"
-                                            : ""
-                                        }`}
-                                >
-                                    <Link
-                                        href={`/dashboard?post=${n.post_id}`}
-                                        onClick={async () => {
-                                            await supabase
-                                                .from("notifications")
-                                                .update({ read: true })
-                                                .eq("id", n.id);
-                                        }}
+                        <div className="max-h-80 overflow-y-auto mt-1 pr-1 space-y-1">
+                            {notifications.map((n) => {
+                                const unread = !n.read;
+                                return (
+                                    <DropdownMenu.Item
+                                        key={n.id}
+                                        asChild
+                                        className="
+                                            block cursor-pointer rounded-xl transition
+                                            focus:outline-none
+                                        "
                                     >
-                                        <p className="text-[hsl(var(--foreground))]">
-                                            {getMessage(n)}
-                                        </p>
-                                        <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-0.5">
-                                            {new Date(
-                                                n.created_at
-                                            ).toLocaleString()}
-                                        </p>
-                                    </Link>
-                                </DropdownMenu.Item>
-                            ))}
+                                        <Link
+                                            href={`/dashboard?post=${n.post_id}`}
+                                            onClick={() =>
+                                                supabase
+                                                    .from("notifications")
+                                                    .update({ read: true })
+                                                    .eq("id", n.id)
+                                            }
+                                            className={`
+                                                px-3 py-2 block rounded-xl 
+                                                border border-transparent 
+                                                text-sm transition
+                                                ${unread
+                                                    ? "bg-emerald-500/10 border-emerald-500/20 shadow-sm"
+                                                    : "hover:bg-muted/40"
+                                                }
+                                            `}
+                                        >
+                                            <p className="text-foreground/90">{getMessage(n)}</p>
+                                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                                                {new Date(n.created_at).toLocaleString()}
+                                            </p>
+                                        </Link>
+                                    </DropdownMenu.Item>
+                                );
+                            })}
                         </div>
                     )}
                 </DropdownMenu.Content>

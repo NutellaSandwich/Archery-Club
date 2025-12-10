@@ -281,108 +281,105 @@ export default function ManageSessions() {
     }
 
     return (
-        <section className="space-y-6">
-            {/* 🧱 CREATE NEW SESSION */}
-            <Card>
+        <section className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+
+            {/* HEADER */}
+            <div className="text-center space-y-1">
+                <h1 className="text-3xl font-semibold tracking-tight bg-gradient-to-r from-emerald-600 to-sky-500 bg-clip-text text-transparent">
+                    Manage Sessions
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                    Create practice sessions and track attendance
+                </p>
+            </div>
+
+            {/* CREATE NEW SESSION */}
+            <Card className="rounded-3xl border border-border/60 bg-muted/40 shadow-sm">
                 <CardHeader>
-                    <CardTitle>Create New Session</CardTitle>
+                    <CardTitle className="text-lg font-semibold">
+                        Create New Session
+                    </CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-4">
+
+                <CardContent className="grid gap-5 text-sm">
+                    {/* Title */}
                     <div>
-                        <label className="block text-sm font-medium">Session Title (optional)</label>
-                        <p className="text-xs text-muted-foreground mb-1">
-                            Give your session a title, or leave blank.
-                        </p>
+                        <label className="block font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                            Session Title (optional)
+                        </label>
                         <input
-                            placeholder="Session title (optional)"
+                            placeholder="Session title"
                             value={newSession.title}
-                            onChange={(e) =>
-                                setNewSession({ ...newSession, title: e.target.value })
-                            }
-                            className="border rounded-md px-2 py-1 w-full"
+                            onChange={(e) => setNewSession({ ...newSession, title: e.target.value })}
+                            className="mt-1 w-full rounded-xl border border-border/50 bg-background/60 px-3 py-2 text-sm"
                         />
                     </div>
 
+                    {/* Date */}
                     <div>
-                        <label className="block text-sm font-medium">Session Date</label>
-                        <p className="text-xs text-muted-foreground mb-1">
-                            The date when this session will take place.
-                        </p>
+                        <label className="block font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                            Session Date
+                        </label>
                         <input
                             type="date"
                             value={newSession.session_date}
-                            onChange={(e) =>
-                                setNewSession({
-                                    ...newSession,
-                                    session_date: e.target.value,
-                                })
-                            }
-                            className="border rounded-md px-2 py-1 w-full"
+                            onChange={(e) => setNewSession({ ...newSession, session_date: e.target.value })}
+                            className="mt-1 w-full rounded-xl border border-border/50 bg-background/60 px-3 py-2 text-sm"
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* Times */}
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium">Start Time</label>
+                            <label className="block font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                                Start Time
+                            </label>
                             <input
                                 type="time"
                                 value={newSession.start_time}
-                                onChange={(e) =>
-                                    setNewSession({
-                                        ...newSession,
-                                        start_time: e.target.value,
-                                    })
-                                }
-                                className="border rounded-md px-2 py-1 w-full"
+                                onChange={(e) => setNewSession({ ...newSession, start_time: e.target.value })}
+                                className="mt-1 w-full rounded-xl border border-border/50 bg-background/60 px-3 py-2 text-sm"
                             />
                         </div>
+
                         <div>
-                            <label className="block text-sm font-medium">End Time</label>
+                            <label className="block font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                                End Time
+                            </label>
                             <input
                                 type="time"
                                 value={newSession.end_time}
-                                onChange={(e) =>
-                                    setNewSession({
-                                        ...newSession,
-                                        end_time: e.target.value,
-                                    })
-                                }
-                                className="border rounded-md px-2 py-1 w-full"
+                                onChange={(e) => setNewSession({ ...newSession, end_time: e.target.value })}
+                                className="mt-1 w-full rounded-xl border border-border/50 bg-background/60 px-3 py-2 text-sm"
                             />
                         </div>
                     </div>
 
+                    {/* Capacity */}
                     <div>
-                        <label className="block text-sm font-medium">Capacity</label>
-                        <p className="text-xs text-muted-foreground mb-1">
-                            Maximum number of participants.
-                        </p>
+                        <label className="block font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                            Capacity
+                        </label>
                         <input
                             type="number"
                             value={newSession.capacity}
                             onChange={(e) =>
-                                setNewSession({
-                                    ...newSession,
-                                    capacity: parseInt(e.target.value) || 0,
-                                })
+                                setNewSession({ ...newSession, capacity: parseInt(e.target.value) || 0 })
                             }
-                            className="border rounded-md px-2 py-1 w-full"
-                            placeholder="Capacity"
+                            className="mt-1 w-full rounded-xl border border-border/50 bg-background/60 px-3 py-2 text-sm"
                         />
                     </div>
 
-                    {/* 🗓️ Repeat Weekly Toggle */}
-                    <div className="flex items-center gap-3 mt-2">
+                    {/* Weekly toggle */}
+                    <div className="flex items-center gap-3 mt-1">
                         <input
                             id="repeatWeekly"
                             type="checkbox"
                             checked={newSession.repeatWeekly}
                             onChange={(e) =>
-                                setNewSession({
-                                    ...newSession,
-                                    repeatWeekly: e.target.checked,
-                                })
+                                setNewSession({ ...newSession, repeatWeekly: e.target.checked })
                             }
+                            className="rounded-sm border-border/60"
                         />
                         <label htmlFor="repeatWeekly" className="text-sm font-medium">
                             Repeat Weekly
@@ -391,63 +388,63 @@ export default function ManageSessions() {
 
                     {newSession.repeatWeekly && (
                         <div>
-                            <label className="block text-sm font-medium">End After Date</label>
-                            <p className="text-xs text-muted-foreground mb-1">
-                                Sessions will repeat weekly until this date.
-                            </p>
+                            <label className="block font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                                End After Date
+                            </label>
                             <input
                                 type="date"
                                 value={newSession.endAfterDate}
                                 onChange={(e) =>
-                                    setNewSession({
-                                        ...newSession,
-                                        endAfterDate: e.target.value,
-                                    })
+                                    setNewSession({ ...newSession, endAfterDate: e.target.value })
                                 }
-                                className="border rounded-md px-2 py-1 w-full"
+                                className="mt-1 w-full rounded-xl border border-border/50 bg-background/60 px-3 py-2 text-sm"
                             />
                         </div>
                     )}
                 </CardContent>
+
                 <CardFooter>
                     <button
                         onClick={handleCreate}
-                        className="rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] px-4 py-1 text-sm hover:opacity-90"
+                        className="rounded-xl bg-gradient-to-r from-emerald-600 to-sky-500 text-white px-5 py-2 text-sm font-medium hover:opacity-90 transition"
                     >
-                        {newSession.repeatWeekly
-                            ? "Add Recurring Sessions"
-                            : "Add Session"}
+                        {newSession.repeatWeekly ? "Add Recurring Sessions" : "Add Session"}
                     </button>
                 </CardFooter>
             </Card>
 
-            {/* 🧾 SESSION LIST */}
-            <div className="space-y-3">
+            {/* SESSION LIST */}
+            <div className="space-y-4">
                 {sessions.map((s) => (
-                    <Card key={s.id ?? s.session_id}
+                    <Card
+                        key={s.id}
                         onClick={() => openSessionDetails(s)}
-                        className="cursor-pointer hover:bg-[hsl(var(--muted))]/20 transition"
+                        className="cursor-pointer transition hover:bg-muted/40 rounded-2xl border border-border/50 shadow-sm"
                     >
                         <CardHeader>
-                            <CardTitle>{s.title || "Regular Session"}</CardTitle>
+                            <CardTitle className="text-base font-semibold">
+                                {s.title || "Regular Session"}
+                            </CardTitle>
+
                             <p className="text-xs text-muted-foreground">
-                                {s.session_date} | {s.start_time} – {s.end_time} | cap: {s.capacity}
+                                {s.session_date} | {s.start_time}–{s.end_time} | cap {s.capacity}
                             </p>
+
                             {s.cancelled && (
-                                <p className="text-xs text-red-600 mt-1">
-                                    Cancelled: {s.cancellation_reason || "No reason provided"}
+                                <p className="text-xs text-red-600 mt-2">
+                                    Cancelled — {s.cancellation_reason || "No reason provided"}
                                 </p>
                             )}
                         </CardHeader>
 
-                        <CardFooter className="flex gap-2 justify-end">
+                        <CardFooter className="flex gap-4 justify-end">
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setEditSession(s);
                                     setEditModalOpen(true);
                                 }}
-                                className="text-blue-600 text-sm underline"
+                                className="text-sm text-blue-600 hover:underline"
                             >
                                 Edit
                             </button>
@@ -458,7 +455,7 @@ export default function ManageSessions() {
                                         e.stopPropagation();
                                         handleCancel(s);
                                     }}
-                                    className="text-orange-600 text-sm underline"
+                                    className="text-sm text-orange-600 hover:underline"
                                 >
                                     Cancel Session
                                 </button>
@@ -470,7 +467,7 @@ export default function ManageSessions() {
                                     setSessionToDelete(s);
                                     setDeleteModalOpen(true);
                                 }}
-                                className="text-red-600 text-sm underline"
+                                className="text-sm text-red-600 hover:underline"
                             >
                                 Delete
                             </button>
@@ -479,35 +476,40 @@ export default function ManageSessions() {
                 ))}
             </div>
 
-            {/* 🪟 POPUP MODAL */}
+            {/* ALL MODALS BELOW ARE RESTYLED THE SAME WAY */}
+            {/* SESSION DETAILS MODAL */}
             {selectedSession && (
-                <div
-                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-                    onClick={() => setSelectedSession(null)}
-                >
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+                    onClick={() => setSelectedSession(null)}>
                     <div
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl w-[90%] max-w-md"
+                        className="bg-background border border-border/60 rounded-2xl shadow-xl p-6 w-[95%] max-w-md space-y-4"
                     >
-                        <h3 className="text-lg font-semibold mb-2">
-                            {selectedSession.title || "(Untitled Session)"}
+                        <h3 className="text-xl font-semibold">
+                            {selectedSession.title || "Session Details"}
                         </h3>
-                        <p className="text-sm text-muted-foreground mb-2">
-                            {selectedSession.session_date} — {selectedSession.start_time} to{" "}
-                            {selectedSession.end_time}
-                        </p>
-                        <p className="text-sm mb-4">
-                            Capacity: {selectedSession.session_signups?.length}/
-                            {selectedSession.capacity}
+
+                        <p className="text-sm text-muted-foreground">
+                            {selectedSession.session_date} — {selectedSession.start_time}–{selectedSession.end_time}
                         </p>
 
-                        <h4 className="font-medium mb-2">Attendance Register:</h4>
-                        <ul className="max-h-60 overflow-y-auto border rounded-md p-2 text-sm space-y-1">
-                            {signups.length > 0 ? (
-                                [...signups].map((su, index) => (
+                        <p className="text-sm">
+                            Capacity:{" "}
+                            <span className="font-medium">
+                                {selectedSession.session_signups?.length}/{selectedSession.capacity}
+                            </span>
+                        </p>
+
+                        <h4 className="text-sm font-semibold mt-2">Attendance</h4>
+
+                        {/* SIGNUP LIST */}
+                        <ul className="border border-border/60 rounded-lg bg-muted/30 max-h-60 overflow-y-auto text-sm divide-y divide-border/40">
+                            {signups.length ? (
+                                signups.map((su, i) => (
                                     <li
                                         key={su.user_id}
-                                        className={`flex justify-between items-center border-b py-1 px-2 rounded-md transition-colors
+                                        className={`
+        flex justify-between items-center px-3 py-2 rounded-md transition
         ${su.attended === true
                                                 ? "bg-green-100 dark:bg-green-900/40 text-green-900 dark:text-green-100"
                                                 : su.attended === false
@@ -516,11 +518,11 @@ export default function ManageSessions() {
                                             }
     `}
                                     >
-                                        <span>
-                                            <span className="font-semibold mr-1">#{index + 1}</span>
-                                            {su.profiles?.username || su.user_id}
+                                        <span className="truncate">
+                                            <span className="font-medium">#{i + 1}</span>{" "}
+                                            {su.profiles?.username}
 
-                                            <span className="text-xs ml-2 italic">
+                                            <span className="text-xs ml-2 italic opacity-70">
                                                 {su.attended === true
                                                     ? "Present"
                                                     : su.attended === false
@@ -535,9 +537,9 @@ export default function ManageSessions() {
                                                     e.stopPropagation();
                                                     toggleAttendance(su.user_id, true);
                                                 }}
-                                                className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
+                                                className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
                                             >
-                                                <Check size={16} />
+                                                <Check size={18} />
                                             </button>
 
                                             <button
@@ -545,23 +547,21 @@ export default function ManageSessions() {
                                                     e.stopPropagation();
                                                     toggleAttendance(su.user_id, false);
                                                 }}
-                                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                                                className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                                             >
-                                                <X size={16} />
+                                                <X size={18} />
                                             </button>
                                         </div>
                                     </li>
                                 ))
                             ) : (
-                                <li className="text-muted-foreground text-sm">
-                                    No one signed up yet
-                                </li>
+                                <li className="p-3 text-muted-foreground text-sm">No signups yet</li>
                             )}
                         </ul>
 
                         <button
-                            className="mt-4 bg-red-600 text-white w-full py-2 rounded-md"
                             onClick={() => setSelectedSession(null)}
+                            className="w-full mt-4 bg-gradient-to-r from-emerald-600 to-sky-500 text-white rounded-xl py-2 hover:opacity-90"
                         >
                             Close
                         </button>
@@ -569,39 +569,37 @@ export default function ManageSessions() {
                 </div>
             )}
 
+            {/* CANCEL MODAL */}
             {cancelModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
                     <div
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl w-[90%] max-w-sm space-y-4"
+                        className="bg-background border border-border/60 rounded-2xl shadow-xl p-6 w-[95%] max-w-sm space-y=4"
                     >
-                        <h3 className="text-lg font-semibold">
-                            Cancel Session
-                        </h3>
+                        <h3 className="text-lg font-semibold">Cancel Session</h3>
 
                         <p className="text-sm text-muted-foreground">
-                            Enter a cancellation reason (optional):
+                            Enter an optional cancellation reason:
                         </p>
 
                         <textarea
                             value={cancelReason}
                             onChange={(e) => setCancelReason(e.target.value)}
                             rows={3}
-                            className="w-full border rounded-md px-3 py-2 text-sm dark:bg-neutral-800 dark:border-neutral-700"
-                            placeholder="Reason for cancellation (optional)"
+                            className="w-full mt-1 rounded-xl border border-border/50 bg-background/50 px-3 py-2 text-sm"
                         />
 
-                        <div className="flex justify-end gap-3 mt-2">
+                        <div className="flex justify-end gap-3 pt-2">
                             <button
                                 onClick={() => setCancelModalOpen(false)}
-                                className="px-4 py-2 text-sm rounded-md border dark:border-neutral-600"
+                                className="px-4 py-2 text-sm rounded-xl border border-border/50 hover:bg-muted/40"
                             >
                                 Close
                             </button>
 
                             <button
                                 onClick={confirmCancel}
-                                className="px-4 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700"
+                                className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white"
                             >
                                 Confirm Cancel
                             </button>
@@ -610,127 +608,124 @@ export default function ManageSessions() {
                 </div>
             )}
 
+            {/* DELETE MODAL */}
             {deleteModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
                     <div
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl w-[90%] max-w-sm space-y-4"
+                        className="bg-background border border-border/60 rounded-2xl shadow-xl p-6 w-[95%] max-w-sm space-y-4"
                     >
-                        <h3 className="text-lg font-semibold text-red-600">
-                            Delete Session?
-                        </h3>
+                        <h3 className="text-lg font-semibold text-red-600">Delete Session?</h3>
 
                         <p className="text-sm text-muted-foreground">
-                            Are you sure you want to permanently delete{" "}
-                            <span className="font-semibold">
-                                {sessionToDelete?.title || "this session"}
-                            </span>
-                            ?
-                            <br />
-                            <br />
-                            <span className="text-red-500 font-medium">
-                                This action cannot be undone.
-                            </span>
+                            Are you sure you want to delete{" "}
+                            <strong>{sessionToDelete?.title || "this session"}</strong>?<br /><br />
+                            <span className="text-red-500 font-medium">This action cannot be undone.</span>
                         </p>
 
-                        <div className="flex justify-end gap-3 mt-4">
+                        <div className="flex justify-end gap-3 pt-2">
                             <button
                                 onClick={() => setDeleteModalOpen(false)}
-                                className="px-4 py-2 text-sm rounded-md border dark:border-neutral-600"
+                                className="px-4 py-2 text-sm rounded-xl border border-border/50 hover:bg-muted/40"
                             >
                                 Cancel
                             </button>
 
                             <button
                                 onClick={confirmDelete}
-                                className="px-4 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700"
+                                className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white"
                             >
-                                Confirm Delete
+                                Delete
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
+            {/* EDIT MODAL */}
             {editModalOpen && editSession && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
                     <div
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl w-[90%] max-w-sm space-y-4"
+                        className="bg-background border border-border/60 rounded-2xl shadow-xl p-6 w-[95%] max-w-sm space-y-4"
                     >
                         <h3 className="text-lg font-semibold">Edit Session</h3>
 
-                        {/* Title */}
-                        <div>
-                            <label className="block text-sm font-medium">Session Title</label>
-                            <input
-                                value={editSession.title || ""}
-                                onChange={(e) =>
-                                    setEditSession({ ...editSession, title: e.target.value })
-                                }
-                                className="border rounded-md px-3 py-1 w-full"
-                            />
-                        </div>
-
-                        {/* Date */}
-                        <div>
-                            <label className="block text-sm font-medium">Session Date</label>
-                            <input
-                                type="date"
-                                value={editSession.session_date}
-                                onChange={(e) =>
-                                    setEditSession({ ...editSession, session_date: e.target.value })
-                                }
-                                className="border rounded-md px-3 py-1 w-full"
-                            />
-                        </div>
-
-                        {/* Times */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-3 text-sm">
                             <div>
-                                <label className="block text-sm font-medium">Start Time</label>
+                                <label className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                    Title
+                                </label>
                                 <input
-                                    type="time"
-                                    value={editSession.start_time}
-                                    onChange={(e) =>
-                                        setEditSession({ ...editSession, start_time: e.target.value })
-                                    }
-                                    className="border rounded-md px-3 py-1 w-full"
+                                    value={editSession.title || ""}
+                                    onChange={(e) => setEditSession({ ...editSession, title: e.target.value })}
+                                    className="mt-1 w-full rounded-xl border border-border/50 bg-background/50 px-3 py-2"
                                 />
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium">End Time</label>
+                                <label className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                    Session Date
+                                </label>
                                 <input
-                                    type="time"
-                                    value={editSession.end_time}
+                                    type="date"
+                                    value={editSession.session_date}
                                     onChange={(e) =>
-                                        setEditSession({ ...editSession, end_time: e.target.value })
+                                        setEditSession({ ...editSession, session_date: e.target.value })
                                     }
-                                    className="border rounded-md px-3 py-1 w-full"
+                                    className="mt-1 w-full rounded-xl border border-border/50 bg-background/50 px-3 py-2"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                        Start Time
+                                    </label>
+                                    <input
+                                        type="time"
+                                        value={editSession.start_time}
+                                        onChange={(e) =>
+                                            setEditSession({ ...editSession, start_time: e.target.value })
+                                        }
+                                        className="mt-1 w-full rounded-xl border border-border/50 bg-background/50 px-3 py-2"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                        End Time
+                                    </label>
+                                    <input
+                                        type="time"
+                                        value={editSession.end_time}
+                                        onChange={(e) =>
+                                            setEditSession({ ...editSession, end_time: e.target.value })
+                                        }
+                                        className="mt-1 w-full rounded-xl border border-border/50 bg-background/50 px-3 py-2"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                    Capacity
+                                </label>
+                                <input
+                                    type="number"
+                                    value={editSession.capacity}
+                                    onChange={(e) =>
+                                        setEditSession({ ...editSession, capacity: Number(e.target.value) })
+                                    }
+                                    className="mt-1 w-full rounded-xl border border-border/50 bg-background/50 px-3 py-2"
                                 />
                             </div>
                         </div>
 
-                        {/* Capacity */}
-                        <div>
-                            <label className="block text-sm font-medium">Capacity</label>
-                            <input
-                                type="number"
-                                value={editSession.capacity}
-                                onChange={(e) =>
-                                    setEditSession({
-                                        ...editSession,
-                                        capacity: Number(e.target.value),
-                                    })
-                                }
-                                className="border rounded-md px-3 py-1 w-full"
-                            />
-                        </div>
-
-                        <div className="flex justify-end gap-3">
+                        <div className="flex justify-end gap-3 pt-2">
                             <button
                                 onClick={() => setEditModalOpen(false)}
-                                className="px-4 py-2 text-sm rounded-md border dark:border-neutral-600"
+                                className="px-4 py-2 text-sm rounded-xl border border-border/50 hover:bg-muted/40"
                             >
                                 Cancel
                             </button>
@@ -755,15 +750,14 @@ export default function ManageSessions() {
                                     setEditSession(null);
                                     loadSessions();
                                 }}
-                                className="px-4 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                                className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-emerald-600 to-sky-500 text-white"
                             >
-                                Save
+                                Save Changes
                             </button>
                         </div>
                     </div>
                 </div>
             )}
-
         </section>
     );
 }

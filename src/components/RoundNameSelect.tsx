@@ -12,14 +12,20 @@ export default function RoundNameSelect({
     const [rounds, setRounds] = useState<string[]>([]);
     const supabase = useMemo(() => supabaseBrowser(), []);
 
+    /* ----------------------------
+       Load rounds
+    ----------------------------- */
     useEffect(() => {
         async function loadRounds() {
             const { data, error } = await supabase.rpc("get_distinct_rounds");
             if (error) return console.error("Error loading rounds:", error);
 
-            const uniqueRounds = (data || [])
-                .map((r: { round_name: string | null }) => r.round_name?.trim())
-                .filter((r: string | null | undefined): r is string => typeof r === "string" && r.length > 0)
+            // Explicit RPC return type
+            type RoundRow = { round_name: string | null };
+
+            const uniqueRounds = ((data ?? []) as RoundRow[])
+                .map((r: RoundRow) => r.round_name?.trim() || "")
+                .filter((r: string) => r.length > 0)
                 .sort();
 
             setRounds(uniqueRounds);
@@ -29,12 +35,16 @@ export default function RoundNameSelect({
 
     useEffect(() => setQuery(value), [value]);
 
-    const filtered = !query ? rounds : rounds.filter(r => r.toLowerCase().includes(query.toLowerCase()));
+    const filtered =
+        !query ? rounds : rounds.filter(r => r.toLowerCase().includes(query.toLowerCase()));
 
+    /* ----------------------------
+       Selection + Validation
+    ----------------------------- */
     const handleSelect = (val: string) => {
         setQuery(val);
-        setShowList(false);
         setIsValid(true);
+        setShowList(false);
         onChange?.(val);
     };
 
@@ -50,31 +60,68 @@ export default function RoundNameSelect({
         setTimeout(() => setShowList(false), 150);
     };
 
+    /* ----------------------------
+       UI
+    ----------------------------- */
     return (
         <div className="relative">
+            {/* INPUT */}
             <input
                 type="text"
-                placeholder="Start typing a round name..."
+                placeholder="Start typing a round name…"
                 value={query}
-                onChange={(e) => { setQuery(e.target.value); setShowList(true); }}
+                onChange={(e) => {
+                    setQuery(e.target.value);
+                    setShowList(true);
+                }}
                 onFocus={() => setShowList(true)}
                 onBlur={handleBlur}
-                className={`w-full rounded-md border px-3 py-2 bg-[hsl(var(--muted))]/20 ${isValid ? "border-[hsl(var(--border))]/40" : "border-red-500 focus:border-red-500"}`}
+                className={`
+                    w-full h-11 px-4 rounded-xl text-sm
+                    bg-background/60 backdrop-blur-xl
+                    border transition-all shadow-sm 
+                    placeholder:text-muted-foreground/70
+
+                    ${isValid
+                        ? "border-border/50 focus:ring-2 focus:ring-emerald-500/60"
+                        : "border-red-500 focus:ring-2 focus:ring-red-500/50"
+                    }
+                `}
             />
+
+            {/* DROPDOWN */}
             {showList && filtered.length > 0 && (
-                <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--card))] shadow-sm">
+                <ul
+                    className="
+                        absolute z-20 mt-2 w-full max-h-52 overflow-y-auto 
+                        rounded-xl border border-border/50 
+                        bg-background/80 backdrop-blur-xl
+                        shadow-xl
+                        animate-in fade-in-0 zoom-in-95
+                    "
+                >
                     {filtered.map((round) => (
                         <li
                             key={round}
                             onMouseDown={() => handleSelect(round)}
-                            className="px-3 py-2 text-sm hover:bg-[hsl(var(--muted))]/40 cursor-pointer"
+                            className="
+                                px-4 py-2.5 text-sm cursor-pointer
+                                hover:bg-emerald-500/10 hover:text-emerald-600
+                                transition-colors
+                            "
                         >
                             {round}
                         </li>
                     ))}
                 </ul>
             )}
-            {!isValid && <p className="text-xs text-red-500 mt-1">Please select a valid round from the list.</p>}
+
+            {/* INVALID MESSAGE */}
+            {!isValid && (
+                <p className="text-xs text-red-500 mt-1">
+                    Please select a valid round from the list.
+                </p>
+            )}
         </div>
     );
 }

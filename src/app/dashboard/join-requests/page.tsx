@@ -166,11 +166,20 @@ export default function JoinRequestsPage() {
         }
 
         return (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
                 <div
-                    className="bg-[hsl(var(--card))] rounded-xl p-6 max-w-md w-full border border-[hsl(var(--border))]/40"
+                    className="
+        group relative bg-[hsl(var(--card))] rounded-xl p-6 max-w-md w-full
+        border border-border/40 shadow-xl
+        overflow-hidden
+    "
                     onClick={(e) => e.stopPropagation()}
                 >
+                    <div className="
+        absolute inset-0 opacity-20 rounded-xl
+        bg-gradient-to-br from-emerald-500/20 via-sky-500/20 to-emerald-500/20
+        blur-2xl pointer-events-none
+    "></div>
                     <h2 className="text-lg font-semibold mb-3">Edit Request</h2>
 
                     <div className="space-y-3">
@@ -225,7 +234,15 @@ export default function JoinRequestsPage() {
 
     return (
         <main className="max-w-3xl mx-auto p-6 space-y-6">
-            <h1 className="text-2xl font-semibold text-center">Join Requests</h1>
+            {/* PAGE TITLE */}
+<div className="text-center mb-4">
+    <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
+        Join Requests
+    </h1>
+    <div className="w-40 h-1 mx-auto mt-2 rounded-full bg-gradient-to-r
+        from-emerald-500 via-sky-500 to-emerald-500 opacity-40">
+    </div>
+</div>
 
             {loading ? (
                 <p className="text-center text-muted-foreground">Loading...</p>
@@ -236,10 +253,28 @@ export default function JoinRequestsPage() {
             ) : (
                 requests.map((r) => (
                     <Card
-    key={r.id}
-    className="border border-[hsl(var(--border))]/40 px-4 py-3 sm:px-6 sm:py-4"
->
-                        <CardHeader>
+                        key={r.id}
+                        className="
+        group relative px-4 py-3 sm:px-6 sm:py-4
+        border border-border/50 rounded-xl bg-muted/30
+        shadow-sm hover:shadow-md transition
+        hover:bg-muted/50 overflow-hidden
+    "
+                    >
+                        {/* Glow */}
+                        <div
+                            className="
+            absolute inset-0 rounded-xl opacity-0 group-hover:opacity-40
+            bg-gradient-to-br from-emerald-500/10 via-sky-500/10 to-emerald-500/10
+            blur-xl transition-opacity duration-300 pointer-events-none
+        "
+                        ></div>
+                        <CardHeader className="relative pb-3">
+                            <div className="
+        absolute inset-x-0 -bottom-[1px] h-[2px]
+        bg-gradient-to-r from-emerald-500/40 via-sky-500/40 to-emerald-500/40
+        rounded-full
+    "></div>
                             <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:gap-2 text-base sm:text-lg leading-snug">
                                 <User size={18} /> {r.profiles?.username || "Unknown"}{" "}
                                 <span className="text-sm text-muted-foreground">
@@ -276,20 +311,49 @@ export default function JoinRequestsPage() {
 
                             {r.status === "pending" ? (
                                 <div className="flex flex-wrap gap-2 mt-3">
-                                    <Button size="sm" className="flex-1 min-w-[110px]">
+                                    <Button
+                                        size="sm"
+                                        className="
+        flex-1 min-w-[110px] rounded-lg
+        bg-gradient-to-r from-emerald-600/20 to-sky-500/20
+        border border-emerald-600/30
+        hover:from-emerald-600/30 hover:to-sky-500/30
+    "
+                                        onClick={() => updateStatus(r.id, "accepted")}
+                                    >
                                         Accept
                                     </Button>
-                                    <Button size="sm" variant="destructive" className="flex-1 min-w-[110px]">
+
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="flex-1 min-w-[110px] rounded-lg"
+                                        onClick={() => updateStatus(r.id, "rejected")}
+                                    >
                                         Reject
                                     </Button>
-                                    <Button size="sm" variant="secondary" className="flex-1 min-w-[110px]">
+
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        className="flex-1 min-w-[110px] rounded-lg"
+                                        onClick={() => setEditingRequest(r)}
+                                    >
                                         Edit
                                     </Button>
                                 </div>
                             ) : (
-                                <span className={`text-sm font-medium ${r.status === "accepted" ? "text-green-500" : "text-red-500"}`}>
-                                    {r.status.toUpperCase()}
-                                </span>
+                                    <span
+                                        className={`
+        inline-flex px-3 py-1 rounded-full text-xs font-semibold
+        ${r.status === "accepted"
+                                                ? "bg-emerald-600/20 text-emerald-700 dark:text-emerald-300"
+                                                : "bg-red-600/20 text-red-700 dark:text-red-300"
+                                            }
+    `}
+                                    >
+                                        {r.status.toUpperCase()}
+                                    </span>
                             )}
                         </CardContent>
                     </Card>

@@ -14,6 +14,9 @@ export default function RoundNameSelect({ value, onChange }: RoundNameSelectProp
     const [rounds, setRounds] = useState<string[]>([]);
     const supabase = useMemo(() => supabaseBrowser(), []);
 
+    /* ---------------------------------------------
+       LOAD ROUNDS FROM SUPABASE
+    ---------------------------------------------- */
     useEffect(() => {
         async function loadRounds() {
             const { data, error } = await supabase
@@ -26,15 +29,9 @@ export default function RoundNameSelect({ value, onChange }: RoundNameSelectProp
                 return;
             }
 
-            // ✅ Explicitly cast to correct type
             const rows = (data ?? []) as { round_name: string }[];
-
-            // ✅ Deduplicate and sort round names
-            const uniqueRounds = Array.from(
-                new Set(rows.map((r) => r.round_name))
-            ).sort();
-
-            setRounds(uniqueRounds);
+            const unique = Array.from(new Set(rows.map((r) => r.round_name))).sort();
+            setRounds(unique);
         }
 
         loadRounds();
@@ -53,30 +50,58 @@ export default function RoundNameSelect({ value, onChange }: RoundNameSelectProp
         onChange?.(val);
     };
 
+    /* ---------------------------------------------
+       UI
+    ---------------------------------------------- */
     return (
         <div className="relative">
+            {/* INPUT */}
             <input
                 type="text"
-                placeholder="Start typing a round name..."
+                placeholder="Search round name…"
                 value={query}
                 onChange={(e) => {
-                    const val = e.target.value;
-                    setQuery(val);
+                    const v = e.target.value;
+                    setQuery(v);
                     setShowList(true);
-                    onChange?.(val);
+                    onChange?.(v);
                 }}
                 onFocus={() => setShowList(true)}
                 onBlur={() => setTimeout(() => setShowList(false), 150)}
-                className="w-full rounded-md border border-[hsl(var(--border))]/40 px-3 py-2 bg-[hsl(var(--muted))]/20"
+                className="
+                    w-full h-11 px-4 rounded-xl text-sm
+                    border border-border/50 
+                    bg-background/60 backdrop-blur-xl
+                    shadow-sm
+                    transition-all
+                    focus:outline-none focus:ring-2 
+                    focus:ring-emerald-500/70
+                    placeholder:text-muted-foreground/70
+                "
             />
 
+            {/* DROPDOWN */}
             {showList && filteredRounds.length > 0 && (
-                <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--card))] shadow-sm">
+                <ul
+                    className="
+                        absolute z-20 mt-2 w-full 
+                        max-h-52 overflow-y-auto 
+                        rounded-xl border border-border/50 
+                        bg-background/80 backdrop-blur-xl
+                        shadow-xl
+                        animate-in fade-in-0 zoom-in-95
+                    "
+                >
                     {filteredRounds.map((round) => (
                         <li
                             key={round}
                             onMouseDown={() => handleSelect(round)}
-                            className="px-3 py-2 text-sm hover:bg-[hsl(var(--muted))]/40 cursor-pointer"
+                            className="
+                                px-4 py-2.5 text-sm cursor-pointer
+                                hover:bg-emerald-500/10 
+                                hover:text-emerald-600
+                                transition-colors
+                            "
                         >
                             {round}
                         </li>

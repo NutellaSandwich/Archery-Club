@@ -3,11 +3,25 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardTitle,
+} from "@/components/ui/card";
+
 import { ThemeToggle } from "@/components/theme-toggle";
-import { LogIn, UserPlus, Users, Building, ArrowLeft } from "lucide-react";
+import {
+  LogIn,
+  UserPlus,
+  Users,
+  Building,
+  ArrowLeft,
+} from "lucide-react";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -15,9 +29,16 @@ import Link from "next/link";
 export default function Home() {
   const supabase = supabaseBrowser();
   const router = useRouter();
-  const [modalType, setModalType] = useState<null | "individual" | "joinClub" | "createClub">(null);
+
+  const [modalType, setModalType] = useState<
+    null | "individual" | "joinClub" | "createClub"
+  >(null);
+
   const [loading, setLoading] = useState(true);
 
+  /* ----------------------------------------------
+      CHECK SESSION
+  ----------------------------------------------- */
   useEffect(() => {
     async function checkSession() {
       const { data } = await supabase.auth.getSession();
@@ -28,86 +49,105 @@ export default function Home() {
         return;
       }
 
-      // 🔍 Check if the logged-in user belongs to a club
-      const { data: profile, error } = await supabase
+      const { data: profile } = await supabase
         .from("profiles")
         .select("club_id")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching profile:", error);
-        setLoading(false);
-        return;
-      }
-
       if (profile?.club_id) {
-        // ✅ User is in a club → go to dashboard
         router.replace("/dashboard");
       } else {
-        // 🚫 Logged in but no club → stay here to let them join/create one
         setLoading(false);
       }
     }
-
     checkSession();
   }, [router, supabase]);
 
-  if (loading) return <p className="text-center mt-20 text-muted-foreground">Loading...</p>;
+  if (loading)
+    return (
+      <p className="text-center mt-20 text-muted-foreground">Loading...</p>
+    );
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 text-center">
-      <h1 className="text-4xl font-bold tracking-tight">Arcus</h1>
-      <p className="text-muted-foreground text-sm">
-        Manage your club, track your progress, and connect with other archers.
-      </p>
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
+      {/* TITLE */}
+      <motion.h1
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-5xl font-bold tracking-tight bg-gradient-to-r from-emerald-500 to-sky-500 bg-clip-text text-transparent drop-shadow-sm"
+      >
+        Arcus
+      </motion.h1>
 
-      {/* Options */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mt-6">
+      <motion.p
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="text-muted-foreground text-sm mt-2"
+      >
+        Manage your club, track your progress, and connect with other archers.
+      </motion.p>
+
+      {/* UNDERLINE */}
+      <div className="w-40 h-1 mt-3 rounded-full bg-gradient-to-r from-emerald-500/40 via-sky-500/40 to-emerald-500/40"></div>
+
+      {/* SIGNUP OPTIONS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mt-10 w-full">
         <SignupOption
-          icon={<UserPlus className="text-blue-500" size={18} />}
+          icon={<UserPlus size={18} className="text-emerald-500" />}
           title="Join as Individual"
           description="£5/year for independent archers."
           action={() => setModalType("individual")}
         />
+
         <SignupOption
-          icon={<Users className="text-green-500" size={18} />}
+          icon={<Users size={18} className="text-sky-500" />}
           title="Join a Club"
-          description="Join your club with a unique code."
+          description="Join your club using a code."
           action={() => setModalType("joinClub")}
         />
+
         <SignupOption
-          icon={<Building className="text-yellow-500" size={18} />}
+          icon={<Building size={18} className="text-yellow-500" />}
           title="Create a Club"
-          description="£5/month, £10/3 months, or £40/year."
+          description="£5/month, £10/3 months, £40/year."
           action={() => setModalType("createClub")}
         />
       </div>
 
-      <div className="flex flex-col items-center gap-3 mt-6">
+      {/* LOGIN + THEME */}
+      <div className="flex flex-col items-center gap-3 mt-8">
         <Link href="/login">
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 rounded-xl"
+          >
             <LogIn size={16} /> Login
           </Button>
         </Link>
+
         <ThemeToggle />
       </div>
 
-      {/* Modal */}
+      {/* MODAL */}
       <AnimatePresence>
         {modalType && (
           <motion.div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setModalType(null)}
           >
             <motion.div
-              className="bg-[hsl(var(--card))] rounded-xl p-6 max-w-md w-full border border-[hsl(var(--border))]/40"
-              initial={{ scale: 0.95, opacity: 0 }}
+              className="
+                bg-background/90 backdrop-blur-md p-6 rounded-2xl 
+                border border-border/50 shadow-xl w-full max-w-md
+              "
+              initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              exit={{ scale: 0.92, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
               <SignupFlow type={modalType} onClose={() => setModalType(null)} />
@@ -131,21 +171,48 @@ function SignupOption({
   action: () => void;
 }) {
   return (
-    <Card className="p-6 border border-[hsl(var(--border))]/40">
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="
+        group relative rounded-2xl border border-border/60 
+        bg-muted/40 p-6 shadow-sm hover:bg-muted/60 
+        transition cursor-pointer overflow-hidden
+      "
+      onClick={action}
+    >
+      {/* Glow */}
+      <div
+        className="
+          absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-40
+          bg-gradient-to-br from-emerald-500/20 via-sky-500/20 to-emerald-500/20
+          blur-xl transition-opacity duration-300 pointer-events-none
+        "
+      ></div>
+
       <CardHeader>
         <CardTitle className="flex items-center justify-center gap-2 text-lg font-semibold">
           {icon} {title}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+
+      <CardContent className="text-center">
         <p className="text-sm text-muted-foreground mb-4">{description}</p>
-        <Button onClick={action} className="w-full">
+
+        <Button
+          className="
+            w-full rounded-xl 
+            bg-gradient-to-r from-emerald-600 to-sky-500 text-white 
+            hover:opacity-90
+          "
+        >
           Continue
         </Button>
       </CardContent>
-    </Card>
+    </motion.div>
   );
 }
+
+/* -------------------- SIGNUP FLOW -------------------- */
 
 /* -------------------- SIGNUP FLOW -------------------- */
 
@@ -158,10 +225,17 @@ function SignupFlow({
 }) {
   const supabase = supabaseBrowser();
   const router = useRouter();
+
   const [step, setStep] = useState<1 | 2>(1);
   const [isLogin, setIsLogin] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [account, setAccount] = useState({ email: "", password: "", confirmPassword: "" });
+
+  const [account, setAccount] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
   const [form, setForm] = useState({
     username: "",
     dob: "",
@@ -174,25 +248,25 @@ function SignupFlow({
     subscription_tier: "month",
   });
 
-  // ✅ Skip account creation if already logged in
+  /* ----------------------------------------------
+      CHECK EXISTING LOGIN → Skip Step 1
+  ----------------------------------------------- */
   useEffect(() => {
     async function checkLoggedIn() {
       const { data } = await supabase.auth.getSession();
-      if (data.session?.user) {
-        setStep(2);
-      }
+      if (data.session?.user) setStep(2);
     }
     checkLoggedIn();
   }, [supabase]);
 
-  // 🔹 Step 1: Signup or Login
-  // 🔹 Step 1: Signup or Login
+  /* ----------------------------------------------
+      STEP 1 — Create/Login Account
+  ----------------------------------------------- */
   async function handleAccountAction() {
     setLoading(true);
 
     if (isLogin) {
-      // ✅ Login
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: account.email.trim(),
         password: account.password,
       });
@@ -209,105 +283,77 @@ function SignupFlow({
       return;
     }
 
-    if (!account.email || !account.email.includes("@")) {
-      toast.error("Please enter a valid email address.");
+    // SIGNUP FLOW
+    if (!account.email.includes("@")) {
+      toast.error("Enter a valid email.");
       setLoading(false);
       return;
     }
-    // ✅ Password confirmation + strength checks
     if (account.password !== account.confirmPassword) {
       toast.error("Passwords do not match.");
       setLoading(false);
       return;
     }
 
-    const password = account.password;
-    let strengthScore = 0;
-    if (password.length >= 8) strengthScore++;
-    if (/[A-Z]/.test(password)) strengthScore++;
-    if (/[a-z]/.test(password)) strengthScore++;
-    if (/[0-9]/.test(password)) strengthScore++;
-    if (/[^A-Za-z0-9]/.test(password)) strengthScore++;
-
-    if (strengthScore < 3) {
-      toast.error(
-        "Password too weak. Use at least 8 characters with a mix of upper/lowercase, numbers, and symbols."
-      );
-      setLoading(false);
-      return;
-    }
-
-    // ✅ Signup — safely handle existing user case
     const { data, error } = await supabase.auth.signUp({
       email: account.email.trim(),
       password: account.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-      },
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
     });
 
     if (error) {
-      // 🧩 Check for “already registered” case
-      if (error.message?.toLowerCase().includes("already registered")) {
-        toast.info("Account already exists. Logging you in...");
-        // Attempt login instead
-        const { data: loginData, error: loginError } =
-          await supabase.auth.signInWithPassword({
-            email: account.email.trim(),
-            password: account.password,
-          });
+      if (error.message.toLowerCase().includes("already registered")) {
+        toast.info("Account already exists — logging you in...");
+        const attempt = await supabase.auth.signInWithPassword({
+          email: account.email.trim(),
+          password: account.password,
+        });
 
-        if (loginError) {
-          toast.error("Login failed — please check your password.");
+        if (attempt.error) {
+          toast.error("Wrong password.");
           setLoading(false);
           return;
         }
 
-        toast.success("Logged in successfully!");
+        toast.success("Logged in!");
         setStep(2);
         setLoading(false);
         return;
       }
 
-      toast.error(error.message || "Signup failed.");
+      toast.error(error.message);
       setLoading(false);
       return;
     }
 
-    // ✅ Successful signup
     toast.success("Account created!");
     setStep(2);
     setLoading(false);
   }
 
-  // 🔹 Step 2: Complete profile details
+  /* ----------------------------------------------
+      STEP 2 — Profile & Club Handling
+  ----------------------------------------------- */
   async function handleFinish() {
     setLoading(true);
 
-    // 🧠 Ensure we actually have a session
-    let {
-      data: { session },
-    } = await supabase.auth.getSession();
+    let { data: sessionData } = await supabase.auth.getSession();
+    let session = sessionData.session;
 
-    // Wait briefly if session isn't yet available
     if (!session) {
-      // Try to refresh
-      const { data: refreshed } = await supabase.auth.getSession();
-      session = refreshed?.session;
+      const refreshed = await supabase.auth.getSession();
+      session = refreshed.data.session;
     }
 
-    // 🚨 Still no session → likely email confirmation required
     if (!session?.user) {
-      toast.error(
-        "Please verify your email before continuing, or log in again."
-      );
+      toast.error("Please verify your email first.");
       setLoading(false);
       return;
     }
 
     const user = session.user;
 
-    // Ensure profile exists
+    // Ensure profile row exists
     const { data: profile } = await supabase
       .from("profiles")
       .select("id")
@@ -315,30 +361,20 @@ function SignupFlow({
       .maybeSingle();
 
     if (!profile) {
-      const { error: insertError } = await supabase
-        .from("profiles")
-        .insert([{ id: user.id }]);
-
-      if (insertError) {
-        toast.error("Failed to create profile record.");
-        setLoading(false);
-        return;
-      }
+      await supabase.from("profiles").insert([{ id: user.id }]);
     }
 
-    // 🧍 INDIVIDUAL SIGNUP
+    // INDIVIDUAL SIGNUP
     if (type === "individual") {
       const expiry = new Date();
       expiry.setFullYear(expiry.getFullYear() + 1);
 
-      const cleanDob = form.dob ? form.dob : null;
-
-      const { error } = await supabase
+      await supabase
         .from("profiles")
         .update({
           username: form.username.trim(),
-          dob: cleanDob,
-          agb_number: form.agb_number?.trim() || null,
+          dob: form.dob || null,
+          agb_number: form.agb_number || null,
           category: form.category,
           experience: form.experience,
           payment_status: "paid",
@@ -346,71 +382,50 @@ function SignupFlow({
         })
         .eq("id", user.id);
 
-      if (error) toast.error(`Failed to complete signup: ${error.message}`);
-      else toast.success("Welcome! You’re now an individual member.");
+      toast.success("Welcome to Arcus!");
     }
 
-    // 🏹 JOIN CLUB
+    // JOIN CLUB
     if (type === "joinClub") {
-      const { data: club, error: clubError } = await supabase
+      const { data: club } = await supabase
         .from("clubs")
         .select("id, name")
         .ilike("join_code", form.club_code.trim())
         .maybeSingle();
 
-      if (clubError) {
-        toast.error("Error checking club code.");
-        setLoading(false);
-        return;
-      }
-
       if (!club) {
-        toast.error("Invalid club code.");
+        toast.error("Invalid join code.");
         setLoading(false);
         return;
       }
 
-      const cleanDob = form.dob ? form.dob : null;
+      await supabase.from("join_requests").insert({
+        user_id: user.id,
+        club_id: club.id,
+        username: form.username.trim(),
+        dob: form.dob || null,
+        agb_number: form.agb_number || null,
+        category: form.category,
+        experience: form.experience,
+      });
 
-      const { error: joinError } = await supabase.from("join_requests").insert([
-        {
-          user_id: user.id,
-          club_id: club.id,
-          message: `${form.username} (${form.category}, ${form.experience})`,
-          username: form.username.trim(),
-          dob: cleanDob,
-          agb_number: form.agb_number?.trim() || null,
-          category: form.category,
-          experience: form.experience,
-        },
-      ]);
-
-      if (joinError) {
-        console.error("Join request insert failed:", joinError);
-        toast.error("Failed to send join request.");
-        setLoading(false);
-        return;
-      }
-
-      
       await supabase
         .from("profiles")
         .update({
           username: form.username.trim(),
-          dob: cleanDob,
-          agb_number: form.agb_number?.trim() || null,
+          dob: form.dob || null,
+          agb_number: form.agb_number || null,
           category: form.category,
           experience: form.experience,
         })
         .eq("id", user.id);
 
-      toast.success("Join request sent to club admins!");
+      toast.success("Join request sent!");
     }
 
-    // 🏛️ CREATE CLUB
+    // CREATE CLUB
     if (type === "createClub") {
-      // 1️⃣ Create the club
-      const { data: insertedClubs, error: clubError } = await supabase
+      const { data: inserted } = await supabase
         .from("clubs")
         .insert([
           {
@@ -420,39 +435,27 @@ function SignupFlow({
             created_by: user.id,
           },
         ])
-        .select("*"); // ✅ Ensure we actually get the inserted club row
+        .select("*");
 
-      if (clubError || !insertedClubs?.length) {
-        toast.error("Failed to create club.");
-        console.error(clubError);
+      if (!inserted?.length) {
+        toast.error("Club creation failed.");
         setLoading(false);
         return;
       }
 
-      const clubData = insertedClubs[0];
-
-
-      // 2️⃣ Update profile to link to new club
-      const { error: profileError } = await supabase
+      await supabase
         .from("profiles")
         .update({
-          club_id: clubData.id,
+          club_id: inserted[0].id,
           username: form.username.trim(),
           dob: form.dob,
-          agb_number: form.agb_number || null,
+          agb_number: form.agb_number,
           category: form.category,
           experience: form.experience,
         })
         .eq("id", user.id);
 
-      if (profileError) {
-        console.error(profileError);
-        toast.error("Club created but failed to update your profile.");
-        setLoading(false);
-        return;
-      }
-
-      toast.success(`Club "${clubData.name}" created successfully!`);
+      toast.success("Club created successfully!");
     }
 
     setLoading(false);
@@ -460,104 +463,87 @@ function SignupFlow({
     router.replace("/dashboard");
   }
 
-  async function handleForgotPassword() {
-    if (!account.email || !account.email.includes("@")) {
-      toast.error("Please enter your email first.");
-      return;
-    }
+  /* ---------------------------------------------------
+      UI — FULLY RESTYLED ARCUS DESIGN
+  ---------------------------------------------------- */
 
-    const { error } = await supabase.auth.resetPasswordForEmail(account.email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-
-    if (error) {
-      toast.error(error.message || "Failed to send reset link.");
-    } else {
-      toast.success("Password reset link sent! Check your email.");
-    }
-  }
-
-  // ✨ RENDER
   return (
-    <div>
-      {step === 1 ? (
-        <>
-          <h2 className="text-xl font-semibold mb-4">
-            {isLogin ? "Login to Continue" : "Create Account"}
-          </h2>
+    <div className="space-y-6">
 
-          <div className="space-y-3">
+      {/* HEADER */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={step === 1 ? onClose : () => setStep(1)}
+          className="rounded-full"
+        >
+          <ArrowLeft size={16} />
+        </Button>
+
+        <h2 className="text-xl font-semibold bg-gradient-to-r from-emerald-500 to-sky-500 bg-clip-text text-transparent">
+          {step === 1
+            ? isLogin
+              ? "Log In"
+              : "Create Account"
+            : type === "individual"
+              ? "Individual Signup"
+              : type === "joinClub"
+                ? "Join a Club"
+                : "Create a Club"}
+        </h2>
+      </div>
+
+      {/* ------------------------------------------
+           STEP 1 — ACCOUNT CREDENTIALS
+      ------------------------------------------- */}
+      {step === 1 && (
+        <>
+          <div className="space-y-4">
+
             <Input
               placeholder="Email"
               type="email"
               value={account.email}
-              onChange={(e) => setAccount({ ...account, email: e.target.value })}
+              onChange={(e) =>
+                setAccount({ ...account, email: e.target.value })
+              }
             />
+
             <Input
               placeholder="Password"
               type="password"
               value={account.password}
-              onChange={(e) => setAccount({ ...account, password: e.target.value })}
+              onChange={(e) =>
+                setAccount({ ...account, password: e.target.value })
+              }
             />
-            {/* Only show when signing up */}
+
             {!isLogin && (
               <>
                 <Input
                   placeholder="Confirm Password"
                   type="password"
-                  value={account.confirmPassword || ""}
+                  value={account.confirmPassword}
                   onChange={(e) =>
-                    setAccount({ ...account, confirmPassword: e.target.value })
+                    setAccount({
+                      ...account,
+                      confirmPassword: e.target.value,
+                    })
                   }
                 />
-
-                {account.password && (() => {
-                  const password = account.password;
-                  const requirements = [
-                    { test: password.length >= 8, label: "8+ characters" },
-                    { test: /[A-Z]/.test(password), label: "uppercase letter" },
-                    { test: /[a-z]/.test(password), label: "lowercase letter" },
-                    { test: /[0-9]/.test(password), label: "number" },
-                    { test: /[^A-Za-z0-9]/.test(password), label: "symbol" },
-                  ];
-
-                  const metCount = requirements.filter(r => r.test).length;
-                  const missing = requirements.filter(r => !r.test).map(r => r.label);
-
-                  let strengthColor = "bg-red-500";
-                  let strengthLabel = "Weak";
-                  if (metCount >= 3) { strengthColor = "bg-yellow-500"; strengthLabel = "Medium"; }
-                  if (metCount >= 4) { strengthColor = "bg-green-500"; strengthLabel = "Strong"; }
-
-                  return (
-                    <div className="mt-2">
-                      {/* Bar */}
-                      <div className="w-full h-2 bg-[hsl(var(--muted))]/30 rounded-full overflow-hidden">
-                        <div
-                          className={`h-2 ${strengthColor} transition-all duration-300`}
-                          style={{ width: `${(metCount / requirements.length) * 100}%` }}
-                        />
-                      </div>
-
-                      {/* Label */}
-                      <p className="text-xs mt-1 text-muted-foreground">
-                        Strength:{" "}
-                        <span className={`${strengthColor.replace("bg-", "text-")} font-medium`}>
-                          {strengthLabel}
-                        </span>
-                        {missing.length > 0 && (
-                          <span className="text-xs text-muted-foreground">
-                            {" — Missing: "}{missing.join(", ")}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  );
-                })()}
               </>
             )}
 
-            <Button onClick={handleAccountAction} className="w-full" disabled={loading}>
+            <Button
+              onClick={handleAccountAction}
+              disabled={loading}
+              className="
+                w-full rounded-xl 
+                bg-gradient-to-r from-emerald-600 to-sky-500 
+                text-white hover:opacity-90
+              "
+            >
               {loading
                 ? isLogin
                   ? "Logging in..."
@@ -567,20 +553,10 @@ function SignupFlow({
                   : "Next"}
             </Button>
 
-            {isLogin && (
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="text-sm text-blue-500 hover:underline mt-2"
-              >
-                Forgot your password?
-              </button>
-            )}
-
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-sm text-muted-foreground">
               {isLogin ? (
                 <>
-                  Don’t have an account?{" "}
+                  No account?{" "}
                   <button
                     className="text-primary underline"
                     onClick={() => setIsLogin(false)}
@@ -590,114 +566,142 @@ function SignupFlow({
                 </>
               ) : (
                 <>
-                  Already have an account?{" "}
+                  Already registered?{" "}
                   <button
                     className="text-primary underline"
                     onClick={() => setIsLogin(true)}
                   >
-                    Log in instead
+                    Log in
                   </button>
                 </>
               )}
             </p>
           </div>
+        </>
+      )}
 
-          <Button variant="ghost" className="mt-3 w-full" onClick={onClose}>
+      {/* ------------------------------------------
+           STEP 2 — PROFILE + CLUB DETAILS
+      ------------------------------------------- */}
+      {step === 2 && (
+        <div className="space-y-4">
+
+          {/* USERNAME */}
+          <Input
+            placeholder="Username"
+            value={form.username}
+            onChange={(e) =>
+              setForm({ ...form, username: e.target.value })
+            }
+          />
+
+          {/* DOB */}
+          <Input
+            type="date"
+            value={form.dob}
+            onChange={(e) => setForm({ ...form, dob: e.target.value })}
+          />
+
+          {/* AGB NUMBER */}
+          <Input
+            placeholder="AGB Number (optional)"
+            value={form.agb_number}
+            onChange={(e) =>
+              setForm({ ...form, agb_number: e.target.value })
+            }
+          />
+
+          {/* CATEGORY */}
+          <select
+            className="w-full rounded-md border p-2 bg-background"
+            value={form.category}
+            onChange={(e) =>
+              setForm({ ...form, category: e.target.value })
+            }
+          >
+            <option>Open</option>
+            <option>Women</option>
+          </select>
+
+          {/* EXPERIENCE */}
+          <select
+            className="w-full rounded-md border p-2 bg-background"
+            value={form.experience}
+            onChange={(e) =>
+              setForm({ ...form, experience: e.target.value })
+            }
+          >
+            <option>Novice</option>
+            <option>Experienced</option>
+          </select>
+
+          {/* JOIN CLUB */}
+          {type === "joinClub" && (
+            <Input
+              placeholder="Club Join Code"
+              value={form.club_code}
+              onChange={(e) =>
+                setForm({ ...form, club_code: e.target.value })
+              }
+            />
+          )}
+
+          {/* CREATE CLUB */}
+          {type === "createClub" && (
+            <>
+              <Input
+                placeholder="Club Name"
+                value={form.club_name}
+                onChange={(e) =>
+                  setForm({ ...form, club_name: e.target.value })
+                }
+              />
+
+              <Input
+                placeholder="Club Join Code"
+                value={form.join_code}
+                onChange={(e) =>
+                  setForm({ ...form, join_code: e.target.value })
+                }
+              />
+
+              <select
+                className="w-full rounded-md border p-2 bg-background"
+                value={form.subscription_tier}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    subscription_tier: e.target.value,
+                  })
+                }
+              >
+                <option value="month">£5 / month</option>
+                <option value="3months">£10 / 3 months</option>
+                <option value="year">£40 / year</option>
+              </select>
+            </>
+          )}
+
+          <Button
+            onClick={handleFinish}
+            disabled={loading}
+            className="
+              w-full rounded-xl 
+              bg-gradient-to-r from-emerald-600 to-sky-500 
+              text-white hover:opacity-90
+            "
+          >
+            {loading ? "Submitting..." : "Finish Signup"}
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="w-full mt-2"
+            onClick={onClose}
+          >
             Cancel
           </Button>
-        </>
-      ) : (
-        <>
-          {/* Step 2 */}
-          <div className="flex items-center gap-2 mb-4">
-            <Button variant="ghost" size="sm" onClick={() => setStep(1)}>
-              <ArrowLeft size={16} />
-            </Button>
-            <h2 className="text-xl font-semibold">
-              {type === "individual"
-                ? "Individual Signup"
-                : type === "joinClub"
-                  ? "Join a Club"
-                  : "Create a Club"}
-            </h2>
-          </div>
-
-          <div className="space-y-3">
-              <Input
-                placeholder="Username"
-                value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })}
-              />
-            <Input
-              type="date"
-              value={form.dob}
-              onChange={(e) => setForm({ ...form, dob: e.target.value })}
-            />
-            <Input
-              placeholder="AGB Number (optional)"
-              value={form.agb_number}
-              onChange={(e) => setForm({ ...form, agb_number: e.target.value })}
-            />
-            <select
-              className="w-full rounded-md border p-2 bg-background"
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-            >
-              <option>Open</option>
-              <option>Women</option>
-            </select>
-            <select
-              className="w-full rounded-md border p-2 bg-background"
-              value={form.experience}
-              onChange={(e) => setForm({ ...form, experience: e.target.value })}
-            >
-              <option>Novice</option>
-              <option>Experienced</option>
-            </select>
-
-            {type === "joinClub" && (
-              <Input
-                placeholder="Club Code"
-                value={form.club_code}
-                onChange={(e) => setForm({ ...form, club_code: e.target.value })}
-              />
-            )}
-
-            {type === "createClub" && (
-              <>
-                <Input
-                  placeholder="Club Name"
-                  value={form.club_name}
-                  onChange={(e) => setForm({ ...form, club_name: e.target.value })}
-                />
-                <Input
-                  placeholder="Club Join Code"
-                  value={form.join_code}
-                  onChange={(e) => setForm({ ...form, join_code: e.target.value })}
-                />
-                <select
-                  className="w-full rounded-md border p-2 bg-background"
-                  value={form.subscription_tier}
-                  onChange={(e) =>
-                    setForm({ ...form, subscription_tier: e.target.value })
-                  }
-                >
-                  <option value="month">£5 / month</option>
-                  <option value="3months">£10 / 3 months</option>
-                  <option value="year">£40 / year</option>
-                </select>
-              </>
-            )}
-
-            <Button onClick={handleFinish} disabled={loading} className="w-full">
-              {loading ? "Submitting..." : "Finish Signup"}
-            </Button>
-          </div>
-
-          <Button variant="ghost" className="mt-3 w-full" onClick={onClose}>
-            Cancel
-          </Button>
-        </>
+        </div>
       )}
     </div>
   );

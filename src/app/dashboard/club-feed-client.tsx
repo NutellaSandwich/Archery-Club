@@ -23,6 +23,24 @@ import RoundNameSelect from "@/components/RoundNameSelect";
 import { getRoundMaxScore } from "@/lib/rounds";
 import { Button } from "@/components/ui/button";
 
+const GoldMedalIcon = () => (
+    <div className="w-7 h-7 rounded-full bg-yellow-400 border border-yellow-500 flex items-center justify-center shadow-md">
+        <Award className="w-4 h-4 text-yellow-900" />
+    </div>
+);
+
+const SilverMedalIcon = () => (
+    <div className="w-7 h-7 rounded-full bg-gray-300 border border-gray-400 flex items-center justify-center shadow-md">
+        <Award className="w-4 h-4 text-gray-700" />
+    </div>
+);
+
+const BronzeMedalIcon = () => (
+    <div className="w-7 h-7 rounded-full bg-amber-700 border border-amber-800 flex items-center justify-center shadow-md">
+        <Award className="w-4 h-4 text-amber-200" />
+    </div>
+);
+
 interface ClubFeedClientProps {
     userId: string;
     clubId: string | null;
@@ -70,6 +88,7 @@ type Post = {
     competition_name?: string | null;
     scoresheet_url?: string | null;
     spot_type?: string | null;
+    medal?: "gold" | "silver" | "bronze" | null;
 };
 
 type RawComment = {
@@ -97,7 +116,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
     const [confirmDeleteComment, setConfirmDeleteComment] = useState<string | null>(null);
     const [confirmDeleteReply, setConfirmDeleteReply] = useState<string | null>(null);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
-
+    
     const [editingPost, setEditingPost] = useState<{
         id: string;
         round_name: string;
@@ -251,6 +270,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
     competition_name,
     scoresheet_url,
     spot_type,
+    medal,
     profiles(id, username, avatar_url)
   `)
                 .eq("club_id", clubId)
@@ -651,39 +671,65 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
     return (
         <main className="w-full max-w-3xl mx-auto px-4 sm:px-6 space-y-6 pb-6 pt-3">
             {/* Top card */}
-            <section className="bg-[hsl(var(--card))] border border-[hsl(var(--border))]/40 rounded-2xl p-5 sm:p-6 shadow-sm text-center">
+            <section className="
+    rounded-2xl 
+    border border-border/40 
+    bg-muted/30 backdrop-blur-xl 
+    shadow-sm 
+    p-6 sm:p-7 
+    text-center
+">
                 <motion.h1
-                    className="text-xl sm:text-2xl font-semibold mb-4 flex items-center justify-center gap-2"
+                    className="
+            text-2xl sm:text-3xl font-semibold 
+            bg-gradient-to-r from-emerald-500 to-sky-500 
+            bg-clip-text text-transparent 
+            flex items-center justify-center gap-2
+        "
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    transition={{ duration: 0.4 }}
                 >
                     <motion.div
                         initial={{ rotate: -10 }}
                         animate={{ rotate: [0, -5, 0] }}
-                        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                        transition={{ repeat: Infinity, duration: 3 }}
                     >
-                        <BowArrow className="w-6 h-6 text-[hsl(var(--primary))]" />
+                        <BowArrow className="w-7 h-7" />
                     </motion.div>
                     Club Feed
                 </motion.h1>
 
-                <p className="text-xs text-muted-foreground mb-4 sm:mb-5">
-                    Share scores with your club, track PBs and celebrate records.
+                <p className="text-xs text-muted-foreground mt-3 mb-5">
+                    Share scores with your club, track personal bests and celebrate records.
                 </p>
 
-                {/* Button container */}
-                <div className="flex flex-col sm:flex-row sm:justify-center gap-3 w-full max-w-md mx-auto">
+                <div className="flex flex-col sm:flex-row justify-center gap-3 max-w-md mx-auto">
                     <button
                         onClick={() => router.push("/dashboard/new-score")}
-                        className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-xl px-6 py-3 text-sm sm:text-base font-medium hover:opacity-90 transition w-full sm:w-auto"
+                        className="
+                w-full sm:w-auto 
+                px-6 py-3 rounded-xl 
+                font-medium text-sm 
+                bg-gradient-to-r from-emerald-600 to-sky-500 
+                text-white 
+                hover:opacity-90 transition
+            "
                     >
                         Submit New Score
                     </button>
 
                     <button
                         onClick={() => router.push("/dashboard/club-records")}
-                        className="inline-flex items-center justify-center gap-2 bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] rounded-xl px-6 py-3 text-sm sm:text-base font-medium hover:opacity-90 transition w-full sm:w-auto"
+                        className="
+                w-full sm:w-auto 
+                px-6 py-3 rounded-xl 
+                font-medium text-sm 
+                inline-flex items-center justify-center gap-2
+                bg-muted/40 
+                border border-border/50 
+                hover:bg-muted/60 transition
+            "
                     >
                         <Trophy size={18} />
                         View Club Records
@@ -705,8 +751,22 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             y: p._deleting ? -10 : 0,
                         }}
                         transition={{ duration: 0.4 }}
-                        className="rounded-2xl bg-[hsl(var(--card))] border border-[hsl(var(--border))]/40 shadow-sm p-4 sm:p-6 mb-4 sm:mb-5 w-full"
+                        className="
+        relative
+        rounded-2xl 
+        border border-border/40 
+        bg-muted/20 backdrop-blur-sm 
+        shadow-sm hover:shadow-md hover:-translate-y-[1px]
+        transition 
+        p-4 sm:p-6 mb-4 sm:mb-5
+    "
                     >
+                        {/* Gradient Accent Line */}
+                        <div className="
+        absolute top-0 left-0 right-0 h-[3px]
+        bg-gradient-to-r from-emerald-500 to-sky-500 
+        rounded-t-2xl
+    "></div>
                         {/* Header */}
                         <div className="flex items-start justify-between mb-3 w-full gap-3">
                             <div className="flex flex-1 min-w-0 items-center gap-3">
@@ -762,11 +822,27 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                         </div>
 
                         {/* Score + tags */}
-                        <div className="flex flex-col items-center text-center border-y border-[hsl(var(--border))]/40 py-4 mb-3 space-y-4">
-                            <div className="flex flex-col items-center">
-                                <p className="font-bold text-3xl text-foreground leading-none">
-                                    {p.score}
-                                </p>
+                        <div className="
+    flex flex-col items-center text-center 
+    border-y border-[hsl(var(--border))]/40 
+    py-4 mb-3 space-y-4 
+    relative
+">
+                            {/* soft gradient glow */}
+                            <div className="
+        absolute inset-0 -z-10 
+        bg-gradient-to-b from-emerald-500/5 to-sky-500/5
+        opacity-70 rounded-xl blur-xl
+    "></div>                            <div className="flex flex-col items-center">
+                                <div className="flex items-center justify-center gap-2">
+                                    <p className="font-bold text-3xl text-foreground leading-none">
+                                        {p.score}
+                                    </p>
+
+                                    {p.medal === "gold" && <GoldMedalIcon />}
+                                    {p.medal === "silver" && <SilverMedalIcon />}
+                                    {p.medal === "bronze" && <BronzeMedalIcon />}
+                                </div>
                                 <p className="uppercase text-[9px] text-muted-foreground/60 tracking-[0.18em] mt-1">
                                     score
                                 </p>
@@ -897,12 +973,21 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                     <Link
                                         href={`/dashboard/club-records?round=${encodeURIComponent(p.round_name)}`}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="inline-flex items-center px-3 py-1.5 rounded-full w-full justify-center text-xs sm:text-sm
-                border border-[hsl(var(--border))]/60
-                bg-transparent text-[hsl(var(--primary))] font-medium
-                hover:bg-[hsl(var(--muted))]/30 hover:border-[hsl(var(--primary))]/60 hover:underline
-                transition cursor-pointer truncate"
-                                    >
+                                        className="
+    inline-flex items-center justify-center
+    w-full px-3 py-1.5 
+    rounded-full text-xs sm:text-sm font-medium
+    relative overflow-hidden
+    text-emerald-600 
+    transition
+    border border-transparent
+    bg-muted/20
+    before:absolute before:inset-0 before:-z-10 
+    before:rounded-full 
+    before:bg-gradient-to-r before:from-emerald-500/40 before:to-sky-500/40
+    hover:before:opacity-80
+"
+>
                                         {p.round_name}
                                     </Link>
                                     <p className="uppercase text-[9px] text-muted-foreground/50 tracking-[0.12em] mt-1">
@@ -929,8 +1014,10 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                         </div>
 
                         {/* Meta info */}
-                        <div className="mt-3 text-center space-y-1 px-1">
-                            {p.score_type === "Competition" && p.competition_name && (
+                        <div className="mt-3 text-center space-y-1 px-1 relative">
+                            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-24 h-[2px] 
+        bg-gradient-to-r from-emerald-500 to-sky-500 rounded-full opacity-60">
+                            </div>                            {p.score_type === "Competition" && p.competition_name && (
                                 <p className="text-sm font-medium text-[hsl(var(--primary))] flex items-center justify-center gap-1">
                                     <Trophy size={14} className="text-yellow-500" />
                                     {p.competition_name}
@@ -966,7 +1053,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
 
                         {/* Likes / comments summary */}
                         <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm w-full">
-                            <div className="flex gap-4 items-center relative overflow-hidden">
+                            <div className="flex gap-4 items-center relative overflow-visible">
                                 <AnimatePresence>
                                     {animatingLike === p.id && (
                                         <motion.div
@@ -1276,7 +1363,17 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             }}
                             className="mt-3 space-y-2 w-full"
                         >
-                            <div className="flex items-center gap-2 w-full rounded-xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/15 px-3 py-1.5">
+                            <div className="
+    flex items-center gap-2 
+    w-full rounded-xl 
+    border border-transparent
+    bg-muted/20 backdrop-blur-sm 
+    px-3 py-2
+    relative overflow-hidden
+    before:absolute before:inset-0 before:-z-10
+    before:rounded-xl 
+    before:bg-gradient-to-r before:from-emerald-500/20 before:to-sky-500/20
+">
                                 <input
                                     type="text"
                                     placeholder="Add a comment..."
@@ -1293,7 +1390,7 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                             submitComment(p.id);
                                         }
                                     }}
-                                    className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-sm"
+                                    className="flex-1 bg-transparent border-none focus:outline-none text-sm placeholder:text-muted-foreground/60"
                                 />
 
                                 {newComments[p.id] && (
@@ -1320,7 +1417,13 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                         setTimeout(() => setAnimatingComment(null), 400);
                                     }}
                                     disabled={!newComments[p.id]?.trim()}
-                                    className="rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] px-4 py-2 text-sm font-medium disabled:opacity-50"
+                                    className="
+    rounded-xl 
+    px-4 py-2 text-sm font-medium 
+    bg-gradient-to-r from-emerald-600 to-sky-500 
+    text-white 
+    hover:opacity-90 disabled:opacity-50
+"
                                 >
                                     Post
                                 </button>
@@ -1344,9 +1447,18 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             transition={{ duration: 0.25 }}
-                            className="bg-[hsl(var(--card))] rounded-xl shadow-lg border border-[hsl(var(--border))]/50 p-6 max-w-sm text-center w-[90%]"
+                            className="
+    bg-background/80 backdrop-blur-xl 
+    rounded-2xl shadow-xl 
+    border border-border/50 
+    p-6 max-w-sm text-center w-[90%]
+"
                         >
-                            <h2 className="text-lg font-semibold mb-2 text-[hsl(var(--foreground))]">
+                            <h2 className="
+    text-lg font-semibold mb-3 
+    bg-gradient-to-r from-red-500 to-rose-500 
+    bg-clip-text text-transparent
+">
                                 Delete this post?
                             </h2>
                             <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
@@ -1362,7 +1474,11 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                                 </button>
                                 <button
                                     onClick={() => handleDeletePost(confirmDelete)}
-                                    className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition"
+                                    className="
+    px-4 py-2 rounded-xl 
+    bg-gradient-to-r from-red-600 to-rose-500 
+    text-white hover:opacity-90 transition
+"
                                 >
                                     Delete
                                 </button>
@@ -1386,7 +1502,12 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             transition={{ duration: 0.25 }}
-                            className="bg-[hsl(var(--card))] rounded-xl shadow-lg border border-[hsl(var(--border))]/50 p-6 max-w-sm text-center w-[90%]"
+                            className="
+    bg-background/80 backdrop-blur-xl 
+    rounded-2xl shadow-xl 
+    border border-border/50 
+    p-6 max-w-sm text-center w-[90%]
+"
                         >
                             <h2 className="text-lg font-semibold mb-2">Delete this comment?</h2>
                             <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
@@ -1425,7 +1546,12 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             transition={{ duration: 0.25 }}
-                            className="bg-[hsl(var(--card))] rounded-xl shadow-lg border border-[hsl(var(--border))]/50 p-6 max-w-sm text-center w-[90%]"
+                            className="
+    bg-background/80 backdrop-blur-xl 
+    rounded-2xl shadow-xl 
+    border border-border/50 
+    p-6 max-w-sm text-center w-[90%]
+"
                         >
                             <h2 className="text-lg font-semibold mb-2">Delete this reply?</h2>
                             <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
@@ -1465,7 +1591,12 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="bg-[hsl(var(--card))] rounded-xl shadow-lg border border-[hsl(var(--border))]/50 p-5 w-full max-w-md"
+                            className="
+    bg-background/80 backdrop-blur-xl 
+    rounded-2xl shadow-xl 
+    border border-border/50 
+    p-5
+"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <h2 className="text-lg font-semibold mb-3">Edit Post</h2>

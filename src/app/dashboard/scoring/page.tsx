@@ -255,223 +255,233 @@ export default function ScoringSetupPage() {
     }
 
     return (
-        <main className="max-w-2xl mx-auto p-6 space-y-6">
-            <h1 className="text-2xl font-semibold text-center">Start Scoring</h1>
+        <main className="max-w-2xl mx-auto p-6 space-y-8">
 
-            {/* 🔤 Round search & select */}
-            <div className="relative">
-                <label className="block text-sm mb-1">Round</label>
-                <Input
-                    placeholder="Type round name..."
-                    value={searchTerm}
-                    onChange={(e) => {
-                        setIsTyping(true);
-                        setSpotDropdownOpen(false);   // prevents overlap with spot dropdown
-                        setSearchTerm(e.target.value);
-                        setSelectedRound(null);
-                    }}
-                    onFocus={() => {
-                        if (searchTerm) {
-                            setFilteredRounds(
-                                rounds.filter((r) =>
-                                    r.name.toLowerCase().includes(searchTerm.toLowerCase())
-                                )
-                            );
-                        }
-                    }}
-                />
-                {/* DROPDOWN */}
-                <AnimatePresence>
-                    {isTyping && filteredRounds.length > 0 && searchTerm && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -5 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute z-20 w-full bg-[hsl(var(--card))]
-                       border border-[hsl(var(--border))]/50
-                       rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg"
-                        >
-                            {filteredRounds.map((r) => (
-                                <button
-                                    key={r.name}
-                                    onClick={() => {
-                                        setClosingDropdown(true);
-                                        handleSelectRound(r);
-                                        setFilteredRounds([]);
-
-                                        setTimeout(() => {
-                                            setIsTyping(false);              // move AFTER closing animation
-                                            setSearchTerm(r.name);
-                                            setClosingDropdown(false);
-                                        }, 120);
-                                    }}
-                                    className={`block w-full text-left px-3 py-2 text-sm transition ${selectedRound?.name === r.name
-                                            ? "bg-[hsl(var(--muted))]/40 text-[hsl(var(--foreground))]"
-                                            : "hover:bg-[hsl(var(--muted))]/30 text-[hsl(var(--foreground))]"
-                                        }`}
-                                >
-                                    {r.name}
-                                </button>
-                            ))}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+            {/* PAGE TITLE */}
+            <div className="text-center space-y-1">
+                <h1 className="text-3xl font-semibold tracking-tight bg-gradient-to-r from-emerald-600 to-sky-500 bg-clip-text text-transparent">
+                    Start Scoring
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                    Choose your round and scoring method
+                </p>
             </div>
 
-            {selectedRound && (
-                <>
-                    {/* 🏹 Options */}
-                    <div className="space-y-3">
-                        {/* Animated Input Method Toggle */}
-                        <div className="">
-                            <label className="block text-sm mb-1">Input Method</label>
+            {/* SECTION CARD */}
+            <section className="rounded-3xl border border-border/70 bg-muted/40 px-5 py-6 shadow-sm space-y-6">
 
-                            <div
-                                className="relative flex items-center w-full bg-[hsl(var(--muted))]/20 
-                   border border-[hsl(var(--border))]/50 rounded-lg p-1"
-                            >
-                                {/* Background slider */}
+                {/* ROUND SELECT */}
+                <div className="space-y-3">
+                    <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-[0.12em]">
+                            Select Round
+                        </p>
+                        <p className="text-xs text-muted-foreground/80 max-w-md">
+                            Search and choose a round to begin scoring.
+                        </p>
+                    </div>
+
+                    <div className="relative">
+                        <Input
+                            placeholder="Search for a round..."
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setIsTyping(true);
+                                setSpotDropdownOpen(false);
+                                setSearchTerm(e.target.value);
+                                setSelectedRound(null);
+                            }}
+                            onFocus={() => {
+                                if (searchTerm) {
+                                    setFilteredRounds(
+                                        rounds.filter((r) =>
+                                            r.name.toLowerCase().includes(searchTerm.toLowerCase())
+                                        )
+                                    );
+                                }
+                            }}
+                            className="pl-9 h-10 rounded-xl border-border/60 bg-background/80 text-sm"
+                        />
+
+                        {/* Search Icon */}
+                        <BowArrow
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60"
+                            size={16}
+                        />
+
+                        {/* DROPDOWN */}
+                        <AnimatePresence>
+                            {isTyping && filteredRounds.length > 0 && searchTerm && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -6 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -6 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute z-20 w-full bg-background border border-border/60 rounded-xl mt-2 shadow-lg max-h-60 overflow-auto text-sm"
+                                >
+                                    {filteredRounds.map((r) => (
+                                        <button
+                                            key={r.name}
+                                            onClick={() => {
+                                                setClosingDropdown(true);
+                                                handleSelectRound(r);
+                                                setFilteredRounds([]);
+
+                                                setTimeout(() => {
+                                                    setIsTyping(false);
+                                                    setSearchTerm(r.name);
+                                                    setClosingDropdown(false);
+                                                }, 120);
+                                            }}
+                                            className={`block w-full text-left px-3 py-2 transition ${selectedRound?.name === r.name
+                                                    ? "bg-muted/70 text-primary font-medium"
+                                                    : "hover:bg-muted/50"
+                                                }`}
+                                        >
+                                            {r.name}
+                                        </button>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </div>
+
+                {selectedRound && (
+                    <>
+                        {/* INPUT METHOD TOGGLE */}
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-[0.12em]">
+                                    Input Method
+                                </p>
+                            </div>
+
+                            <div className="relative flex items-center w-full bg-muted/20 border border-border/50 rounded-xl p-1">
                                 <motion.div
                                     layout
-                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                    className="absolute top-1 bottom-1 w-1/2 bg-[hsl(var(--primary))]/20 
-                       rounded-md"
+                                    className="absolute top-1 bottom-1 w-1/2 bg-gradient-to-r from-emerald-500 to-sky-500/70 rounded-lg"
+                                    transition={{ type: "spring", stiffness: 260, damping: 30 }}
                                     animate={{
                                         left: useTargetFace ? "50%" : "0%",
                                     }}
                                 />
 
-                                {/* Arrow Values */}
                                 <button
+                                    className={`relative z-10 flex-1 py-2 text-sm font-medium transition ${!useTargetFace
+                                            ? "text-foreground"
+                                            : "text-muted-foreground"
+                                        }`}
                                     onClick={() => setUseTargetFace(false)}
-                                    className={`relative z-10 flex-1 py-2 text-sm font-medium transition
-                        ${!useTargetFace
-                                            ? "text-[hsl(var(--foreground))]"
-                                            : "text-[hsl(var(--muted-foreground))]"}`}
                                 >
                                     Arrow Values
                                 </button>
 
-                                {/* Target Face */}
                                 <button
+                                    className={`relative z-10 flex-1 py-2 text-sm font-medium transition ${useTargetFace
+                                            ? "text-foreground"
+                                            : "text-muted-foreground"
+                                        }`}
                                     onClick={() => setUseTargetFace(true)}
-                                    className={`relative z-10 flex-1 py-2 text-sm font-medium transition
-                        ${useTargetFace
-                                            ? "text-[hsl(var(--foreground))]"
-                                            : "text-[hsl(var(--muted-foreground))]"}`}
                                 >
                                     Target Face
                                 </button>
                             </div>
+
+                            {/* SPOT TYPE */}
+                            {selectedRound.supports_triple && (
+                                <div className="space-y-1">
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-[0.12em]">
+                                        Spot Type
+                                    </p>
+
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setSpotDropdownOpen((o) => !o)}
+                                            className="w-full flex justify-between items-center border border-border/50 bg-muted/20 rounded-xl px-3 py-2 text-sm"
+                                        >
+                                            {isTripleSpot ? "Triple Spot" : "Single Spot"}
+                                            <span className="text-muted-foreground">▾</span>
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {spotDropdownOpen && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: -5 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: -5 }}
+                                                    transition={{ duration: 0.15 }}
+                                                    className="absolute z-20 w-full bg-background border border-border/50 rounded-xl mt-2 shadow-lg overflow-hidden"
+                                                >
+                                                    <button
+                                                        className="block w-full px-3 py-2 text-left text-sm hover:bg-muted/40"
+                                                        onClick={() => {
+                                                            setIsTripleSpot(false);
+                                                            setSpotDropdownOpen(false);
+                                                        }}
+                                                    >
+                                                        Single Spot
+                                                    </button>
+                                                    <button
+                                                        className="block w-full px-3 py-2 text-left text-sm hover:bg-muted/40"
+                                                        onClick={() => {
+                                                            setIsTripleSpot(true);
+                                                            setSpotDropdownOpen(false);
+                                                        }}
+                                                    >
+                                                        Triple Spot
+                                                    </button>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {selectedRound.supports_triple && (
-                            <div>                                {/* Spot Type Styled Dropdown */}
-                                <div className="relative">
-                                    <label className="block text-sm mb-1">Spot Type</label>
+                        {/* SUMMARY */}
+                        <div className="bg-background/50 rounded-xl border border-border/40 p-4 mt-4 space-y-1 text-sm">
+                            <p>
+                                <span className="font-medium">Round:</span>{" "}
+                                {selectedRound.name}
+                            </p>
+                            <p>Total arrows: {selectedRound.total_arrows}</p>
+                            <p>Ends: {totalEnds}</p>
+                            <p>Arrows per end: {selectedRound.arrows_per_end}</p>
+                            <p>
+                                Spot Type:{" "}
+                                {isTripleSpot ? "Triple Spot" : "Single Spot"}
+                            </p>
+                            {userCategory && <p>Category: {userCategory}</p>}
+                            {userExperience && <p>Experience: {userExperience}</p>}
+                        </div>
 
-                                    {/* Trigger button */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setSpotDropdownOpen((o) => !o)}
-                                        className="w-full flex justify-between items-center border border-[hsl(var(--border))]/50 
-                   bg-[hsl(var(--muted))]/20 rounded-md px-3 py-2 text-left"
-                                    >
-                                        {isTripleSpot ? "Triple Spot" : "Single Spot"}
-                                        <span className="text-[hsl(var(--muted-foreground))]">▾</span>
-                                    </button>
+                        {/* START BUTTON */}
+                        <Button
+                            className="w-full mt-4 bg-gradient-to-r from-emerald-600 to-sky-500 text-white hover:opacity-90 rounded-xl py-3"
+                            onClick={handleStartScoring}
+                        >
+                            Start Scoring
+                        </Button>
+                    </>
+                )}
+            </section>
 
-                                    {/* Dropdown */}
-                                    <AnimatePresence>
-                                        {spotDropdownOpen && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: -5 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: -5 }}
-                                                transition={{ duration: 0.15 }}
-                                                className="absolute z-20 w-full mt-1 rounded-md 
-                           bg-[hsl(var(--card))] border border-[hsl(var(--border))]/50 
-                           shadow-lg overflow-hidden"
-                                            >
-                                                <button
-                                                    className={`block w-full px-3 py-2 text-left text-sm hover:bg-[hsl(var(--muted))]/30`}
-                                                    onClick={() => {
-                                                        setIsTripleSpot(false);
-                                                        setSpotDropdownOpen(false);
-                                                    }}
-                                                >
-                                                    Single Spot
-                                                </button>
-
-                                                <button
-                                                    className={`block w-full px-3 py-2 text-left text-sm hover:bg-[hsl(var(--muted))]/30`}
-                                                    onClick={() => {
-                                                        setIsTripleSpot(true);
-                                                        setSpotDropdownOpen(false);
-                                                    }}
-                                                >
-                                                    Triple Spot
-                                                </button>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Summary */}
-                    <div className="mt-4 text-sm text-muted-foreground space-y-1">
-                        <p>
-                            Round: <strong>{selectedRound.name}</strong>
-                        </p>
-                        <p>Total arrows: {selectedRound.total_arrows}</p>
-                        <p>Ends: {totalEnds}</p>
-                        <p>Arrows per end: {selectedRound.arrows_per_end}</p>
-                        <p>
-                            Spot Type:{" "}
-                            {selectedRound.supports_triple
-                                ? isTripleSpot
-                                    ? "Triple Spot"
-                                    : "Single Spot"
-                                : "Single Spot"}
-                        </p>
-                        {userCategory && <p>Category: {userCategory}</p>}
-                        {userExperience && <p>Experience: {userExperience}</p>}
-                    </div>
-
-                    <Button className="w-full mt-4" onClick={handleStartScoring}>
-                        Start Scoring
-                    </Button>
-                </>
-            )}
-
-           
+            {/* DIVIDER */}
             <div className="flex items-center my-10">
-                <div className="flex-1 h-px bg-[hsl(var(--border))]/60"></div>
-
-                <span className="px-4 text-sm font-medium text-[hsl(var(--muted-foreground))] 
-                    bg-[hsl(var(--card))] rounded-full shadow-sm border 
-                    border-[hsl(var(--border))]/40">
+                <div className="flex-1 h-px bg-border/60"></div>
+                <span className="px-4 text-sm font-medium text-muted-foreground bg-card rounded-full shadow-sm border border-border/40">
                     or
                 </span>
-
-                <div className="flex-1 h-px bg-[hsl(var(--border))]/60"></div>
+                <div className="flex-1 h-px bg-border/60"></div>
             </div>
 
+            {/* SUBMIT MANUAL SCORE */}
             <button
                 onClick={() => (window.location.href = "/dashboard/new-score")}
-                className="
-        bg-indigo-600 
-        hover:bg-indigo-700 
-        text-white 
-        rounded-lg px-6 py-3 font-medium 
-        shadow-sm transition w-full
-    "
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 text-white rounded-xl px-6 py-3 font-medium shadow-sm transition"
             >
                 Submit New Score
             </button>
         </main>
-    );
-}
+    );}

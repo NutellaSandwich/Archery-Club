@@ -154,19 +154,28 @@ export default function TrophiesPage() {
     return (
         <main className="max-w-4xl mx-auto p-6 space-y-6">
             <div className="flex items-center justify-between mb-4">
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Trophy className="text-yellow-500" size={28} /> Trophies
+                <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-3 
+    bg-gradient-to-r from-emerald-500 to-sky-500 bg-clip-text text-transparent">
+                    <Trophy size={28} className="text-yellow-400 drop-shadow" />
+                    Trophies
                 </h1>
             </div>
 
-            {/* 🏗️ Trophy Creation */}
-            <Card className="p-4 flex gap-3 items-center">
+            <Card className="
+    p-4 rounded-2xl border border-border/40 
+    bg-muted/30 backdrop-blur-md 
+    flex gap-3 items-center shadow-sm
+">
                 <Input
                     placeholder="New Trophy"
                     value={newTrophy}
                     onChange={(e) => setNewTrophy(e.target.value)}
+                    className="rounded-xl"
                 />
-                <Button onClick={handleCreate} className="flex items-center gap-2">
+                <Button
+                    onClick={handleCreate}
+                    className="bg-gradient-to-r from-emerald-600 to-sky-500 text-white rounded-xl px-4 hover:opacity-90"
+                >
                     <PlusCircle size={16} /> Create
                 </Button>
             </Card>
@@ -191,16 +200,22 @@ export default function TrophiesPage() {
                     return (
                         <Card
                             key={trophy.id}
-                            className="border border-[hsl(var(--border))]/40 rounded-xl shadow-sm hover:shadow-md transition"
+                            className="
+        rounded-2xl border border-border/40 
+        bg-muted/20 backdrop-blur-sm 
+        shadow-sm hover:shadow-md hover:-translate-y-[1px] transition
+    "
                         >
-                            <CardHeader className="flex justify-between items-center px-4 py-3 border-b">
+                            <CardHeader className="
+    px-4 py-3 border-b border-border/30 
+    flex justify-between items-center
+">
                                 <div className="flex items-center gap-3">
                                     <Trophy
                                         size={20}
-                                        className={`${assignedUser ? "text-yellow-500" : "text-muted-foreground"
-                                            } transition-colors`}
+                                        className={`${assignedUser ? "text-yellow-400" : "text-muted-foreground"} drop-shadow`}
                                     />
-                                    <h2 className="font-semibold">{trophy.name}</h2>
+                                    <h2 className="font-semibold tracking-tight">{trophy.name}</h2>
                                 </div>
                             </CardHeader>
 
@@ -209,9 +224,7 @@ export default function TrophiesPage() {
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                         <User size={14} />
                                         {assignedUser ? (
-                                            <span className="text-foreground font-medium">
-                                                {assignedUser}
-                                            </span>
+                                            <span className="text-foreground font-medium">{assignedUser}</span>
                                         ) : (
                                             <span>Club has it</span>
                                         )}
@@ -221,23 +234,23 @@ export default function TrophiesPage() {
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-red-500 h-8"
+                                            className="text-xs rounded-xl hover:bg-muted/40"
                                             onClick={() => handleAssign(trophy.id, null)}
                                         >
-                                            <X size={14} /> Clear
+                                            <X size={14} className="mr-1" /> Clear
                                         </Button>
+
                                         <Button
                                             variant="ghost"
-                                            size="sm"
-                                            className="flex items-center justify-center text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 h-8 w-8"
+                                            size="icon"
+                                            className="rounded-xl text-red-500 hover:bg-red-500/10"
                                             onClick={() => {
                                                 setTrophyToDelete(trophy.id);
                                                 setShowDeleteModal(true);
                                             }}
                                         >
-                                            <Trash2 size={14} />
+                                            <Trash2 size={15} />
                                         </Button>
-                                
                                     </div>
                                 </div>
 
@@ -251,37 +264,38 @@ export default function TrophiesPage() {
                                                 [trophy.id]: e.target.value,
                                             }))
                                         }
-                                        className="flex-1 text-sm"
+                                        className="flex-1 rounded-xl"
                                     />
 
                                     {filterText && (
-                                        <div className="absolute bg-[hsl(var(--popover))] border border-[hsl(var(--border))]/50 mt-10 rounded-md shadow-lg z-50 w-[200px] max-h-[180px] overflow-y-auto">
-                                            {filteredUsers.map((u) => (
-                                                <button
-                                                    key={u.id}
-                                                    onClick={() => {
-                                                        handleAssign(trophy.id, u.id);
-                                                        setSearch((prev) => ({
-                                                            ...prev,
-                                                            [trophy.id]: "",
-                                                        }));
-                                                    }}
-                                                    className="w-full text-left px-3 py-2 text-sm hover:bg-[hsl(var(--muted))]/30 transition"
-                                                >
-                                                    {u.username}
-                                                </button>
-                                            ))}
-                                            {filteredUsers.length === 0 && (
-                                                <p className="text-xs text-center text-muted-foreground p-2">
-                                                    No matches
-                                                </p>
+                                        <div className="
+        absolute left-0 top-full mt-2 w-[220px]
+        rounded-xl bg-popover/90 backdrop-blur-md
+        border border-border/40 shadow-lg z-50 
+        max-h-[200px] overflow-y-auto
+    ">
+                                            {filteredUsers.length > 0 ? (
+                                                filteredUsers.map((u) => (
+                                                    <button
+                                                        key={u.id}
+                                                        onClick={() => {
+                                                            handleAssign(trophy.id, u.id);
+                                                            setSearch((prev) => ({ ...prev, [trophy.id]: "" }));
+                                                        }}
+                                                        className="w-full px-3 py-2 text-sm rounded-lg text-left hover:bg-muted/40 transition"
+                                                    >
+                                                        {u.username}
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <p className="text-xs text-center text-muted-foreground p-2">No matches</p>
                                             )}
                                         </div>
                                     )}
                                 </div>
 
                                 {trophy.assigned_at && (
-                                    <p className="text-xs text-muted-foreground text-right">
+                                    <p className="text-xs text-muted-foreground/80 text-right italic">
                                         Assigned on{" "}
                                         {new Date(trophy.assigned_at).toLocaleDateString(
                                             "en-GB",
@@ -300,20 +314,34 @@ export default function TrophiesPage() {
             </div>
 
             {showDeleteModal && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-lg w-[90%] max-w-sm space-y-4">
-                        <h3 className="text-lg font-semibold text-center text-red-600">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="
+        bg-background/80 backdrop-blur-xl 
+        border border-border/50 
+        rounded-2xl shadow-xl 
+        p-6 w-[90%] max-w-sm space-y-4
+        animate-in fade-in zoom-in-95
+    ">
+                        <h3 className="text-lg font-semibold text-center 
+            bg-gradient-to-r from-red-500 to-rose-500 bg-clip-text text-transparent">
                             Delete Trophy
                         </h3>
+
                         <p className="text-sm text-muted-foreground text-center">
-                            Are you sure you want to delete this trophy? This action cannot be undone.
+                            Are you sure you want to delete this trophy? This cannot be undone.
                         </p>
+
                         <div className="flex justify-end gap-2">
-                            <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
+                            <Button
+                                variant="outline"
+                                className="rounded-xl"
+                                onClick={() => setShowDeleteModal(false)}>
                                 Cancel
                             </Button>
+
                             <Button
                                 variant="destructive"
+                                className="rounded-xl"
                                 onClick={async () => {
                                     if (trophyToDelete) await handleDelete(trophyToDelete);
                                     setShowDeleteModal(false);

@@ -208,14 +208,38 @@ export default function DashboardClient({ initialUser }: DashboardClientProps) {
     }
 
     return (
-        <main className="flex min-h-screen flex-col items-center justify-center space-y-6">
-            <h1 className="text-2xl font-bold">
+        <main className="min-h-screen flex flex-col items-center pt-10 pb-16 px-4 space-y-8 bg-background/50">
+            <h1
+                className="
+        text-3xl font-semibold 
+        bg-gradient-to-r from-emerald-500 to-sky-500 
+        bg-clip-text text-transparent 
+        text-center
+    "
+            >
                 Welcome back, {profile?.username || "Archer"}!
             </h1>
 
             {/* Profile Card */}
-            <div className="w-full max-w-md rounded-xl border border-[hsl(var(--border))]/50 bg-[hsl(var(--card))] p-6 text-sm shadow-sm space-y-3">
-                <h2 className="text-lg font-semibold mb-2">🎯 Your Profile</h2>
+            <div
+    className="
+        w-full max-w-md 
+        rounded-2xl 
+        border border-border/40 
+        bg-muted/30 backdrop-blur-xl 
+        p-6 shadow-sm 
+        space-y-4 text-sm
+    "
+>
+                <h2
+                    className="
+        text-xl font-semibold mb-3 
+        bg-gradient-to-r from-emerald-500 to-sky-500 
+        bg-clip-text text-transparent
+    "
+                >
+                    🎯 Your Profile
+                </h2>
 
                 {profile?.avatar_url ? (
                     <Image
@@ -223,7 +247,7 @@ export default function DashboardClient({ initialUser }: DashboardClientProps) {
                         alt="Avatar"
                         width={80}
                         height={80}
-                        className="rounded-full border border-[hsl(var(--border))] mx-auto mb-3 object-cover"
+                        className="rounded-full border border-border/40 shadow-sm mx-auto mb-3 object-cover"
                     />
                 ) : (
                     <div className="h-20 w-20 mx-auto rounded-full bg-gray-200 flex items-center justify-center text-gray-500 mb-3">
@@ -237,7 +261,13 @@ export default function DashboardClient({ initialUser }: DashboardClientProps) {
                         <select
                             value={form.club_id}
                             onChange={(e) => setForm({ ...form, club_id: e.target.value })}
-                            className="w-full rounded-md border border-[hsl(var(--border))] p-2"
+                            className="
+    w-full rounded-xl 
+    border border-border/40 
+    bg-muted/20 backdrop-blur-sm 
+    px-3 py-2 
+    text-sm
+"
                         >
                             <option value="">— No Club —</option>
                             {clubs.map((club) => (
@@ -251,14 +281,24 @@ export default function DashboardClient({ initialUser }: DashboardClientProps) {
                             <button
                                 onClick={handleSave}
                                 disabled={saving}
-                                className="flex-1 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] py-2 font-medium hover:opacity-90 disabled:opacity-50"
-                            >
+                                className="
+    flex-1 rounded-xl 
+    bg-gradient-to-r from-emerald-600 to-sky-500 
+    text-white 
+    py-2 font-medium 
+    hover:opacity-90 transition
+"                            >
                                 {saving ? "Saving..." : "Save"}
                             </button>
                             <button
                                 onClick={() => setEditing(false)}
-                                className="flex-1 rounded-md border border-[hsl(var(--border))] py-2 font-medium hover:bg-[hsl(var(--muted))]/40"
-                            >
+                                className="
+    flex-1 rounded-xl 
+    border border-border/40 
+    bg-muted/20 backdrop-blur-sm 
+    py-2 font-medium 
+    hover:bg-muted/40 transition
+"                            >
                                 Cancel
                             </button>
                         </div>
@@ -286,8 +326,13 @@ export default function DashboardClient({ initialUser }: DashboardClientProps) {
 
                         <button
                             onClick={() => setEditing(true)}
-                            className="mt-3 w-full rounded-md border border-[hsl(var(--border))] py-2 font-medium hover:bg-[hsl(var(--muted))]/40"
-                        >
+                                className="
+    mt-3 w-full rounded-xl 
+    border border-border/40 
+    bg-muted/20 backdrop-blur-sm 
+    py-2 font-medium 
+    hover:bg-muted/40 transition
+"                        >
                             Edit Profile
                         </button>
                     </>
@@ -296,8 +341,16 @@ export default function DashboardClient({ initialUser }: DashboardClientProps) {
 
             {/* Club Info Card */}
             {clubInfo && (
-                <div className="w-full max-w-md rounded-xl border border-[hsl(var(--border))]/50 bg-[hsl(var(--secondary))]/10 p-5 text-sm shadow-sm space-y-2">
-                    <h2 className="text-lg font-semibold">🏹 {clubInfo.name}</h2>
+                <div
+                    className="
+        w-full max-w-md 
+        rounded-2xl 
+        border border-border/40 
+        bg-muted/25 backdrop-blur-xl 
+        p-5 shadow-sm 
+        space-y-3 text-sm
+    "
+                >                    <h2 className="text-lg font-semibold">🏹 {clubInfo.name}</h2>
                     {clubInfo.location && <p>📍 {clubInfo.location}</p>}
                     {clubInfo.description && <p>{clubInfo.description}</p>}
                     <p>
@@ -309,8 +362,14 @@ export default function DashboardClient({ initialUser }: DashboardClientProps) {
             <button
                 onClick={handleLogout}
                 disabled={signingOut}
-                className="rounded-md bg-[hsl(var(--primary))] px-4 py-2 text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-all disabled:opacity-60"
-            >
+                className="
+    rounded-xl 
+    bg-gradient-to-r from-emerald-600 to-sky-500 
+    text-white 
+    px-5 py-2 
+    font-medium 
+    hover:opacity-90 transition
+"            >
                 {signingOut ? "Signing out..." : "Sign Out"}
             </button>
         </main>

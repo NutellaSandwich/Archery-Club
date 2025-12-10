@@ -5,7 +5,24 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { toast } from "sonner";
 import confettiLib from "canvas-confetti";
-import { Target } from "lucide-react";
+import { Target, Award } from "lucide-react";
+const GoldMedalIcon = () => (
+    <div className="w-7 h-7 rounded-full bg-yellow-400 border border-yellow-500 flex items-center justify-center shadow-md">
+        <Award className="w-4 h-4 text-yellow-900" />
+    </div>
+);
+
+const SilverMedalIcon = () => (
+    <div className="w-7 h-7 rounded-full bg-gray-300 border border-gray-400 flex items-center justify-center shadow-md">
+        <Award className="w-4 h-4 text-gray-700" />
+    </div>
+);
+
+const BronzeMedalIcon = () => (
+    <div className="w-7 h-7 rounded-full bg-amber-700 border border-amber-800 flex items-center justify-center shadow-md">
+        <Award className="w-4 h-4 text-amber-200" />
+    </div>
+);
 
 function StyledSelect({
     value,
@@ -23,7 +40,12 @@ function StyledSelect({
             <button
                 type="button"
                 onClick={() => setOpen(!open)}
-                className="w-full flex justify-between items-center rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--muted))]/20 px-3 py-2 text-left hover:bg-[hsl(var(--muted))]/30 transition"
+                className="
+    w-full flex justify-between items-center rounded-md px-3 py-2 text-left
+    border border-border/40 bg-muted/30 
+    hover:bg-muted/40 transition shadow-sm
+    group relative overflow-hidden
+"
             >
                 <span>{value || "Select..."}</span>
                 <svg
@@ -65,6 +87,7 @@ function RoundNameSelect({ value, onChange }: { value: string; onChange?: (val: 
     const [isValid, setIsValid] = useState(true);
     const [rounds, setRounds] = useState<string[]>([]);
     const supabase = useMemo(() => supabaseBrowser(), []);
+    
 
     useEffect(() => {
         async function loadRounds() {
@@ -127,13 +150,15 @@ function RoundNameSelect({ value, onChange }: { value: string; onChange?: (val: 
                 }}
                 onFocus={() => setShowList(true)}
                 onBlur={handleBlur}
-                className={`w-full rounded-md border px-3 py-2 bg-[hsl(var(--muted))]/20 ${isValid
-                    ? "border-[hsl(var(--border))]/40"
-                    : "border-red-500 focus:border-red-500"
-                    }`}
+                className={`w-full h-10 px-3 rounded-xl border text-sm
+                bg-background/80 border-border/60
+                focus:outline-none focus:ring-1 focus:ring-emerald-400
+                ${isValid ? "" : "border-red-500 ring-red-400"}
+            `}
             />
             {showList && filteredRounds.length > 0 && (
-                <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--card))] shadow-sm">
+                <ul className="absolute z-20 mt-2 w-full max-h-48 overflow-y-auto 
+                bg-background border border-border/60 rounded-xl shadow-lg text-sm">
                     {filteredRounds.map((round) => (
                         <li
                             key={round}
@@ -236,6 +261,73 @@ export const ROUND_MAX_SCORES: Record<string, number> = {
     "Vegas300": 300,
 };
 
+function ArcherSearchSelect({
+    archers,
+    value,
+    onChange,
+}: {
+    archers: { id: string; username: string; avatar_url?: string | null }[];
+    value: string;
+    onChange: (val: string) => void;
+}) {
+    const [query, setQuery] = useState("");
+    const [open, setOpen] = useState(false);
+
+    const selected = archers.find(a => a.id === value);
+
+    const filtered = useMemo(() => {
+        if (!query.trim()) return archers;
+        return archers.filter(a =>
+            a.username.toLowerCase().includes(query.toLowerCase())
+        );
+    }, [query, archers]);
+
+    return (
+        <div className="relative">
+            <input
+                type="text"
+                value={query || selected?.username || ""}
+                placeholder="Start typing a name..."
+                onChange={e => {
+                    setQuery(e.target.value);
+                    setOpen(true);
+                }}
+                onFocus={() => setOpen(true)}
+                onBlur={() => setTimeout(() => setOpen(false), 150)}
+                className="w-full rounded-md border px-3 py-2 bg-[hsl(var(--muted))]/20 border-[hsl(var(--border))]/40"
+            />
+
+            {open && filtered.length > 0 && (
+                <ul className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-md border border-[hsl(var(--border))]/40 bg-[hsl(var(--card))] shadow">
+                    {filtered.map(archer => (
+                        <li
+                            key={archer.id}
+                            onMouseDown={() => {
+                                onChange(archer.id);
+                                setQuery(archer.username);
+                                setOpen(false);
+                            }}
+                            className="px-3 py-2 flex items-center gap-2 hover:bg-[hsl(var(--muted))]/40 cursor-pointer"
+                        >
+                            {archer.avatar_url ? (
+                                <img
+                                    src={archer.avatar_url}
+                                    className="w-6 h-6 rounded-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-[10px] text-gray-600">
+                                    ?
+                                </div>
+                            )}
+                            {archer.username}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+}
+
 export default function NewScorePage() {
     const router = useRouter();
     const supabase = useMemo(() => supabaseBrowser(), []);
@@ -252,6 +344,7 @@ export default function NewScorePage() {
         score_type: "Informal Practice",
         competition_name: "",
         scoresheet: null as File | null,
+        medal: null as "gold" | "silver" | "bronze" | null,
     });
 
     const [roundData, setRoundData] = useState<
@@ -261,6 +354,10 @@ export default function NewScorePage() {
     const [roundMaxScore, setRoundMaxScore] = useState<number | null>(null);
     const [showCompetitionModal, setShowCompetitionModal] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [submitForOther, setSubmitForOther] = useState(false);
+    const [archers, setArchers] = useState<any[]>([]);
+    const [selectedArcherId, setSelectedArcherId] = useState<string>("");
 
     const isFormalOrCompetition =
         form.score_type === "Formal Practice" || form.score_type === "Competition";
@@ -316,6 +413,39 @@ export default function NewScorePage() {
         }
 
         loadRoundData();
+    }, [supabase]);
+
+    useEffect(() => {
+        async function loadAdminAndArchers() {
+            const {
+                data: { session },
+            } = await supabase.auth.getSession();
+
+            const user = session?.user;
+            if (!user) return;
+
+            // get role
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("role, club_id")
+                .eq("id", user.id)
+                .single();
+
+            if (profile?.role === "admin") {
+                setIsAdmin(true);
+
+                // load all archers in club
+                const { data: people } = await supabase
+                    .from("profiles")
+                    .select("id, username, avatar_url")
+                    .eq("club_id", profile.club_id)
+                    .order("username");
+
+                setArchers(people || []);
+            }
+        }
+
+        loadAdminAndArchers();
     }, [supabase]);
 
     // ✅ Update available spot types & max score when round changes
@@ -400,10 +530,16 @@ export default function NewScorePage() {
                 setSubmitting(false);
                 return;
             }
+            // Require a valid round name
+            if (!form.round_name || form.round_name.trim() === "") {
+                toast.error("Please select a round from the list.");
+                setSubmitting(false);
+                return;
+            }
 
-            // ✅ Require scoresheet for formal/competition
-            if (isFormalOrCompetition && !form.scoresheet) {
-                toast.error("A scoresheet is required for this type of score.");
+            // Require scoresheet ONLY for Formal Practice
+            if (form.score_type === "Formal Practice" && !form.scoresheet && !submitForOther) {
+                toast.error("A scoresheet is required for a Formal Practice score.");
                 setSubmitting(false);
                 return;
             }
@@ -456,7 +592,7 @@ export default function NewScorePage() {
                 .from("club_posts")
                 .insert([
                     {
-                        user_id: user.id,
+                        user_id: submitForOther && selectedArcherId ? selectedArcherId : user.id,
                         club_id: profile.club_id,
                         round_name: form.round_name.trim(),
                         bow_type: form.bow_type,
@@ -470,6 +606,7 @@ export default function NewScorePage() {
                         scoresheet_url,
                         score_date: form.score_date,
                         is_personal_best: isPersonalBest, // 🟢 New field
+                        medal: form.medal,
                     },
                 ])
                 .select("is_club_record, is_personal_best");
@@ -491,12 +628,61 @@ export default function NewScorePage() {
     }
 
     return (
-        <main className="max-w-md mx-auto mt-12 p-6 rounded-2xl border border-[hsl(var(--border))]/40 bg-[hsl(var(--card))] shadow-sm space-y-6">
-            <h1 className="text-2xl font-semibold text-center flex items-center justify-center gap-2">
-                <Target className="w-6 h-6 text-[hsl(var(--primary))]" />
-                Submit a Score
-            </h1>
+        <main
+            className="
+        max-w-2xl mx-auto mt-12 p-8 space-y-8
+        rounded-3xl border border-border/50 
+        bg-muted/40 backdrop-blur-xl
+        shadow-sm relative group overflow-hidden
+    "
+        >
+    {/* Glow layer */}
+    <div
+        className="
+            absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-30
+            bg-gradient-to-br from-emerald-500/10 via-sky-500/10 to-emerald-500/10
+            blur-2xl transition-opacity duration-300
+        "
+    ></div>
+            <div className="text-center space-y-1">
+                <h1 className="text-3xl font-semibold tracking-tight 
+        bg-gradient-to-r from-emerald-600 to-sky-500 
+        bg-clip-text text-transparent flex items-center justify-center gap-2">
+                    <Target className="w-7 h-7" />
+                    Submit a Score
+                </h1>
+
+                <p className="text-sm text-muted-foreground">
+                    Record a new practice or competition score
+                </p>
+
+                <div className="w-48 h-[2px] mx-auto mt-3 
+        bg-gradient-to-r from-emerald-500/30 via-sky-500/30 to-emerald-500/30 rounded-full"></div>
+            </div>
+            <section className="rounded-3xl border border-border/60 bg-background/40 px-6 py-6 shadow-sm space-y-6">
             <form onSubmit={handleSubmit} className="space-y-4">
+
+                {isAdmin && (
+                    <div className="border p-3 rounded-md bg-[hsl(var(--muted))]/20 space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-medium">
+                            <input
+                                type="checkbox"
+                                checked={submitForOther}
+                                onChange={(e) => setSubmitForOther(e.target.checked)}
+                            />
+                            Submit score for another archer
+                        </label>
+
+                        {submitForOther && (
+                            <ArcherSearchSelect
+                                archers={archers}
+                                value={selectedArcherId}
+                                onChange={setSelectedArcherId}
+                            />
+                        )}
+                    </div>
+                )}
+
                 {/* Round */}
                 <div>
                     <label className="block text-sm mb-1">Round</label>
@@ -513,8 +699,11 @@ export default function NewScorePage() {
                         <select
                             value={form.spot_type}
                             onChange={(e) => setForm({ ...form, spot_type: e.target.value })}
-                            className="w-full rounded-md border border-[hsl(var(--border))]/40 px-3 py-2 bg-[hsl(var(--muted))]/20"
-                        >
+                                className="
+    w-full rounded-xl px-3 py-2 text-sm
+    border border-border/60 bg-muted/20
+    hover:bg-muted/30 focus:ring-1 focus:ring-emerald-400 transition
+">
                             <option value="">Select Spot Type</option>
                             {availableSpotTypes.map((s) => (
                                 <option key={s} value={s}>
@@ -558,7 +747,11 @@ export default function NewScorePage() {
                         type="date"
                         value={form.score_date}
                         onChange={(e) => setForm({ ...form, score_date: e.target.value })}
-                        className="w-full rounded-md border border-[hsl(var(--border))]/40 px-3 py-2 bg-[hsl(var(--muted))]/20"
+                            className="
+    w-full rounded-xl px-3 py-2 text-sm
+    border border-border/60 bg-muted/20
+    hover:bg-muted/30 focus:ring-1 focus:ring-emerald-400 transition
+"
                     />
                 </div>
 
@@ -578,7 +771,11 @@ export default function NewScorePage() {
                                 }
                                 setForm({ ...form, score: val });
                             }}
-                            className="w-full rounded-md border border-[hsl(var(--border))]/40 px-3 py-2 bg-[hsl(var(--muted))]/20"
+                                className="
+    w-full rounded-xl px-3 py-2 text-sm
+    border border-border/60 bg-muted/20
+    hover:bg-muted/30 focus:ring-1 focus:ring-emerald-400 transition
+"
                             required
                             min="0"
                             max={roundMaxScore || undefined}
@@ -599,11 +796,67 @@ export default function NewScorePage() {
                         min="0"
                     />
                 </div>
+                {form.score_type === "Competition" && (
+                    <div className="space-y-2">
+                        <label className="block text-sm font-medium">Medal Achieved (optional)</label>
+
+                        <div className="flex items-center gap-3">
+                            {/* GOLD */}
+                            <button
+                                type="button"
+                                onClick={() => setForm({ ...form, medal: "gold" })}
+                                className={`
+    p-1.5 rounded-lg border transition shadow-sm
+    ${form.medal === "gold"
+                                        ? "border-yellow-500 bg-yellow-500/20"
+                                        : "border-border/40 hover:bg-muted/40"
+                                    }
+`}
+                            >
+                                <GoldMedalIcon />
+                            </button>
+
+                            {/* SILVER */}
+                            <button
+                                type="button"
+                                onClick={() => setForm({ ...form, medal: "silver" })}
+                                className={`p-1.5 rounded-md border transition ${form.medal === "silver"
+                                    ? "border-gray-400 bg-gray-400/20"
+                                    : "border-[hsl(var(--border))]/40"
+                                    }`}
+                            >
+                                <SilverMedalIcon />
+                            </button>
+
+                            {/* BRONZE */}
+                            <button
+                                type="button"
+                                onClick={() => setForm({ ...form, medal: "bronze" })}
+                                className={`p-1.5 rounded-md border transition ${form.medal === "bronze"
+                                    ? "border-amber-700 bg-amber-700/20"
+                                    : "border-[hsl(var(--border))]/40"
+                                    }`}
+                            >
+                                <BronzeMedalIcon />
+                            </button>
+
+                            {form.medal && (
+                                <button
+                                    type="button"
+                                    onClick={() => setForm({ ...form, medal: null })}
+                                    className="text-xs text-red-500 underline ml-2"
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Scoresheet Upload */}
                 <div>
                     <label className="block text-sm mb-1">
-                        Scoresheet {isFormalOrCompetition ? "(required)" : "(optional)"}
+                        Scoresheet {form.score_type === "Formal Practice" ? "(required)" : "(optional)"}
                     </label>
                     <input
                         type="file"
@@ -618,33 +871,35 @@ export default function NewScorePage() {
                 <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] py-2 font-medium hover:opacity-90 transition disabled:opacity-60"
-                >
+                        className="
+    w-full mt-4 
+    bg-gradient-to-r from-emerald-600 to-sky-500 
+    text-white rounded-xl py-3 font-medium 
+    hover:opacity-90 transition shadow-sm disabled:opacity-60
+"                >
                     {submitting ? "Submitting..." : "Submit Score"}
                 </button>
             </form>
+            </section>
 
             <div className="flex items-center my-10">
-                <div className="flex-1 h-px bg-[hsl(var(--border))]/60"></div>
+                <div className="flex-1 h-px bg-border/60"></div>
 
-                <span className="px-4 text-sm font-medium text-[hsl(var(--muted-foreground))] 
-                    bg-[hsl(var(--card))] rounded-full shadow-sm border 
-                    border-[hsl(var(--border))]/40">
+                <span className="px-4 text-sm font-medium text-muted-foreground 
+        bg-card rounded-full shadow-sm border border-border/40">
                     or
                 </span>
 
-                <div className="flex-1 h-px bg-[hsl(var(--border))]/60"></div>
+                <div className="flex-1 h-px bg-border/60"></div>
             </div>
 
             <button
                 onClick={() => router.push("/dashboard/scoring")}
                 className="
-                    bg-indigo-600 
-                    hover:bg-indigo-700 
-                    text-white 
-                    rounded-lg px-6 py-3 font-medium 
-                    shadow-sm transition w-full
-                "
+        w-full bg-gradient-to-r from-indigo-600 to-purple-600 
+        hover:opacity-90 text-white rounded-xl px-6 py-3 
+        font-medium shadow-sm transition
+    "
             >
                 Start Scoring
             </button>
@@ -656,11 +911,17 @@ export default function NewScorePage() {
                 >
                     <div
                         onClick={(e) => e.stopPropagation()}
-                        className="rounded-xl p-6 shadow-xl w-80 
-                       bg-[hsl(var(--card))] 
-                       border border-[hsl(var(--border))]/40
-                       text-[hsl(var(--foreground))]"
+                        className="
+        relative rounded-xl p-6 w-80
+        bg-[hsl(var(--card))] border border-border/40 shadow-xl 
+        overflow-hidden group
+    "
                     >
+                        <div className="
+        absolute inset-0 opacity-20 pointer-events-none
+        bg-gradient-to-br from-emerald-500/20 via-sky-500/20 to-emerald-500/20
+        blur-2xl
+    "></div>
                         <h2 className="text-lg font-semibold mb-2">Competition Name</h2>
 
                         <input
@@ -685,6 +946,8 @@ export default function NewScorePage() {
                     </div>
                 </div>
             )}
+
+            
         </main>
     );
 }
