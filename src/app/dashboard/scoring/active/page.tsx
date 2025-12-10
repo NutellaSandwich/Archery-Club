@@ -61,7 +61,7 @@ export default function ActiveScoringPage() {
 
     const suppressNextClick = useRef(false);
 
-    // 🟢 FIX 2: Ref for requestAnimationFrame to throttle movement
+    // 🟢 Ref for requestAnimationFrame to throttle movement
     const animationFrameRef = useRef<number | null>(null);
 
     // 🔹 Load config from session
@@ -295,35 +295,32 @@ export default function ActiveScoringPage() {
             window.clearTimeout(holdTimeoutRef.current);
         }
 
-        // 1. 🟢 FIX 1: Restore 50ms hold detection to ignore quick taps (ghost zoom fix)
-        holdTimeoutRef.current = window.setTimeout(() => {
+        // 1. Hold detection time (50ms)
+        holdTimeoutRef.current = window.setTimeout(async () => {
             if (!isPointerDown.current) return;
 
             // Hold was successful, now activate zoom and track it
             didZoomOccur.current = true;
             setZoomActive(true); // Immediate UI update for responsiveness
-            updateCrosshair(lastPointerPos.current.x, lastPointerPos.current.y); // Set initial visible position
+            // updateCrosshair was already called in moveZoom during the 50ms, so it's already in the right place.
 
-            // 2. PERFORMANCE FIX: Delay the expensive html2canvas operation
-            // This ensures the zoom circle appears instantly, preventing lag
-            window.setTimeout(async () => {
-                const container = document.getElementById("live-target-container");
-                if (container) {
-                    const canvas = await html2canvas(container, {
-                        backgroundColor: null,
-                        scale: 1.2, // slightly lower for speed
-                        logging: false,
-                    });
-                    setTargetSnapshot(canvas);
-                }
-            }, 50); // <-- 50ms delay for canvas rendering (after 50ms hold)
-
-        }, 50); // <-- CHANGED from 10 to 50 for tap detection
+            // 2. 🟢 FIX 1: Trigger html2canvas immediately on hold detection (no extra delay)
+            // This reduces the time the magnifier is visible but blank.
+            const container = document.getElementById("live-target-container");
+            if (container) {
+                const canvas = await html2canvas(container, {
+                    backgroundColor: null,
+                    scale: 1.2, // slightly lower for speed
+                    logging: false,
+                });
+                setTargetSnapshot(canvas);
+            }
+        }, 50);
     };
 
     const moveZoom = (e: PointerEvent) => {
-        // Only run if pointer is down and zoom is active (meaning hold was registered)
-        if (!isPointerDown.current || !zoomActive) return;
+        // 🟢 FIX 2: Check only if pointer is down. We track position even if zoomActive is false.
+        if (!isPointerDown.current) return;
 
         const clientX =
             "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
@@ -332,7 +329,7 @@ export default function ActiveScoringPage() {
 
         lastPointerPos.current = { x: clientX, y: clientY };
 
-        // 🟢 FIX 2: Throttle position updates using requestAnimationFrame for smooth movement
+        // Throttle position updates using requestAnimationFrame for smooth movement
         if (animationFrameRef.current) {
             window.cancelAnimationFrame(animationFrameRef.current);
         }
@@ -381,7 +378,7 @@ export default function ActiveScoringPage() {
             }, 0);
         }
 
-        // 🟢 FIX 2: Clear animation frame on end
+        // Clear animation frame on end
         if (animationFrameRef.current !== null) {
             window.cancelAnimationFrame(animationFrameRef.current);
             animationFrameRef.current = null;
@@ -405,6 +402,7 @@ export default function ActiveScoringPage() {
         const relX = x - rect.left;
         const relY = y - rect.top;
 
+        // Set the position state, this is what the magnifier uses for placement
         setZoomPos({
             x: relX,
             y: relY,
