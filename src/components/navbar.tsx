@@ -12,14 +12,13 @@ import {
     LogOut,
     User,
     Target,
-    Trophy,
     LayoutDashboard,
     ClipboardList,
     Award,
     UserCircle2,
     BowArrow,
     Menu,
-    Shield
+    Shield,
 } from "lucide-react";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
@@ -29,6 +28,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/components/AuthProvider";
 import type { Session } from "@supabase/supabase-js";
+import type { Variants } from "framer-motion";
 
 type UserProfile = {
     id: string;
@@ -50,7 +50,7 @@ export default function Navbar() {
     const pathname = usePathname();
     const { theme, systemTheme, setTheme } = useTheme();
     const supabase = useMemo(() => supabaseBrowser(), []);
-    const { session } = useAuth(); // ✅ get session from context
+    const { session } = useAuth();
 
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [mounted, setMounted] = useState(false);
@@ -78,10 +78,9 @@ export default function Navbar() {
     useEffect(() => setMounted(true), []);
 
     /* -----------------------------------------
-     LOAD PROFILE WHEN SESSION CHANGES
-  ------------------------------------------ */
+       LOAD PROFILE WHEN SESSION CHANGES
+    ------------------------------------------ */
     useEffect(() => {
-        // no session → no profile
         if (!session) {
             setProfile(null);
             setLoading(false);
@@ -118,13 +117,13 @@ export default function Navbar() {
             setLoading(false);
         }
 
-        loadProfile(session); // ✅ session is guaranteed non-null here
+        loadProfile(session);
     }, [session, supabase]);
 
     /* -----------------------------------------
        NAV ITEMS
     ------------------------------------------ */
-    const navItems = useMemo(() => {
+    const navItems: NavItem[] = useMemo(() => {
         if (!profile) return [];
 
         return [
@@ -133,38 +132,33 @@ export default function Navbar() {
             { href: "/dashboard/club-records", label: "Club Records", icon: Award },
             { href: "/dashboard/coaching", label: "Coaching", icon: Target },
             { href: "/dashboard/scoring", label: "Scoring", icon: BowArrow },
-
-            // ⭐ NEW: single admin tab
             ...(profile.role === "admin"
-                ? [
-                    { href: "/dashboard/admin", label: "Admin", icon: Shield }
-                ]
+                ? [{ href: "/dashboard/admin", label: "Admin", icon: Shield }]
                 : []),
-
             { href: "/profile", label: "Profile", icon: UserCircle2 },
         ];
     }, [profile]);
 
     /* -----------------------------------------
        LAYOUT CALCULATION
+       (avoids overlap with search / right section)
     ------------------------------------------ */
     function updateLayout() {
         if (!navbarRef.current || !measureRef.current || !rightRef.current) return;
 
         const totalWidth = navbarRef.current.clientWidth;
-        // add permanent 36px reserved for overflow button
-        const rightWidth = rightRef.current.clientWidth + 24 + 36;
+
+        // Reserve space for right side + dropdown button + a small safety gap
+        const rightWidth = rightRef.current.clientWidth + 36 + 32;
         const available = totalWidth - rightWidth;
 
-        const children = Array.from(
-            measureRef.current.children
-        ) as HTMLElement[];
+        const children = Array.from(measureRef.current.children) as HTMLElement[];
 
         let used = 0;
         let count = 0;
 
         for (const el of children) {
-            used += el.clientWidth + 12;
+            used += el.clientWidth + 12; // nav pill + gap
             if (used <= available) count++;
             else break;
         }
@@ -239,8 +233,9 @@ export default function Navbar() {
         <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
                 <button
+                    aria-label="More navigation items"
                     className="w-9 h-9 flex items-center justify-center rounded-full border border-border/60 
-               bg-muted/40 hover:bg-muted/70 shadow-sm text-muted-foreground hover:text-foreground"
+                               bg-muted/40 hover:bg-muted/70 shadow-sm text-muted-foreground hover:text-foreground"
                 >
                     <Menu size={18} />
                 </button>
@@ -276,6 +271,7 @@ export default function Navbar() {
         return (
             <button
                 onClick={() => setTheme(isDark ? "light" : "dark")}
+                aria-label="Toggle theme"
                 className="inline-flex items-center justify-center rounded-xl border border-border/60 
                            bg-muted/40 px-2 py-1.5 hover:bg-muted/70 shadow-sm transition"
             >
@@ -293,11 +289,18 @@ export default function Navbar() {
     ------------------------------------------ */
     async function logout() {
         await supabase.auth.signOut({ scope: "local" });
-        localStorage.clear();
-        sessionStorage.clear();
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+        } catch {
+            // ignore if not available
+        }
         router.push("/");
     }
 
+    /* -----------------------------------------
+       MOBILE FULLSCREEN MENU
+    ------------------------------------------ */
     function MobileFullScreenMenu({ items }: { items: NavItem[] }) {
         const [open, setOpen] = useState(false);
         const [mounted, setMounted] = useState(false);
@@ -311,20 +314,29 @@ export default function Navbar() {
             router.push("/");
         }
 
-        const containerVariants = {
+        const containerVariants: Variants = {
             hidden: { opacity: 0 },
             show: {
                 opacity: 1,
-                transition: { staggerChildren: 0.05, delayChildren: 0.1 }
+                transition: {
+                    staggerChildren: 0.05,
+                    delayChildren: 0.15
+                }
             }
         };
 
-        const itemVariants = {
-            hidden: { opacity: 0, y: 6 },
+        const itemVariants: Variants = {
+            hidden: {
+                opacity: 0,
+                y: 10
+            },
             show: {
                 opacity: 1,
                 y: 0,
-                transition: { duration: 0.18 }
+                transition: {
+                    duration: 0.25,
+                    ease: "easeOut"
+                }
             }
         };
 
@@ -346,106 +358,142 @@ export default function Navbar() {
                                     {/* BACKDROP */}
                                     <motion.div
                                         initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
+                                        animate={{ opacity: 0.9 }}
                                         exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.2 }}
+                                        transition={{ duration: 0.25 }}
                                         className="
-                                            fixed inset-0 z-[998]
-                                            bg-gradient-to-br from-[#020817] via-[#020617] to-emerald-800
-                                            bg-opacity-90
-                                            md:hidden
-                                        "
+                                        fixed inset-0 z-[998]
+                                        bg-gradient-to-br from-[#020617]/90 via-emerald-900/60 to-sky-900/70
+                                        backdrop-blur-[6px]
+                                    "
                                         onClick={() => setOpen(false)}
                                     />
 
-                                    {/* CONTENT */}
+                                    {/* PARALLAX PARTICLES */}
                                     <motion.div
-                                        initial={{ opacity: 0, scale: 0.97 }}
+                                        className="fixed inset-0 z-[999] pointer-events-none overflow-hidden"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 0.4 }}
+                                        exit={{ opacity: 0 }}
+                                    >
+                                        {[...Array(22)].map((_, i) => (
+                                            <motion.div
+                                                key={i}
+                                                className="absolute w-1 h-1 bg-emerald-300 rounded-full"
+                                                initial={{
+                                                    x: Math.random() * window.innerWidth,
+                                                    y: Math.random() * window.innerHeight,
+                                                    opacity: 0.3
+                                                }}
+                                                animate={{
+                                                    x: "+=30",
+                                                    y: "-=60",
+                                                    opacity: [0.2, 0.55, 0.2]
+                                                }}
+                                                transition={{
+                                                    duration: 6 + Math.random() * 4,
+                                                    repeat: Infinity,
+                                                    ease: "easeInOut"
+                                                }}
+                                            />
+                                        ))}
+                                    </motion.div>
+
+                                    {/* FLOATING MENU CONTENT */}
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.96 }}
                                         animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.97 }}
-                                        transition={{ duration: 0.18 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ duration: 0.25 }}
                                         className="
-                                            fixed inset-0 z-[999]
-                                            flex flex-col items-center justify-center
-                                            px-10
-                                        "
-                                        onClick={() => setOpen(false)}
+                                        fixed inset-0 z-[1000]
+                                        flex flex-col items-center justify-center
+                                        text-white gap-8
+                                        px-6
+                                    "
+                                        onClick={(e) => e.stopPropagation()}
                                     >
                                         {/* CLOSE BUTTON */}
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setOpen(false);
-                                            }}
+                                            onClick={() => setOpen(false)}
                                             className="
-                                                absolute top-6 right-6 
-                                                text-white text-2xl 
-                                                transition-transform
-                                                hover:scale-[1.22]
-                                                active:scale-[0.90]
-                                                drop-shadow-[0_0_6px_rgba(255,255,255,0.6)]
-                                            "
+                                            absolute top-7 right-7 text-white text-3xl 
+                                            hover:scale-110 active:scale-90 transition
+                                            drop-shadow-[0_0_8px_rgba(56,189,248,0.7)]
+                                        "
                                         >
                                             ✕
                                         </button>
 
-                                        {/* MENU */}
+                                        {/* ARCUS TITLE WITH FADE ARC */}
+                                        <div className="relative mb-4">
+                                            <span className="
+                                            text-3xl font-semibold 
+                                            bg-gradient-to-r from-emerald-400 to-sky-400 
+                                            bg-clip-text text-transparent
+                                        ">
+                                                Arcus
+                                            </span>
+
+                                            {/* Glowing arc */}
+                                            <motion.div
+                                                className="
+                                                absolute inset-x-0 -bottom-2 h-[2px]
+                                                bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent
+                                                blur-[2px]
+                                            "
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                transition={{ delay: 0.3, duration: 1.2 }}
+                                            />
+                                        </div>
+
+                                        {/* MENU ITEMS */}
                                         <motion.div
-                                            onClick={(e) => e.stopPropagation()}
                                             variants={containerVariants}
                                             initial="hidden"
                                             animate="show"
-                                            className="flex flex-col gap-5 text-base font-medium text-white"
+                                            className="flex flex-col items-center gap-6"
                                         >
                                             {items.map((item) => (
                                                 <motion.div
                                                     key={item.href}
                                                     variants={itemVariants}
-                                                    whileHover={{ scale: 1.08 }}
-                                                    whileTap={{ scale: 0.94 }}
-                                                    transition={{
-                                                        type: "spring",
-                                                        stiffness: 260,
-                                                        damping: 18,
-                                                    }}
+                                                    whileHover={{ scale: 1.1 }}
+                                                    whileTap={{ scale: 0.92 }}
+                                                    className="flex items-center gap-3 cursor-pointer"
                                                 >
                                                     <Link
                                                         href={item.href}
                                                         onClick={() => setOpen(false)}
                                                         className="
-                                                            flex items-center gap-3
-                                                            text-white
-                                                            drop-shadow-[0_0_4px_rgba(255,255,255,0.28)]
-                                                            hover:opacity-85
-                                                        "
+                                                        flex items-center gap-3
+                                                        text-white text-xl
+                                                        drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]
+                                                    "
                                                     >
-                                                        <item.icon size={26} />
+                                                        <item.icon size={30} />
                                                         {item.label}
                                                     </Link>
                                                 </motion.div>
                                             ))}
-
-                                            <motion.button
-                                                variants={itemVariants}
-                                                whileHover={{ scale: 1.08 }}
-                                                whileTap={{ scale: 0.94 }}
-                                                transition={{
-                                                    type: "spring",
-                                                    stiffness: 260,
-                                                    damping: 18,
-                                                }}
-                                                onClick={handleLogout}
-                                                className="
-                                                    flex items-center gap-3
-                                                    text-red-300
-                                                    drop-shadow-[0_0_6px_rgba(255,60,60,0.5)]
-                                                    hover:opacity-85
-                                                "
-                                            >
-                                                <LogOut size={26} />
-                                                Logout
-                                            </motion.button>
                                         </motion.div>
+
+                                        {/* LOGOUT */}
+                                        <motion.button
+                                            variants={itemVariants}
+                                            whileHover={{ scale: 1.1 }}
+                                            whileTap={{ scale: 0.92 }}
+                                            onClick={handleLogout}
+                                            className="
+                                            flex items-center gap-3 text-xl
+                                            text-red-300 mt-6
+                                            drop-shadow-[0_0_10px_rgba(248,113,113,0.6)]
+                                        "
+                                        >
+                                            <LogOut size={30} />
+                                            Logout
+                                        </motion.button>
                                     </motion.div>
                                 </>
                             )}
@@ -476,16 +524,16 @@ export default function Navbar() {
                 </Link>
 
                 {!loading && profile && layoutReady && (
-                    <div className="hidden md:flex items-center gap-3 relative">
-                        {/* Static inline items */}
-                        <div className="flex items-center gap-2">
+                    <div className="hidden md:flex items-center gap-3 relative min-w-0">
+                        {/* Inline nav items */}
+                        <div className="flex items-center gap-2 min-w-0">
                             {navItems
                                 .slice(0, Math.max(0, visibleCount - 1))
                                 .map((item) => (
                                     <NavLink key={item.href} {...item} />
                                 ))}
 
-                            {/* Animated transition item */}
+                            {/* Animated "last visible" item */}
                             <AnimatePresence mode="popLayout" initial={false}>
                                 {visibleCount > 0 && visibleCount <= navItems.length && (
                                     <motion.div
@@ -502,7 +550,7 @@ export default function Navbar() {
                         </div>
 
                         {/* Always reserve dropdown space */}
-                        <div className="w-9 flex justify-center">
+                        <div className="w-9 flex justify-center flex-shrink-0">
                             {visibleCount < navItems.length ? (
                                 <motion.div
                                     initial={{ opacity: 0, y: -4 }}
@@ -513,25 +561,25 @@ export default function Navbar() {
                                     <OverflowDropdown items={navItems.slice(visibleCount)} />
                                 </motion.div>
                             ) : (
-                                /* Placeholder: invisible but takes space */
                                 <div className="w-9 h-9 opacity-0 pointer-events-none" />
                             )}
                         </div>
                     </div>
                 )}
 
-                {!loading && profile && (
-                    <MobileFullScreenMenu items={navItems} />
-                )}
+                {!loading && profile && <MobileFullScreenMenu items={navItems} />}
             </div>
 
-            {/* MEASUREMENT */}
+            {/* MEASUREMENT GHOST (for layout calc) */}
             <div
                 ref={measureRef}
                 className="absolute opacity-0 pointer-events-none h-0 overflow-hidden"
             >
                 {navItems.map((item) => (
-                    <div key={item.href} className="flex items-center px-3 py-1.5 text-sm">
+                    <div
+                        key={item.href}
+                        className="flex items-center px-3 py-1.5 text-sm whitespace-nowrap"
+                    >
                         {item.label}
                     </div>
                 ))}
@@ -544,8 +592,8 @@ export default function Navbar() {
             >
                 {/* SEARCH */}
                 {!loading && profile && (
-                    <div className="relative w-28 xs:w-36 sm:w-44 md:w-56 lg:w-64 max-w-[12rem] min-w-[6rem]">                 
-                     <input
+                    <div className="relative w-28 xs:w-36 sm:w-44 md:w-56 lg:w-64 max-w-[12rem] min-w-[6rem]">
+                        <input
                             type="text"
                             placeholder="Search users..."
                             value={query}
@@ -602,7 +650,10 @@ export default function Navbar() {
                 {!loading && profile && (
                     <DropdownMenu.Root>
                         <DropdownMenu.Trigger asChild>
-                            <button className="cursor-pointer flex items-center hover:opacity-85 transition">
+                            <button
+                                className="cursor-pointer flex items-center hover:opacity-85 transition"
+                                aria-label="Open profile menu"
+                            >
                                 <Image
                                     src={
                                         profile.avatar_url?.startsWith("http")
