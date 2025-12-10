@@ -152,7 +152,8 @@ export default function Navbar() {
         if (!navbarRef.current || !measureRef.current || !rightRef.current) return;
 
         const totalWidth = navbarRef.current.clientWidth;
-        const rightWidth = rightRef.current.clientWidth + 24;
+        // add permanent 36px reserved for overflow button
+        const rightWidth = rightRef.current.clientWidth + 24 + 36;
         const available = totalWidth - rightWidth;
 
         const children = Array.from(
@@ -500,17 +501,22 @@ export default function Navbar() {
                             </AnimatePresence>
                         </div>
 
-                        {/* Dropdown for overflow items */}
-                        {visibleCount < navItems.length && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.15 }}
-                            >
-                                <OverflowDropdown items={navItems.slice(visibleCount)} />
-                            </motion.div>
-                        )}
+                        {/* Always reserve dropdown space */}
+                        <div className="w-9 flex justify-center">
+                            {visibleCount < navItems.length ? (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.15 }}
+                                >
+                                    <OverflowDropdown items={navItems.slice(visibleCount)} />
+                                </motion.div>
+                            ) : (
+                                /* Placeholder: invisible but takes space */
+                                <div className="w-9 h-8 opacity-0 pointer-events-none" />
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -538,7 +544,8 @@ export default function Navbar() {
             >
                 {/* SEARCH */}
                 {!loading && profile && (
-                    <div className="relative w-32 xs:w-40 sm:w-48 md:w-60 lg:w-64 min-w-[6rem]">                        <input
+                    <div className="relative w-28 xs:w-36 sm:w-44 md:w-56 lg:w-64 max-w-[12rem] min-w-[6rem]">                 
+                     <input
                             type="text"
                             placeholder="Search users..."
                             value={query}
