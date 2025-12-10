@@ -1,8 +1,6 @@
-// TargetFaceInput.tsx (MODIFIED)
-
 "use client";
 
-import React, { useState, useRef, useEffect, Ref } from "react";
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react"; // 🟢 ADDED forwardRef, useImperativeHandle
 
 export type ArrowInput = number | "M" | "X";
 
@@ -13,6 +11,12 @@ export type TargetFaceArrow = {
     faceIndex: number;
 };
 
+// 🟢 NEW: Define the exposed functions for the ref
+export type TargetFaceInputRef = {
+    handlePrecisePlacement: (x: number, y: number) => void;
+    // Add other exposed methods here if needed later
+};
+
 type TargetFaceInputProps = {
     arrowsPerEnd: number;
     isTripleSpot?: boolean;
@@ -20,19 +24,9 @@ type TargetFaceInputProps = {
     currentArrows: TargetFaceArrow[];
 };
 
-// NEW: Ref interface to expose precise placement method to parent
-export type TargetFaceInputRef = {
-    handlePrecisePlacement: (clientX: number, clientY: number) => void;
-};
-
-// Change default export function to use forwardRef
-export default React.forwardRef<TargetFaceInputRef, TargetFaceInputProps>(
-    function TargetFaceInput({
-        arrowsPerEnd,
-        isTripleSpot = false,
-        onSelectArrow,
-        currentArrows,
-    }: TargetFaceInputProps, ref: Ref<TargetFaceInputRef>) {
+// 🟢 MODIFIED: Wrap component with forwardRef
+const TargetFaceInput = forwardRef<TargetFaceInputRef, TargetFaceInputProps>(
+    ({ arrowsPerEnd, isTripleSpot = false, onSelectArrow, currentArrows }, ref) => {
 
         const scores: ArrowInput[] = ["X", 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
         const tripleScores: ArrowInput[] = ["X", 10, 9, 8, 7, 6];
@@ -143,51 +137,23 @@ export default React.forwardRef<TargetFaceInputRef, TargetFaceInputProps>(
             }, 180);
         }, [shouldAutoScroll, activeFace, isTripleSpot, isAnimating]);
 
-
-        // NEW: Core scoring logic, handles both click and precise placement
-        const doScoreCalculation = (
-            clientX: number,
-            clientY: number,
-            faceIndex: number,
-            forceSvgEl: SVGElement | null = null // Used for standard click to avoid re-querying DOM
+        // 🟢 NEW: Unified scoring logic for both click and precise placement
+        const calculateAndSelectArrow = (
+            targetX: number, // Client X coordinate
+            targetY: number, // Client Y coordinate
+            faceIndex: number // Current face index (0 for single, 0-2 for triple)
         ) => {
-            if (isTripleSpot && currentArrows.some((a) => a.faceIndex === faceIndex)) {
-                vibrate(); // Indicate blocked placement
-                return;
-            }
+            // Find the specific SVG element corresponding to the target face
+            const svgElement = document.getElementById(`target-face-${faceIndex}`);
+            if (!svgElement) return;
 
-            let svg: SVGElement | null = forceSvgEl;
+            const rect = svgElement.getBoundingClientRect();
 
-            // Fallback: If not passed (precise placement case), try to find the active SVG in the DOM
-            if (!svg) {
-                if (!isTripleSpot) {
-                    // Single spot SVG selector
-                    svg = document.querySelector('.w-full.h-auto.cursor-crosshair') as SVGElement | null;
-                } else {
-                    // Triple spot: find the SVG that corresponds to the active face
-                    const container = scrollRef.current;
-                    if (container) {
-                        const faces = container.querySelectorAll('svg[viewBox="0 0 200 200"]');
-                        svg = faces[faceIndex] as SVGElement | null;
-                    }
-                }
-            }
+            // Calculate click position relative to the SVG element
+            const x = targetX - rect.left;
+            const y = targetY - rect.top;
 
-            if (!svg) {
-                vibrate(); // Failed to find target SVG
-                return;
-            }
-
-            const rect = svg.getBoundingClientRect();
-
-            // Bounds check: If coordinates are outside the target face SVG, don't register.
-            if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
-                return;
-            }
-
-            const x = clientX - rect.left;
-            const y = clientY - rect.top;
-
+            // Normalize position to the 200x200 viewBox
             const cx = (x / rect.width) * 200;
             const cy = (y / rect.height) * 200;
 
@@ -195,47 +161,44 @@ export default React.forwardRef<TargetFaceInputRef, TargetFaceInputProps>(
             const dy = cy - 100;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            const scoresToUse = isTripleSpot ? tripleScores : scores;
-            const ringCount = scoresToUse.length;
+            const activeScores = isTripleSpot ? tripleScores : scores;
+            const ringCount = activeScores.length;
             const ringWidth = 100 / ringCount;
             const ringIndex = Math.floor(dist / ringWidth);
 
             const score = ringIndex >= ringCount
                 ? "M"
-                : scoresToUse[ringIndex];
+                : activeScores[ringIndex];
 
             onSelectArrow({
                 score,
-                xPct: (cx / 200) * 100,
+                xPct: (cx / 200) * 100, // 0-100 percentage for display
                 yPct: (cy / 200) * 100,
                 faceIndex,
             });
 
             vibrate();
-            // Set auto-scroll for all successful placements (precise or click)
             setShouldAutoScroll(true);
         };
 
-        // Original onClickFace handler, now simplified to use doScoreCalculation
+        // 🔴 MODIFIED: Rerouted onClickFace to use the new unified scoring function
         const onClickFace = (
             e: React.MouseEvent<SVGElement, MouseEvent>,
             faceIndex: number
         ) => {
-            // Stop default click if we have enough arrows
-            if (currentArrows.length >= arrowsPerEnd) return;
+            if (isTripleSpot && currentArrows.some((a) => a.faceIndex === faceIndex))
+                return;
 
-            doScoreCalculation(e.clientX, e.clientY, faceIndex, e.currentTarget);
+            calculateAndSelectArrow(e.clientX, e.clientY, faceIndex);
         };
 
-
-        // NEW: Expose precise placement logic via ref
-        React.useImperativeHandle(ref, () => ({
-            handlePrecisePlacement: (clientX: number, clientY: number) => {
-                // For precise placement, use the current active face state
-                doScoreCalculation(clientX, clientY, isTripleSpot ? activeFace : 0);
+        // 🟢 NEW: Expose method to parent via ref for precise placement (from zoom)
+        useImperativeHandle(ref, () => ({
+            handlePrecisePlacement: (x: number, y: number) => {
+                // This is called from the parent component (ActiveScoringPage) after the magnifier releases
+                calculateAndSelectArrow(x, y, activeFace);
             },
         }));
-
 
         return (
             <div className="w-full max-w-md mx-auto flex flex-col items-center gap-2">
@@ -243,6 +206,7 @@ export default React.forwardRef<TargetFaceInputRef, TargetFaceInputProps>(
                 {/* SINGLE SPOT */}
                 {!isTripleSpot && (
                     <svg
+                        id="target-face-0" // 🟢 ADDED ID for precise lookup
                         viewBox="0 0 200 200"
                         className="w-full h-auto cursor-crosshair"
                         onClick={(e) => onClickFace(e, 0)}
@@ -329,6 +293,7 @@ export default React.forwardRef<TargetFaceInputRef, TargetFaceInputProps>(
                                         }}
                                     >
                                         <svg
+                                            id={`target-face-${faceIndex}`} // 🟢 ADDED ID for precise lookup
                                             viewBox="0 0 200 200"
                                             className="cursor-crosshair"
                                             style={{
@@ -428,3 +393,7 @@ export default React.forwardRef<TargetFaceInputRef, TargetFaceInputProps>(
             </div>
         );
     });
+
+// Export the component with its display name
+TargetFaceInput.displayName = "TargetFaceInput";
+export default TargetFaceInput;
