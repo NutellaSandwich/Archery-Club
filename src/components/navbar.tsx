@@ -461,7 +461,7 @@ export default function Navbar() {
     return (
         <nav
             ref={navbarRef}
-            className="sticky top-0 z-50 mt-2 mb-4 mx-2 sm:mx-4 flex items-center justify-between 
+            className="sticky top-0 z-50 mt-2 mb-4 mx-2 sm:mx-4 flex items-center justify-between flex-nowrap 
                        rounded-2xl border border-border/70 bg-background/80 backdrop-blur-lg 
                        shadow-[0_18px_45px_rgba(15,23,42,0.35)] px-3 sm:px-6 py-2.5"
         >
@@ -534,12 +534,11 @@ export default function Navbar() {
             {/* RIGHT */}
             <div
                 ref={rightRef}
-                className="flex items-center gap-2 sm:gap-3 min-w-0 shrink"
+                className="flex items-center gap-2 sm:gap-3 min-w-fit shrink-0"
             >
                 {/* SEARCH */}
                 {!loading && profile && (
-                    <div className="relative w-40 sm:w-52 md:w-64">
-                        <input
+                    <div className="relative w-32 xs:w-40 sm:w-48 md:w-60 lg:w-64 min-w-[6rem]">                        <input
                             type="text"
                             placeholder="Search users..."
                             value={query}
