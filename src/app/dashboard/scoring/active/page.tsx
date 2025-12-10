@@ -288,23 +288,25 @@ export default function ActiveScoringPage() {
             window.clearTimeout(holdTimeoutRef.current);
         }
 
-        // Only do heavy html2canvas IF the press actually becomes a long press
-        holdTimeoutRef.current = window.setTimeout(async () => {
+        holdTimeoutRef.current = window.setTimeout(() => {
             if (!isPointerDown.current) return;
-
-            const container = document.getElementById("live-target-container");
-            if (container) {
-                const canvas = await html2canvas(container, {
-                    backgroundColor: null,
-                    scale: 1.5, // slightly lower scale for speed
-                    logging: false,
-                });
-                setTargetSnapshot(canvas);
-            }
 
             setZoomActive(true);
             updateCrosshair(clientX, clientY);
-        }, 180); // quick but intentional long-press threshold
+
+            // Render snapshot *after* zoom appears (async)
+            requestAnimationFrame(async () => {
+                const container = document.getElementById("live-target-container");
+                if (container) {
+                    const canvas = await html2canvas(container, {
+                        backgroundColor: null,
+                        scale: 1.2, // slightly lower for speed
+                        logging: false,
+                    });
+                    setTargetSnapshot(canvas);
+                }
+            });
+        }, 150);
     };
 
     const moveZoom = (
@@ -329,18 +331,7 @@ export default function ActiveScoringPage() {
             suppressNextClick.current = true;
 
             const { x, y } = lastPointerPos.current;
-            const el = document.elementFromPoint(x, y);
-
-            if (el) {
-                el.dispatchEvent(
-                    new MouseEvent("click", {
-                        bubbles: true,
-                        cancelable: true,
-                        clientX: x,
-                        clientY: y,
-                    })
-                );
-            }
+            registerArrowAtPoint(x, y);
         }
 
         isPointerDown.current = false;
@@ -366,6 +357,26 @@ export default function ActiveScoringPage() {
             y: relY,
         });
     };
+
+    function registerArrowAtPoint(x: number, y: number) {
+        const el = document.elementFromPoint(x, y);
+        if (!el) return;
+
+        // Find dataset attributes from the target component (TargetFaceInput must set these)
+        const score = el.getAttribute("data-score");
+        const xPct = el.getAttribute("data-x");
+        const yPct = el.getAttribute("data-y");
+        const face = el.getAttribute("data-face");
+
+        if (score && xPct && yPct) {
+            handleArrowClick({
+                score: score as ArrowInput,
+                xPct: Number(xPct),
+                yPct: Number(yPct),
+                faceIndex: face ? Number(face) : 0
+            });
+        }
+    }
 
     return (
         <main className="w-full px-4 sm:px-6 md:max-w-3xl mx-auto space-y-8">
