@@ -295,8 +295,9 @@ export default function ActiveScoringPage() {
             window.clearTimeout(holdTimeoutRef.current);
         }
 
-        // 1. 🟢 FIX: Reduced hold detection to 30ms for responsiveness (less pause)
-        holdTimeoutRef.current = window.setTimeout(() => {
+        // 1. Reduced hold detection to 30ms for responsiveness (less pause)
+        // 🟢 FIX: Made the timeout ASYNC to await html2canvas immediately inside.
+        holdTimeoutRef.current = window.setTimeout(async () => {
             if (!isPointerDown.current) return;
 
             // Hold was successful, now activate zoom and track it
@@ -304,20 +305,20 @@ export default function ActiveScoringPage() {
             setZoomActive(true); // Immediate UI update for responsiveness
             updateCrosshair(lastPointerPos.current.x, lastPointerPos.current.y); // Set initial visible position
 
-            // 2. 🟢 FIX: Increased scale to 2.0 (from 1.2) for reliable, higher-quality canvas capture
-            window.setTimeout(async () => {
-                const container = document.getElementById("live-target-container");
-                if (container) {
-                    const canvas = await html2canvas(container, {
-                        backgroundColor: null,
-                        scale: 2.0, // <-- CHANGED from 1.2 to 2.0
-                        logging: false,
-                    });
-                    setTargetSnapshot(canvas);
-                }
-            }, 50); // <-- 50ms delay for canvas rendering (after 30ms hold)
+            // 2. 🟢 FIX: Removed the inner 50ms delay and added useCORS for reliability.
+            // Run html2canvas immediately (non-blocking) after state is set.
+            const container = document.getElementById("live-target-container");
+            if (container) {
+                const canvas = await html2canvas(container, {
+                    backgroundColor: null,
+                    scale: 2.0,
+                    logging: false,
+                    useCORS: true, // <-- NEW ADDITION for better SVG/Canvas compatibility
+                });
+                setTargetSnapshot(canvas);
+            }
 
-        }, 30); // <-- CHANGED from 50 to 30 for responsiveness
+        }, 30); // <-- 30ms hold for responsiveness
     };
 
     const moveZoom = (e: PointerEvent) => {
