@@ -4,9 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Delete } from "lucide-react";
+import { Delete, Target } from "lucide-react";
 import TargetFaceInput from "@/components/TargetFaceInput";
-import { Target } from "lucide-react";
 import html2canvas from "html2canvas";
 
 type ScoringConfig = {
@@ -54,6 +53,9 @@ export default function ActiveScoringPage() {
     // Long-press detection
     const isPointerDown = useRef(false);
     const holdTimeoutRef = useRef<number | null>(null);
+    const lastPointerPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+    const suppressNextClick = useRef(false);
 
     // 🔹 Load config from session
     useEffect(() => {
@@ -197,8 +199,8 @@ export default function ActiveScoringPage() {
             editingEndIndex === null &&
             !roundComplete
         ) {
-            const t = setTimeout(() => handleSaveEnd(), 250);
-            return () => clearTimeout(t);
+            const t = window.setTimeout(() => handleSaveEnd(), 250);
+            return () => window.clearTimeout(t);
         }
     }, [currentArrows, editingEndIndex, config, roundComplete]);
 
@@ -237,15 +239,10 @@ export default function ActiveScoringPage() {
         })();
     };
 
-    // 🔚 Global safety: if pointer somehow ends outside the container
+    // 🔚 Global safety: if pointer ends outside the container
     useEffect(() => {
         const handleUp = () => {
-            isPointerDown.current = false;
-            if (holdTimeoutRef.current !== null) {
-                window.clearTimeout(holdTimeoutRef.current);
-                holdTimeoutRef.current = null;
-            }
-            setZoomActive(false);
+            stopZoom();
         };
 
         window.addEventListener("mouseup", handleUp);
@@ -255,7 +252,7 @@ export default function ActiveScoringPage() {
             window.removeEventListener("mouseup", handleUp);
             window.removeEventListener("touchend", handleUp);
         };
-    }, []);
+    });
 
     if (!config) {
         return (
@@ -272,7 +269,7 @@ export default function ActiveScoringPage() {
         !roundComplete && ends.length < totalEnds && editingEndIndex === null;
 
     // 🔍 Long-press to start zoom
-    const startZoom = async (
+    const startZoom = (
         e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
     ) => {
         const target = e.target as HTMLElement;
@@ -280,53 +277,79 @@ export default function ActiveScoringPage() {
 
         isPointerDown.current = true;
 
-        // Grab snapshot once per press
-        const container = document.getElementById("live-target-container");
-        if (container) {
-            const canvas = await html2canvas(container, {
-                backgroundColor: null,
-                scale: 2,
-                logging: false,
-            });
-            setTargetSnapshot(canvas);
-        }
-
-        // Capture pointer position immediately (before React reuses event)
         const clientX =
             "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
         const clientY =
             "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
 
+        lastPointerPos.current = { x: clientX, y: clientY };
+
         if (holdTimeoutRef.current !== null) {
             window.clearTimeout(holdTimeoutRef.current);
         }
 
-        holdTimeoutRef.current = window.setTimeout(() => {
-            if (!isPointerDown.current) return; // pointer released → cancel
+        // Only do heavy html2canvas IF the press actually becomes a long press
+        holdTimeoutRef.current = window.setTimeout(async () => {
+            if (!isPointerDown.current) return;
+
+            const container = document.getElementById("live-target-container");
+            if (container) {
+                const canvas = await html2canvas(container, {
+                    backgroundColor: null,
+                    scale: 1.5, // slightly lower scale for speed
+                    logging: false,
+                });
+                setTargetSnapshot(canvas);
+            }
+
             setZoomActive(true);
             updateCrosshair(clientX, clientY);
-        }, 150); // hold threshold (ms)
+        }, 180); // quick but intentional long-press threshold
     };
 
     const moveZoom = (
         e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
     ) => {
-        if (!zoomActive) return;
+        if (!isPointerDown.current) return;
 
         const clientX =
             "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
         const clientY =
             "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
 
+        lastPointerPos.current = { x: clientX, y: clientY };
+
+        if (!zoomActive) return;
+
         updateCrosshair(clientX, clientY);
     };
 
     const stopZoom = () => {
+        if (zoomActive) {
+            suppressNextClick.current = true;
+
+            const { x, y } = lastPointerPos.current;
+            const el = document.elementFromPoint(x, y);
+
+            if (el) {
+                el.dispatchEvent(
+                    new MouseEvent("click", {
+                        bubbles: true,
+                        cancelable: true,
+                        clientX: x,
+                        clientY: y,
+                    })
+                );
+            }
+        }
+
         isPointerDown.current = false;
+
         if (holdTimeoutRef.current !== null) {
             window.clearTimeout(holdTimeoutRef.current);
             holdTimeoutRef.current = null;
         }
+
         setZoomActive(false);
     };
 
@@ -408,7 +431,16 @@ export default function ActiveScoringPage() {
                         onTouchMove={moveZoom}
                         onTouchEnd={stopZoom}
                     >
-                        <div id="live-target-container">
+                    <div
+                        id="live-target-container"
+                        onClickCapture={(e) => {
+                            if (suppressNextClick.current) {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                suppressNextClick.current = false;
+                            }
+                        }}
+                    >
                             <TargetFaceInput
                                 arrowsPerEnd={config.arrowsPerEnd}
                                 isTripleSpot={!!config.isTripleSpot}
@@ -506,9 +538,9 @@ export default function ActiveScoringPage() {
             {(canInputNewEnd || editingEndIndex !== null) && (
                 <div className="border rounded-lg p-4 mt-4">
                     <h3
-                        className="font-medium mb-2 relative pb-1
-                        after:block after:h-[2px] after:w-20 after:rounded-full
-                        after:bg-gradient-to-r from-emerald-600 via-sky-500 to-emerald-600"
+                        className="font-medium mb-4 relative pb-2
+        after:block after:h-[2px] after:w-20 after:rounded-full
+        after:bg-gradient-to-r from-emerald-600 via-sky-500 to-emerald-600"
                     >
                         {editingEndIndex !== null
                             ? `Editing End ${editingEndIndex + 1}`
