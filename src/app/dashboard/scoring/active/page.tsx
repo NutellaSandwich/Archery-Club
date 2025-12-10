@@ -61,6 +61,9 @@ export default function ActiveScoringPage() {
 
     const suppressNextClick = useRef(false);
 
+    // 🟢 FIX 2: Ref for requestAnimationFrame to throttle movement
+    const animationFrameRef = useRef<number | null>(null);
+
     // 🔹 Load config from session
     useEffect(() => {
         const stored = sessionStorage.getItem("scoringConfig");
@@ -292,16 +295,16 @@ export default function ActiveScoringPage() {
             window.clearTimeout(holdTimeoutRef.current);
         }
 
-        // 1. Set minimal delay (10ms) for hold detection
+        // 1. 🟢 FIX 1: Restore 50ms hold detection to ignore quick taps (ghost zoom fix)
         holdTimeoutRef.current = window.setTimeout(() => {
             if (!isPointerDown.current) return;
 
             // Hold was successful, now activate zoom and track it
             didZoomOccur.current = true;
-            setZoomActive(true); // 🟢 Immediate UI update
+            setZoomActive(true); // Immediate UI update for responsiveness
             updateCrosshair(lastPointerPos.current.x, lastPointerPos.current.y); // Set initial visible position
 
-            // 2. 🟢 PERFORMANCE FIX: Delay the expensive html2canvas operation
+            // 2. PERFORMANCE FIX: Delay the expensive html2canvas operation
             // This ensures the zoom circle appears instantly, preventing lag
             window.setTimeout(async () => {
                 const container = document.getElementById("live-target-container");
@@ -313,13 +316,14 @@ export default function ActiveScoringPage() {
                     });
                     setTargetSnapshot(canvas);
                 }
-            }, 50); // <-- 50ms delay for canvas rendering
+            }, 50); // <-- 50ms delay for canvas rendering (after 50ms hold)
 
-        }, 10); // <-- This is the minimal delay for hold detection
+        }, 50); // <-- CHANGED from 10 to 50 for tap detection
     };
 
     const moveZoom = (e: PointerEvent) => {
-        if (!isPointerDown.current) return;
+        // Only run if pointer is down and zoom is active (meaning hold was registered)
+        if (!isPointerDown.current || !zoomActive) return;
 
         const clientX =
             "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
@@ -328,9 +332,14 @@ export default function ActiveScoringPage() {
 
         lastPointerPos.current = { x: clientX, y: clientY };
 
-        if (!zoomActive) return;
+        // 🟢 FIX 2: Throttle position updates using requestAnimationFrame for smooth movement
+        if (animationFrameRef.current) {
+            window.cancelAnimationFrame(animationFrameRef.current);
+        }
 
-        updateCrosshair(clientX, clientY);
+        animationFrameRef.current = window.requestAnimationFrame(() => {
+            updateCrosshair(clientX, clientY);
+        });
     };
 
     // 🟢 Use exposed method on TargetFaceInput ref
@@ -370,6 +379,12 @@ export default function ActiveScoringPage() {
                 // Clear suppression flag after attempt to allow normal clicks again
                 suppressNextClick.current = false;
             }, 0);
+        }
+
+        // 🟢 FIX 2: Clear animation frame on end
+        if (animationFrameRef.current !== null) {
+            window.cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
         }
 
         // Reset tracking flags regardless of zoom success
