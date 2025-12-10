@@ -295,32 +295,34 @@ export default function ActiveScoringPage() {
             window.clearTimeout(holdTimeoutRef.current);
         }
 
-        // 1. Hold detection time (50ms)
-        holdTimeoutRef.current = window.setTimeout(async () => {
+        // 1. 🟢 FIX: Reduced hold detection to 30ms for responsiveness (less pause)
+        holdTimeoutRef.current = window.setTimeout(() => {
             if (!isPointerDown.current) return;
 
             // Hold was successful, now activate zoom and track it
             didZoomOccur.current = true;
             setZoomActive(true); // Immediate UI update for responsiveness
-            // updateCrosshair was already called in moveZoom during the 50ms, so it's already in the right place.
+            updateCrosshair(lastPointerPos.current.x, lastPointerPos.current.y); // Set initial visible position
 
-            // 2. 🟢 FIX 1: Trigger html2canvas immediately on hold detection (no extra delay)
-            // This reduces the time the magnifier is visible but blank.
-            const container = document.getElementById("live-target-container");
-            if (container) {
-                const canvas = await html2canvas(container, {
-                    backgroundColor: null,
-                    scale: 1.2, // slightly lower for speed
-                    logging: false,
-                });
-                setTargetSnapshot(canvas);
-            }
-        }, 50);
+            // 2. 🟢 FIX: Increased scale to 2.0 (from 1.2) for reliable, higher-quality canvas capture
+            window.setTimeout(async () => {
+                const container = document.getElementById("live-target-container");
+                if (container) {
+                    const canvas = await html2canvas(container, {
+                        backgroundColor: null,
+                        scale: 2.0, // <-- CHANGED from 1.2 to 2.0
+                        logging: false,
+                    });
+                    setTargetSnapshot(canvas);
+                }
+            }, 50); // <-- 50ms delay for canvas rendering (after 30ms hold)
+
+        }, 30); // <-- CHANGED from 50 to 30 for responsiveness
     };
 
     const moveZoom = (e: PointerEvent) => {
-        // 🟢 FIX 2: Check only if pointer is down. We track position even if zoomActive is false.
-        if (!isPointerDown.current) return;
+        // Only run if pointer is down and zoom is active (meaning hold was registered)
+        if (!isPointerDown.current || !zoomActive) return;
 
         const clientX =
             "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
@@ -329,7 +331,7 @@ export default function ActiveScoringPage() {
 
         lastPointerPos.current = { x: clientX, y: clientY };
 
-        // Throttle position updates using requestAnimationFrame for smooth movement
+        // 🟢 Throttled position updates using requestAnimationFrame for smooth movement
         if (animationFrameRef.current) {
             window.cancelAnimationFrame(animationFrameRef.current);
         }
@@ -378,7 +380,7 @@ export default function ActiveScoringPage() {
             }, 0);
         }
 
-        // Clear animation frame on end
+        // 🟢 Clear animation frame on end
         if (animationFrameRef.current !== null) {
             window.cancelAnimationFrame(animationFrameRef.current);
             animationFrameRef.current = null;
@@ -402,7 +404,6 @@ export default function ActiveScoringPage() {
         const relX = x - rect.left;
         const relY = y - rect.top;
 
-        // Set the position state, this is what the magnifier uses for placement
         setZoomPos({
             x: relX,
             y: relY,
