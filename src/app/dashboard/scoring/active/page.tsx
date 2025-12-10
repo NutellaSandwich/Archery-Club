@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Delete, Target } from "lucide-react";
-import TargetFaceInput from "@/components/TargetFaceInput";
+// 🟢 UPDATED IMPORT: TargetFaceInputRef and TargetFaceArrow are now imported
+import TargetFaceInput, { TargetFaceInputRef, TargetFaceArrow } from "@/components/TargetFaceInput";
 import html2canvas from "html2canvas";
 
 type ScoringConfig = {
@@ -21,12 +22,17 @@ type ScoringConfig = {
 
 type ArrowInput = number | "M" | "X";
 
-type TargetFaceArrow = {
-    score: ArrowInput;
-    xPct: number; // 0–100 SVG position
-    yPct: number;
-    faceIndex: number; // 0–2 for triple spot
-};
+// Re-defining for clarity, though imported from TargetFaceInput
+// type TargetFaceArrow = {
+//     score: ArrowInput;
+//     xPct: number; // 0–100 SVG position
+//     yPct: number;
+//     faceIndex: number; // 0–2 for triple spot
+// };
+
+// Update stopZoom signature to accept optional event
+type PointerEvent = React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>;
+type EventLike = PointerEvent | Event;
 
 export default function ActiveScoringPage() {
     const router = useRouter();
@@ -41,6 +47,9 @@ export default function ActiveScoringPage() {
     const shownRoundCompleteToast = useRef(false);
     const [showArrowMap, setShowArrowMap] = useState(false);
 
+    // 🟢 NEW REF: Added to connect to TargetFaceInput
+    const targetFaceRef = useRef<TargetFaceInputRef | null>(null);
+
     // ---- Magnifier State ----
     const [zoomActive, setZoomActive] = useState(false);
     const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
@@ -54,6 +63,9 @@ export default function ActiveScoringPage() {
     const isPointerDown = useRef(false);
     const holdTimeoutRef = useRef<number | null>(null);
     const lastPointerPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+    // Tracks if a successful hold/zoom occurred
+    const didZoomOccur = useRef(false);
 
     const suppressNextClick = useRef(false);
 
@@ -242,6 +254,8 @@ export default function ActiveScoringPage() {
     // 🔚 Global safety: if pointer ends outside the container
     useEffect(() => {
         const handleUp = () => {
+            // No event needed for global stopZoom, just cancel state
+            // The actual registration happens in the component's onMouseUp/onTouchEnd
             stopZoom();
         };
 
@@ -269,9 +283,7 @@ export default function ActiveScoringPage() {
         !roundComplete && ends.length < totalEnds && editingEndIndex === null;
 
     // 🔍 Long-press to start zoom
-    const startZoom = (
-        e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
-    ) => {
+    const startZoom = (e: PointerEvent) => {
         const target = e.target as HTMLElement;
         if (target.closest("button")) return;
 
@@ -291,10 +303,12 @@ export default function ActiveScoringPage() {
         holdTimeoutRef.current = window.setTimeout(() => {
             if (!isPointerDown.current) return;
 
+            // Hold was successful, now activate zoom and track it
+            didZoomOccur.current = true;
             setZoomActive(true);
-            updateCrosshair(clientX, clientY);
+            updateCrosshair(lastPointerPos.current.x, lastPointerPos.current.y); // Set initial visible position
 
-            // Render snapshot *after* zoom appears (async)
+            // Render snapshot (async)
             requestAnimationFrame(async () => {
                 const container = document.getElementById("live-target-container");
                 if (container) {
@@ -309,9 +323,7 @@ export default function ActiveScoringPage() {
         }, 150);
     };
 
-    const moveZoom = (
-        e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
-    ) => {
+    const moveZoom = (e: PointerEvent) => {
         if (!isPointerDown.current) return;
 
         const clientX =
@@ -326,22 +338,53 @@ export default function ActiveScoringPage() {
         updateCrosshair(clientX, clientY);
     };
 
-    const stopZoom = () => {
-        if (zoomActive) {
+    // 🟢 FIX: Defer registration AND use the exposed TargetFaceInput scoring logic
+    const stopZoom = (e?: EventLike) => {
+        // Only run the registration/suppression logic if a successful hold occurred.
+        if (didZoomOccur.current) {
+            // Set flag to suppress next standard click event
             suppressNextClick.current = true;
 
-            const { x, y } = lastPointerPos.current;
-            registerArrowAtPoint(x, y);
+            let finalX = lastPointerPos.current.x;
+            let finalY = lastPointerPos.current.y;
+
+            // Use changedTouches for the final release position on mobile (most accurate)
+            if (e && "changedTouches" in e && e.changedTouches.length > 0) {
+                finalX = e.changedTouches[0].clientX;
+                finalY = e.changedTouches[0].clientY;
+            } else if (e && "clientX" in e) {
+                // Mouse up case where the position is known from the event
+                finalX = e.clientX;
+                finalY = e.clientY;
+            }
+
+            // Store coordinates for the next tick
+            const xToRegister = finalX;
+            const yToRegister = finalY;
+
+            // 1. Immediately clear state (will trigger re-render to hide magnifier)
+            setZoomActive(false);
+            setTargetSnapshot(null);
+
+            // 2. Schedule registration for after re-render completes (0ms delay)
+            window.setTimeout(() => {
+                // Use the exposed method on the TargetFaceInput component's ref
+                if (targetFaceRef.current) {
+                    targetFaceRef.current.handlePrecisePlacement(xToRegister, yToRegister);
+                }
+                // Clear suppression flag after attempt to allow normal clicks again
+                suppressNextClick.current = false;
+            }, 0);
         }
 
+        // Reset tracking flags regardless of zoom success
         isPointerDown.current = false;
+        didZoomOccur.current = false;
 
         if (holdTimeoutRef.current !== null) {
             window.clearTimeout(holdTimeoutRef.current);
             holdTimeoutRef.current = null;
         }
-
-        setZoomActive(false);
     };
 
     // update crosshair relative to zoom container
@@ -358,25 +401,7 @@ export default function ActiveScoringPage() {
         });
     };
 
-    function registerArrowAtPoint(x: number, y: number) {
-        const el = document.elementFromPoint(x, y);
-        if (!el) return;
-
-        // Find dataset attributes from the target component (TargetFaceInput must set these)
-        const score = el.getAttribute("data-score");
-        const xPct = el.getAttribute("data-x");
-        const yPct = el.getAttribute("data-y");
-        const face = el.getAttribute("data-face");
-
-        if (score && xPct && yPct) {
-            handleArrowClick({
-                score: score as ArrowInput,
-                xPct: Number(xPct),
-                yPct: Number(yPct),
-                faceIndex: face ? Number(face) : 0
-            });
-        }
-    }
+    // 🔴 DELETED: registerArrowAtPoint is removed as the logic is now inside TargetFaceInput via handlePrecisePlacement.
 
     return (
         <main className="w-full px-4 sm:px-6 md:max-w-3xl mx-auto space-y-8">
@@ -437,22 +462,25 @@ export default function ActiveScoringPage() {
                         onMouseDown={startZoom}
                         onMouseMove={moveZoom}
                         onMouseUp={stopZoom}
-                        onMouseLeave={stopZoom}
+                        onMouseLeave={() => stopZoom()} // No event needed for mouse leave
                         onTouchStart={startZoom}
                         onTouchMove={moveZoom}
                         onTouchEnd={stopZoom}
                     >
-                    <div
-                        id="live-target-container"
-                        onClickCapture={(e) => {
-                            if (suppressNextClick.current) {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                suppressNextClick.current = false;
-                            }
-                        }}
-                    >
+                        <div
+                            id="live-target-container"
+                            onClickCapture={(e) => {
+                                // This handler stops the native click event if a hold/zoom occurred
+                                // The flag is cleared inside stopZoom's setTimeout now, so this catches the immediate click.
+                                if (suppressNextClick.current) {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    // We don't clear the flag here, stopZoom's setTimeout does it to ensure the registration call is complete.
+                                }
+                            }}
+                        >
                             <TargetFaceInput
+                                ref={targetFaceRef} // 🟢 ATTACHED REF
                                 arrowsPerEnd={config.arrowsPerEnd}
                                 isTripleSpot={!!config.isTripleSpot}
                                 currentArrows={currentArrows as TargetFaceArrow[]}
@@ -466,9 +494,10 @@ export default function ActiveScoringPage() {
                                 style={{
                                     width: magnifierSize,
                                     height: magnifierSize,
+                                    // Position magnifier relative to the pointer
                                     left: zoomPos.x,
-                                    top: zoomPos.y - 70,
-                                    transform: "translate(-50%, -50%)",
+                                    top: zoomPos.y,
+                                    transform: "translate(-50%, -100%)", // Position circle center over finger, adjust up
                                 }}
                             >
                                 {(() => {
@@ -498,6 +527,7 @@ export default function ActiveScoringPage() {
                                         <div
                                             style={{
                                                 position: "absolute",
+                                                // Pan the image so the crosshair center aligns with the pointer position
                                                 left:
                                                     -(offsetX * scaleX) +
                                                     magnifierSize / 2,
@@ -577,12 +607,12 @@ export default function ActiveScoringPage() {
                                             }
                                         }}
                                         className={`w-10 h-10 flex items-center justify-center rounded-md border text-lg font-semibold cursor-pointer transition ${val
-                                                ? `${getScoreColor(
-                                                    typeof val === "object"
-                                                        ? val.score
-                                                        : val
-                                                )} hover:opacity-75`
-                                                : "bg-muted/30 cursor-default"
+                                            ? `${getScoreColor(
+                                                typeof val === "object"
+                                                    ? val.score
+                                                    : val
+                                            )} hover:opacity-75`
+                                            : "bg-muted/30 cursor-default"
                                             }`}
                                     >
                                         {display}
@@ -649,9 +679,7 @@ export default function ActiveScoringPage() {
                                         <div className="flex gap-2 flex-nowrap overflow-x-auto no-scrollbar">
                                             {end.map((val, j) => {
                                                 const score =
-                                                    typeof val === "object"
-                                                        ? val.score
-                                                        : val;
+                                                    typeof val === "object" ? val.score : val;
                                                 return (
                                                     <div
                                                         key={j}
@@ -924,6 +952,7 @@ export default function ActiveScoringPage() {
                                                                 : score >= 3
                                                                     ? "#1f1f1f"
                                                                     : "#ffffff"
+
                                                 }
                                                 stroke="#000"
                                                 strokeWidth="0.6"
