@@ -292,17 +292,18 @@ export default function ActiveScoringPage() {
             window.clearTimeout(holdTimeoutRef.current);
         }
 
-        // 🟢 FIX 1: Reduce timeout to 10ms for near-instant response on hold
+        // 1. Set minimal delay (10ms) for hold detection
         holdTimeoutRef.current = window.setTimeout(() => {
             if (!isPointerDown.current) return;
 
             // Hold was successful, now activate zoom and track it
             didZoomOccur.current = true;
-            setZoomActive(true);
+            setZoomActive(true); // 🟢 Immediate UI update
             updateCrosshair(lastPointerPos.current.x, lastPointerPos.current.y); // Set initial visible position
 
-            // Render snapshot (async)
-            requestAnimationFrame(async () => {
+            // 2. 🟢 PERFORMANCE FIX: Delay the expensive html2canvas operation
+            // This ensures the zoom circle appears instantly, preventing lag
+            window.setTimeout(async () => {
                 const container = document.getElementById("live-target-container");
                 if (container) {
                     const canvas = await html2canvas(container, {
@@ -312,8 +313,9 @@ export default function ActiveScoringPage() {
                     });
                     setTargetSnapshot(canvas);
                 }
-            });
-        }, 10); // <-- CHANGED from 50 to 10
+            }, 50); // <-- 50ms delay for canvas rendering
+
+        }, 10); // <-- This is the minimal delay for hold detection
     };
 
     const moveZoom = (e: PointerEvent) => {
@@ -331,7 +333,7 @@ export default function ActiveScoringPage() {
         updateCrosshair(clientX, clientY);
     };
 
-    // 🟢 FIX 3: Use exposed method on TargetFaceInput ref
+    // 🟢 Use exposed method on TargetFaceInput ref
     const stopZoom = (e?: EventLike) => {
         // Only run the registration/suppression logic if a successful hold occurred.
         if (didZoomOccur.current) {
@@ -479,7 +481,7 @@ export default function ActiveScoringPage() {
                             />
                         </div>
 
-                        {zoomActive && targetSnapshot && zoomRef.current && (
+                        {zoomActive && zoomRef.current && ( // Render magnifier shell immediately
                             <div
                                 className="pointer-events-none absolute rounded-full border border-gray-300 shadow-xl overflow-hidden bg-white"
                                 style={{
@@ -491,48 +493,50 @@ export default function ActiveScoringPage() {
                                     transform: "translate(-50%, -100%)", // Position circle center over finger, adjust up
                                 }}
                             >
-                                {(() => {
-                                    const container =
-                                        document.getElementById("live-target-container");
-                                    const containerRect =
-                                        container!.getBoundingClientRect();
+                                {targetSnapshot && ( // Render image only after it's been processed
+                                    (() => {
+                                        const container =
+                                            document.getElementById("live-target-container");
+                                        const containerRect =
+                                            container!.getBoundingClientRect();
 
-                                    const scaleX =
-                                        targetSnapshot.width / containerRect.width;
-                                    const scaleY =
-                                        targetSnapshot.height / containerRect.height;
+                                        const scaleX =
+                                            targetSnapshot.width / containerRect.width;
+                                        const scaleY =
+                                            targetSnapshot.height / containerRect.height;
 
-                                    const targetLeft =
-                                        (zoomRef.current!.clientWidth -
-                                            containerRect.width) /
-                                        2;
-                                    const targetTop =
-                                        (zoomRef.current!.clientHeight -
-                                            containerRect.height) /
-                                        2;
+                                        const targetLeft =
+                                            (zoomRef.current!.clientWidth -
+                                                containerRect.width) /
+                                            2;
+                                        const targetTop =
+                                            (zoomRef.current!.clientHeight -
+                                                containerRect.height) /
+                                            2;
 
-                                    const offsetX = zoomPos.x - targetLeft;
-                                    const offsetY = zoomPos.y - targetTop;
+                                        const offsetX = zoomPos.x - targetLeft;
+                                        const offsetY = zoomPos.y - targetTop;
 
-                                    return (
-                                        <div
-                                            style={{
-                                                position: "absolute",
-                                                // Pan the image so the crosshair center aligns with the pointer position
-                                                left:
-                                                    -(offsetX * scaleX) +
-                                                    magnifierSize / 2,
-                                                top:
-                                                    -(offsetY * scaleY) +
-                                                    magnifierSize / 2,
-                                                width: targetSnapshot.width,
-                                                height: targetSnapshot.height,
-                                                backgroundImage: `url(${targetSnapshot.toDataURL()})`,
-                                                backgroundSize: `${targetSnapshot.width}px ${targetSnapshot.height}px`,
-                                            }}
-                                        />
-                                    );
-                                })()}
+                                        return (
+                                            <div
+                                                style={{
+                                                    position: "absolute",
+                                                    // Pan the image so the crosshair center aligns with the pointer position
+                                                    left:
+                                                        -(offsetX * scaleX) +
+                                                        magnifierSize / 2,
+                                                    top:
+                                                        -(offsetY * scaleY) +
+                                                        magnifierSize / 2,
+                                                    width: targetSnapshot.width,
+                                                    height: targetSnapshot.height,
+                                                    backgroundImage: `url(${targetSnapshot.toDataURL()})`,
+                                                    backgroundSize: `${targetSnapshot.width}px ${targetSnapshot.height}px`,
+                                                }}
+                                            />
+                                        );
+                                    })()
+                                )}
 
                                 {/* Center crosshair */}
                                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
