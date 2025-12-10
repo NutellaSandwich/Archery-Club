@@ -239,8 +239,8 @@ export default function Navbar() {
         <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
                 <button
-                    className="flex items-center px-2 py-1.5 rounded-full border border-border/60 bg-muted/40 
-                               hover:bg-muted/70 shadow-sm text-muted-foreground hover:text-foreground"
+                    className="w-9 h-9 flex items-center justify-center rounded-full border border-border/60 
+               bg-muted/40 hover:bg-muted/70 shadow-sm text-muted-foreground hover:text-foreground"
                 >
                     <Menu size={18} />
                 </button>
@@ -514,7 +514,7 @@ export default function Navbar() {
                                 </motion.div>
                             ) : (
                                 /* Placeholder: invisible but takes space */
-                                <div className="w-9 h-8 opacity-0 pointer-events-none" />
+                                <div className="w-9 h-9 opacity-0 pointer-events-none" />
                             )}
                         </div>
                     </div>
@@ -618,8 +618,9 @@ export default function Navbar() {
                         </DropdownMenu.Trigger>
 
                         <DropdownMenu.Content
-                            className="min-w-[190px] p-2 border border-border/70 rounded-2xl shadow-xl bg-background/95 backdrop-blur-md"
+                            className="w-44 p-2 rounded-2xl border border-border/70 shadow-xl bg-background/95 backdrop-blur-md"
                             sideOffset={8}
+                            align="end"
                         >
                             <DropdownMenu.Label className="px-3 py-2 text-xs text-muted-foreground border-b border-border/60 mb-1">
                                 {profile.username}
