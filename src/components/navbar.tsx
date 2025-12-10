@@ -406,94 +406,99 @@ export default function Navbar() {
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         transition={{ duration: 0.25 }}
                                         className="
-                                        fixed inset-0 z-[1000]
-                                        flex flex-col items-center justify-center
-                                        text-white gap-8
-                                        px-6
-                                    "
-                                        onClick={(e) => e.stopPropagation()}
+        fixed inset-0 z-[1000]
+        flex items-center justify-center
+        px-6
+    "
+                                        onClick={() => setOpen(false)} // clicking outside closes popup
                                     >
-                                        {/* CLOSE BUTTON */}
-                                        <button
-                                            onClick={() => setOpen(false)}
-                                            className="
-                                            absolute top-7 right-7 text-white text-3xl 
-                                            hover:scale-110 active:scale-90 transition
-                                            drop-shadow-[0_0_8px_rgba(56,189,248,0.7)]
-                                        "
+                                        {/* INNER COLUMN (all content inside here stays centered) */}
+                                        <div
+                                            className="flex flex-col items-center text-white gap-8"
+                                            onClick={(e) => e.stopPropagation()} // clicking inside does NOT close
                                         >
-                                            ✕
-                                        </button>
-
-                                        {/* ARCUS TITLE WITH FADE ARC */}
-                                        <div className="relative mb-4">
-                                            <span className="
-                                            text-3xl font-semibold 
-                                            bg-gradient-to-r from-emerald-400 to-sky-400 
-                                            bg-clip-text text-transparent
-                                        ">
-                                                Arcus
-                                            </span>
-
-                                            {/* Glowing arc */}
-                                            <motion.div
+                                            {/* CLOSE BUTTON */}
+                                            <button
+                                                onClick={() => setOpen(false)}
                                                 className="
-                                                absolute inset-x-0 -bottom-2 h-[2px]
-                                                bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent
-                                                blur-[2px]
-                                            "
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                transition={{ delay: 0.3, duration: 1.2 }}
-                                            />
-                                        </div>
+                absolute top-7 right-7 text-white text-3xl 
+                hover:scale-110 active:scale-90 transition
+                drop-shadow-[0_0_8px_rgba(56,189,248,0.7)]
+            "
+                                            >
+                                                ✕
+                                            </button>
 
-                                        {/* MENU ITEMS */}
-                                        <motion.div
-                                            variants={containerVariants}
-                                            initial="hidden"
-                                            animate="show"
-                                            className="flex flex-col items-center gap-6"
-                                        >
-                                            {items.map((item) => (
+                                            {/* ARCUS TITLE WITH FADE ARC */}
+                                            <div className="relative mb-4">
+                                                <span className="
+                text-3xl font-semibold 
+                bg-gradient-to-r from-emerald-400 to-sky-400 
+                bg-clip-text text-transparent
+            ">
+                                                    Arcus
+                                                </span>
+
+                                                {/* Glowing arc */}
                                                 <motion.div
-                                                    key={item.href}
-                                                    variants={itemVariants}
-                                                    whileHover={{ scale: 1.1 }}
-                                                    whileTap={{ scale: 0.92 }}
-                                                    className="flex items-center gap-3 cursor-pointer"
-                                                >
-                                                    <Link
-                                                        href={item.href}
-                                                        onClick={() => setOpen(false)}
-                                                        className="
-                                                        flex items-center gap-3
-                                                        text-white text-xl
-                                                        drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]
-                                                    "
-                                                    >
-                                                        <item.icon size={30} />
-                                                        {item.label}
-                                                    </Link>
-                                                </motion.div>
-                                            ))}
-                                        </motion.div>
+                                                    className="
+                    absolute inset-x-0 -bottom-2 h-[2px]
+                    bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent
+                    blur-[2px]
+                "
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    transition={{ delay: 0.3, duration: 1.2 }}
+                                                />
+                                            </div>
 
-                                        {/* LOGOUT */}
-                                        <motion.button
-                                            variants={itemVariants}
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.92 }}
-                                            onClick={handleLogout}
-                                            className="
-                                            flex items-center gap-3 text-xl
-                                            text-red-300 mt-6
-                                            drop-shadow-[0_0_10px_rgba(248,113,113,0.6)]
-                                        "
-                                        >
-                                            <LogOut size={30} />
-                                            Logout
-                                        </motion.button>
+                                            {/* MENU ITEMS */}
+                                            <motion.div
+                                                variants={containerVariants}
+                                                initial="hidden"
+                                                animate="show"
+                                                className="flex flex-col items-center gap-6"
+                                            >
+                                                {items.map((item) => (
+                                                    <motion.div
+                                                        key={item.href}
+                                                        variants={itemVariants}
+                                                        whileHover={{ scale: 1.1 }}
+                                                        whileTap={{ scale: 0.92 }}
+                                                        className="flex items-center gap-3 cursor-pointer"
+                                                    >
+                                                        <Link
+                                                            href={item.href}
+                                                            onClick={() => setOpen(false)}
+                                                            className="
+                            flex items-center gap-3
+                            text-white text-xl
+                            drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]
+                        "
+                                                        >
+                                                            <item.icon size={30} />
+                                                            {item.label}
+                                                        </Link>
+                                                    </motion.div>
+                                                ))}
+                                            </motion.div>
+
+                                            {/* LOGOUT AT BOTTOM, CENTERED */}
+                                            <motion.button
+                                                variants={itemVariants}
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.92 }}
+                                                onClick={handleLogout}
+                                                className="
+                flex items-center gap-3 text-xl
+                text-red-300 mt-6
+                drop-shadow-[0_0_10px_rgba(248,113,113,0.6)]
+            "
+                                            >
+                                                <LogOut size={30} />
+                                                Logout
+                                            </motion.button>
+                                        </div>
                                     </motion.div>
                                 </>
                             )}
