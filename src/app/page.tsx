@@ -247,7 +247,7 @@ function SignupFlow({
     if (score > 3) score = 3;
     return score as 0 | 1 | 2 | 3;
   }
-  
+
   const [account, setAccount] = useState({
     email: "",
     password: "",
@@ -295,7 +295,30 @@ function SignupFlow({
         return;
       }
 
-      toast.success("Logged in successfully!");
+
+      // After successful login, fetch fresh session to get the user
+      const { data: sessionData } = await supabase.auth.getSession();
+      const loggedInUser = sessionData.session?.user;
+
+      if (!loggedInUser) {
+        toast.error("Login error — no user session found.");
+        setLoading(false);
+        return;
+      }
+
+      // Check whether the user already belongs to a club
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("club_id")
+        .eq("id", loggedInUser.id)
+        .maybeSingle();
+
+      if (profile?.club_id) {
+        router.replace("/dashboard");
+        return;
+      }
+
+      // Otherwise continue to Step 2 (new user)
       setStep(2);
       setLoading(false);
       return;
@@ -385,7 +408,12 @@ function SignupFlow({
       .maybeSingle();
 
     if (!profile) {
-      await supabase.from("profiles").insert([{ id: user.id }]);
+      await supabase.from("profiles").insert([
+        {
+          id: user.id,
+          email: user.email, // ← store email on initial row creation
+        },
+      ]);
     }
 
     // INDIVIDUAL SIGNUP
@@ -396,6 +424,7 @@ function SignupFlow({
       await supabase
         .from("profiles")
         .update({
+          email: user.email, // ← add
           username: form.username.trim(),
           dob: form.dob || null,
           agb_number: form.agb_number || null,
@@ -436,6 +465,7 @@ function SignupFlow({
       await supabase
         .from("profiles")
         .update({
+          email: user.email, // ← add
           username: form.username.trim(),
           dob: form.dob || null,
           agb_number: form.agb_number || null,
@@ -470,6 +500,7 @@ function SignupFlow({
       await supabase
         .from("profiles")
         .update({
+          email: user.email, // ← add
           club_id: inserted[0].id,
           username: form.username.trim(),
           dob: form.dob,
@@ -552,43 +583,39 @@ function SignupFlow({
               }}
             />
 
-            {/* Password strength bar */}
-            <div className="h-2 w-full mt-1 rounded-full bg-muted overflow-hidden">
-              <div
-                className={`
-      h-full transition-all duration-300
-      ${passwordStrength === 0 ? "w-0" : ""}
-      ${passwordStrength === 1 ? "w-1/3 bg-red-500" : ""}
-      ${passwordStrength === 2 ? "w-2/3 bg-yellow-500" : ""}
-      ${passwordStrength === 3 ? "w-full bg-green-500" : ""}
-    `}
-              ></div>
-            </div>
-
-            {/* Strength label */}
-            <p className="text-xs mt-1 text-muted-foreground">
-              {passwordStrength === 0 && ""}
-              {passwordStrength === 1 && "Weak"}
-              {passwordStrength === 2 && "Medium"}
-              {passwordStrength === 3 && "Strong"}
-            </p>
-
-            {/* Error message */}
-            {passwordError && (
-              <p className="text-xs text-red-500 mt-1">{passwordError}</p>
-            )}
-
             {!isLogin && (
               <>
+                {/* Password strength bar */}
+                <div className="h-2 w-full mt-1 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={`
+          h-full transition-all duration-300
+          ${passwordStrength === 0 ? "w-0" : ""}
+          ${passwordStrength === 1 ? "w-1/3 bg-red-500" : ""}
+          ${passwordStrength === 2 ? "w-2/3 bg-yellow-500" : ""}
+          ${passwordStrength === 3 ? "w-full bg-green-500" : ""}
+        `}
+                  ></div>
+                </div>
+
+                {/* Strength label */}
+                <p className="text-xs mt-1 text-muted-foreground">
+                  {passwordStrength === 1 && "Weak"}
+                  {passwordStrength === 2 && "Medium"}
+                  {passwordStrength === 3 && "Strong"}
+                </p>
+
+                {passwordError && (
+                  <p className="text-xs text-red-500 mt-1">{passwordError}</p>
+                )}
+
+                {/* Confirm password */}
                 <Input
                   placeholder="Confirm Password"
                   type="password"
                   value={account.confirmPassword}
                   onChange={(e) =>
-                    setAccount({
-                      ...account,
-                      confirmPassword: e.target.value,
-                    })
+                    setAccount({ ...account, confirmPassword: e.target.value })
                   }
                 />
               </>
@@ -654,12 +681,14 @@ function SignupFlow({
             }
           />
 
-          {/* DOB */}
-          <Input
-            type="date"
-            value={form.dob}
-            onChange={(e) => setForm({ ...form, dob: e.target.value })}
-          />
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Date of Birth</label>
+            <Input
+              type="date"
+              value={form.dob}
+              onChange={(e) => setForm({ ...form, dob: e.target.value })}
+            />
+          </div>
 
           {/* AGB NUMBER */}
           <Input
