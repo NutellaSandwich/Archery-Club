@@ -530,7 +530,7 @@ export default function Navbar() {
         backdrop-blur-xl 
         shadow-[0_8px_30px_rgba(0,0,0,0.35)]
         px-3 sm:px-6 py-2.5
-        relative overflow-hidden
+        relative overflow-visible
     "
         >
             {/* GLOSS TOP HIGHLIGHT */}
@@ -663,11 +663,6 @@ export default function Navbar() {
                                             <span className="text-sm font-medium truncate">
                                                 {u.username}
                                             </span>
-                                            {u.bow_type && (
-                                                <span className="block text-xs text-muted-foreground uppercase truncate">
-                                                    {u.bow_type}
-                                                </span>
-                                            )}
                                         </div>
                                     </Link>
                                 ))}

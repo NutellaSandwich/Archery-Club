@@ -36,6 +36,9 @@ export default function Home() {
 
   const [loading, setLoading] = useState(true);
 
+
+
+
   /* ----------------------------------------------
       CHECK SESSION
   ----------------------------------------------- */
@@ -229,7 +232,22 @@ function SignupFlow({
   const [step, setStep] = useState<1 | 2>(1);
   const [isLogin, setIsLogin] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState<0 | 1 | 2 | 3>(0);
+  const [passwordError, setPasswordError] = useState("");
 
+
+  function evaluatePasswordStrength(pw: string): 0 | 1 | 2 | 3 {
+    let score = 0;
+
+    if (pw.length >= 8) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw) || /[^a-zA-Z0-9]/.test(pw)) score++;
+    if (pw.length >= 12) score++;
+
+    if (score > 3) score = 3;
+    return score as 0 | 1 | 2 | 3;
+  }
+  
   const [account, setAccount] = useState({
     email: "",
     password: "",
@@ -289,6 +307,12 @@ function SignupFlow({
       setLoading(false);
       return;
     }
+    if (passwordStrength < 2) {
+      toast.error("Your password is too weak. Please strengthen it.");
+      setLoading(false);
+      return;
+    }
+
     if (account.password !== account.confirmPassword) {
       toast.error("Passwords do not match.");
       setLoading(false);
@@ -514,10 +538,45 @@ function SignupFlow({
               placeholder="Password"
               type="password"
               value={account.password}
-              onChange={(e) =>
-                setAccount({ ...account, password: e.target.value })
-              }
+              onChange={(e) => {
+                const pw = e.target.value;
+                setAccount({ ...account, password: pw });
+                const strength = evaluatePasswordStrength(pw);
+                setPasswordStrength(strength);
+
+                if (strength < 2) {
+                  setPasswordError("Password must be at least 8 characters with a mix of uppercase letters and numbers/symbols.");
+                } else {
+                  setPasswordError("");
+                }
+              }}
             />
+
+            {/* Password strength bar */}
+            <div className="h-2 w-full mt-1 rounded-full bg-muted overflow-hidden">
+              <div
+                className={`
+      h-full transition-all duration-300
+      ${passwordStrength === 0 ? "w-0" : ""}
+      ${passwordStrength === 1 ? "w-1/3 bg-red-500" : ""}
+      ${passwordStrength === 2 ? "w-2/3 bg-yellow-500" : ""}
+      ${passwordStrength === 3 ? "w-full bg-green-500" : ""}
+    `}
+              ></div>
+            </div>
+
+            {/* Strength label */}
+            <p className="text-xs mt-1 text-muted-foreground">
+              {passwordStrength === 0 && ""}
+              {passwordStrength === 1 && "Weak"}
+              {passwordStrength === 2 && "Medium"}
+              {passwordStrength === 3 && "Strong"}
+            </p>
+
+            {/* Error message */}
+            {passwordError && (
+              <p className="text-xs text-red-500 mt-1">{passwordError}</p>
+            )}
 
             {!isLogin && (
               <>
@@ -588,7 +647,7 @@ function SignupFlow({
 
           {/* USERNAME */}
           <Input
-            placeholder="Username"
+            placeholder="Full Name"
             value={form.username}
             onChange={(e) =>
               setForm({ ...form, username: e.target.value })

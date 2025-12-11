@@ -348,14 +348,49 @@ export default function ClubFeedClient({ userId, clubId }: ClubFeedClientProps) 
                     {}
                 );
 
-            const enriched = posts.map((p: Post) => ({
-                ...p,
-                profiles: Array.isArray(p.profiles) ? p.profiles[0] : p.profiles,
-                likes_count: likeCounts[p.id] || 0,
-                liked_by_user: userLikes?.some((l: { post_id: string }) => l.post_id === p.id) ?? false,
-                comments: commentsByPost[p.id] || [],
-                comments_count: commentsByPost[p.id]?.length || 0,
-            }));
+            const enriched = await Promise.all(
+                posts.map(async (p: Post) => {
+                    const isOutdoor = p.score_type?.toLowerCase().includes("outdoor");
+
+                    const bowType = p.bow_type || "recurve";
+                    const bowGroup = bowType.toLowerCase() === "compound" ? "compound" : "non-compound";
+
+                    // Normalise spot type
+                    const rawSpot = (p.spot_type || "").toLowerCase().trim();
+                    const spotType =
+                        rawSpot.includes("triple") || rawSpot.includes("3spot")
+                            ? "triple"
+                            : rawSpot.includes("single") ||
+                                rawSpot.includes("full")
+                                ? "full size"
+                                : null;
+
+                    // Build base query
+                    let query = supabase
+                        .from("handicaps")
+                        .select("handicap")
+                        .eq("round_name", p.round_name)
+                        .eq("bow_group", bowGroup)
+                        .lte("score", p.score)
+                        .order("score", { ascending: false })
+                        .limit(1);
+
+                    if (spotType && spotType !== "full size") {
+                        query = query.ilike("spot_type", `%${spotType}%`);
+                    }
+
+                    const { data: handicapData } = await query.maybeSingle();
+
+                    return {
+                        ...p,
+                        is_outdoor: isOutdoor,
+                        handicap: handicapData?.handicap ?? null,
+                        date: p.score_date
+                            ? new Date(p.score_date).getTime()
+                            : new Date(p.created_at).getTime(),
+                    };
+                })
+            );
 
             setPosts(enriched);
         } catch (err) {
